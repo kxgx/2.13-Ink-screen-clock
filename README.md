@@ -49,7 +49,7 @@ sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt install -y python3-gpiozero
-sudo apt-get install -y netcat
+sudo apt-get install -y netcat*
 sudo pip3 install spidev
 ## Python2
 sudo apt-get update
@@ -57,15 +57,15 @@ sudo apt-get install -y python-pip
 sudo apt-get install -y python-pil
 sudo apt-get install -y python-numpy
 sudo apt install -y python-gpiozero
-sudo apt-get install -y netcat
+sudo apt-get install -y netcat*
 sudo pip install spidev
 ```
 也可以
 ```Bash
 ## Python3
-sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat && sudo pip3 install spidev
+sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev
 ## Python2
-sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat && sudo pip install spidev
+sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat* && sudo pip install spidev
 ```
 
 #### 需要安装的依赖:
