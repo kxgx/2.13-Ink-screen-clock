@@ -50,7 +50,7 @@ sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt install -y python3-gpiozero
 sudo apt-get install -y netcat*
-sudo pip3 install spidev
+sudo pip3 install spidev --break-system-packages
 ## Python2
 sudo apt-get update
 sudo apt-get install -y python-pip
@@ -58,19 +58,19 @@ sudo apt-get install -y python-pil
 sudo apt-get install -y python-numpy
 sudo apt install -y python-gpiozero
 sudo apt-get install -y netcat*
-sudo pip install spidev
+sudo pip install spidev --break-system-packages
 ```
 也可以
 ```Bash
 ## Python3
-sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev
+sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev --break-system-packages
 ## Python2
-sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat* && sudo pip install spidev
+sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat* && sudo pip install spidev --break-system-packages
 ```
 
 #### 需要安装的依赖:
 ```Bash
-pip3 install borax pillow threading requests
+pip3 install borax pillow threading requests --break-system-packages
 ```
 
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
