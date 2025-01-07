@@ -13,7 +13,7 @@
     在控制台f12就可以抓取到
     手动伪造一个来源即可正常的获取到该数据内容
 
-#### 外壳及电池模块
+### 外壳及电池模块
    使用的是PiSugar的外壳,获取电源及树莓派(Raspberry)RTC时间都是靠这一部分模块完成的,附上github地址
      https://github.com/PiSugar/PiSugar/wiki/PiSugar2
      https://www.pisugar.com/
