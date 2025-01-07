@@ -268,8 +268,8 @@ try:
     #epd.Clear(0xFF)
     epd.sleep()
 except IOError as e:
-    logging.info(e)   
-except KeyboardInterrupt:    
+    logging.info(e)
+except KeyboardInterrupt:
     logging.info("ctrl + c:")
     epd.init()
     epd.sleep()
