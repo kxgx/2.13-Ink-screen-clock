@@ -53,39 +53,25 @@ sudo reboot
 
 ![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
-#### 需要安装的软件:
-参考微雪电子https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
+#### 需要安装的软件和依赖:
+参考
+微雪电子 https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
+PiSugar 3官方文档 https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#software-installation
 ```Bash
-## Python3
 sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt install -y python3-gpiozero
 sudo apt-get install -y netcat*
-sudo pip3 install spidev --break-system-packages
-## Python2
-sudo apt-get update
-sudo apt-get install -y python-pip
-sudo apt-get install -y python-pil
-sudo apt-get install -y python-numpy
-sudo apt install -y python-gpiozero
-sudo apt-get install -y netcat*
-sudo pip install spidev --break-system-packages
+sudo pip3 install spidev borax pillow threading requests --break-system-packages
+wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
+bash pisugar-power-manager.sh -c release
 ```
-也可以
+#### 傻瓜式安装命令和执行启动文件：
 ```Bash
-## Python3
-sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev --break-system-packages
-## Python2
-sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat* && sudo pip install spidev --break-system-packages
+sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev borax pillow threading requests --break-system-packages && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://github.com/kxgx/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
 ```
-
-#### 需要安装的依赖:
-```Bash
-pip3 install borax pillow threading requests --break-system-packages
-```
-
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 
 
