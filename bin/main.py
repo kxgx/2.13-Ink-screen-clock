@@ -66,8 +66,27 @@ def Memory_footprint():#显示内存占用百分比
      return(subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell = True ).decode('gbk'))
 def CPU_usage(): #显示CPU占用百分比
      return(str(int(float(os.popen("top -b -n1 | awk '/Cpu\(s\):/ {print $2}'").readline().strip()))))
-def power_battery():#获取当前电池电量
-     return(str(int(subprocess.check_output(u"echo \"get battery\" | nc -q 0 127.0.0.1 8423|awk -F':' '{print int($2)}'", shell = True ).decode('gbk')))+u'%')      
+def power_battery():
+    try:
+        # 获取电池电量
+        battery_percentage = subprocess.check_output(
+            "echo \"get battery\" | nc -q 0 127.0.0.1 8423 | awk -F':' '{print $2}'",
+            shell=True,
+            text=True
+        ).strip()
+
+        # 检查电量信息
+        if not battery_percentage:
+            return "电量信息无效"
+
+        # 返回电量百分比
+        return f"{int(battery_percentage)}%"
+    except Exception as e:
+        # 返回错误信息
+        return "获取电量失败"
+
+# 打印电量信息
+print(power_battery())
 def Bottom_edge():  #在图片中添加底边内容
      draw.rectangle((0, 105, 250, 122), 'black', 'black')
      '''电池图标画图'''
@@ -122,9 +141,9 @@ def Weather(): #在图片中添加天气内容
 
 def Basic_refresh(): #全刷函数
     logging.info("Refresh and prepare the basic content before starting the canvas")#开始画布前刷新准备基础内容
-    epd.init(epd.PART_UPDATE)
+    epd.init()
     epd.Clear(0xFF)
-    epd.init(epd.FULL_UPDATE)
+    epd.init()
     epd.Clear(0xFF)
     global get_date_var
     get_date_var=get_date() #记录开始数据
@@ -138,11 +157,11 @@ def Basic_refresh(): #全刷函数
 def Partial_full_brush(): #局部定时全刷函数
      Basic_refresh() #全局刷新
      logging.debug("局部定时全局刷新")
-     epd.init(epd.PART_UPDATE)
+     epd.init()
 def Partial_refresh():#局刷函数
      logging.info("Partial content update, this update is recommended to be synchronized with the minute to save the life of the ink screen")#局部内容更新,此更新建议与分钟同步,以节省墨水屏寿命
      epd.displayPartBaseImage(epd.getbuffer(info_image.rotate(180)))
-     epd.init(epd.PART_UPDATE)
+     epd.init()
      while (True):
          global local_time
          local_time1=get_time()
@@ -236,7 +255,7 @@ try:
 ##################屏幕初始化#########################
     getWeath()#天气获取函数开始运行
     epd = epd2in13_V4.EPD() #初始化
-    epd.init(epd.FULL_UPDATE)#设定屏幕刷新模式
+    epd.init()#设定屏幕刷新模式
     epd.Clear(0xFF) #清除屏幕内容
 ##################屏幕初始化#########################   
     logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
@@ -245,14 +264,14 @@ try:
     draw = ImageDraw.Draw(info_image)
     Basic_refresh() #全局刷新
     Partial_refresh() #局部刷新
-    epd.init(epd.FULL_UPDATE)
+    epd.init()
     #epd.Clear(0xFF)
     epd.sleep()
 except IOError as e:
     logging.info(e)   
 except KeyboardInterrupt:    
     logging.info("ctrl + c:")
-    epd.init(epd.FULL_UPDATE)
+    epd.init()
     epd.sleep()
     epd2in13_V4.epdconfig.module_exit()
     exit()
