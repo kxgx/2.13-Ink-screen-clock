@@ -19,7 +19,54 @@
      https://www.pisugar.com/
      ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
 
+### 墨水屏2.13inch e-Paper HAT+硬件连接
+连接树莓派的时候，可以直接将板子插到树莓派的 40PIN 排针上去，注意对好引脚。
 
+### 开启SPI接口：
+打开树莓派终端，输入以下指令进入配置界面：
+sudo raspi-config
+选择Interfacing Options -> SPI -> Yes 开启SPI接口
+![image](https://www.waveshare.net/w/upload/1/1e/RPI_open_spi.png)
+
+### 重启树莓派：
+sudo reboot
+检查 /boot/config.txt，可以看到 'dtparam=spi=on' 已被写入
+![image](https://www.waveshare.net/wiki/%E6%96%87%E4%BB%B6:RPI_open_spi_1.jpg)
+
+为了确保 SPI 没有被占用，建议其他的驱动覆盖暂时先关闭。可以使用 ls /dev/spi* 来检查 SPI 占用情况，终端输出 /dev/spidev0.0 和 /dev/spidev0.1 表示 SPI 情况正常
+![image](https://www.waveshare.net/wiki/%E6%96%87%E4%BB%B6:RPI_open_spi_2.jpg)
+
+#### 需要安装的软件:
+参考微雪电子https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
+```Bash
+## Python3
+sudo apt-get update
+sudo apt-get install -y python3-pip
+sudo apt-get install -y python3-pil
+sudo apt-get install -y python3-numpy
+sudo pip3 install spidev
+## Python2
+sudo apt-get update
+sudo apt-get install -y python-pip
+sudo apt-get install -y python-pil
+sudo apt-get install -y python-numpy
+sudo pip install spidev
+```
+也可以
+```Bash
+## Python3
+sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo pip3 install spidev
+## Python2
+sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo pip install spidev
+```
+（可选）
+```Bash
+sudo apt-get update
+# python3
+sudo apt install -y python3-gpiozero
+# python2
+sudo apt install -y python-gpiozero
+```
 #### 需要安装的依赖:
 ```Bash
 pip3 install borax pillow threading requests
