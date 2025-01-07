@@ -1,3 +1,4 @@
+首先感谢上游https://github.com/Seek-Huang/2.13-Ink-screen-clock的代码
 # 墨水屏展示当前时间及天气数据
 
 ## API说明:
