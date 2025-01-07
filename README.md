@@ -36,7 +36,7 @@ PiSugar 3 板载一个 RTC，可以通过 hwclock 轻松使用
 ```Bash
 dtoverlay=i2c-rtc,ds3231
 ```
-![image](https://github.com/kxgx/2.13-Ink-screen-clock/blob/main/pic/1.png?raw=true)
+![image](https://raw.github.com/kxgx/2.13-Ink-screen-clock/main/pic/1.png)
 
 ### 重启树莓派：
 sudo reboot
