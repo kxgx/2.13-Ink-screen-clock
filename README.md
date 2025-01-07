@@ -18,7 +18,8 @@
      https://github.com/PiSugar/PiSugar/wiki/PiSugar2
      https://www.pisugar.com/
      ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
-
+     ps:代码里需要nc命令需要安装netcat，安装内容已集成到“需要安装的软件“https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6
+     
 ### 墨水屏2.13inch e-Paper HAT+硬件连接
 连接树莓派的时候，可以直接将板子插到树莓派的 40PIN 排针上去，注意对好引脚。
 
@@ -44,29 +45,26 @@ sudo apt-get update
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
+sudo apt install -y python3-gpiozero
+sudo apt-get install -y netcat
 sudo pip3 install spidev
 ## Python2
 sudo apt-get update
 sudo apt-get install -y python-pip
 sudo apt-get install -y python-pil
 sudo apt-get install -y python-numpy
+sudo apt install -y python-gpiozero
+sudo apt-get install -y netcat
 sudo pip install spidev
 ```
 也可以
 ```Bash
 ## Python3
-sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo pip3 install spidev
+sudo apt-get update && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat && sudo pip3 install spidev
 ## Python2
-sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo pip install spidev
+sudo apt-get update && sudo apt-get install -y python-pip && sudo apt-get install -y python-pil && sudo apt-get install -y python-numpy && sudo apt install -y python-gpiozero && sudo apt-get install -y netcat && sudo pip install spidev
 ```
-（可选）
-```Bash
-sudo apt-get update
-# python3
-sudo apt install -y python3-gpiozero
-# python2
-sudo apt install -y python-gpiozero
-```
+
 #### 需要安装的依赖:
 ```Bash
 pip3 install borax pillow threading requests
