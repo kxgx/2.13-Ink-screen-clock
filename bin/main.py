@@ -99,7 +99,7 @@ def Bottom_edge():  #在图片中添加底边内容
      draw.line((157,113,157,115),fill=255, width=1)
      global power_str
      power_str=power_battery()
-     draw.text((131,108),power_str,font = font04,fill =255) #显示当前电量百分比
+     draw.text((128,108),power_str,font = font04,fill =255) #显示当前电量百分比
      '''电池图标画图'''
      '''添加一言API'''
      global Time_keeping
@@ -233,7 +233,7 @@ def Partial_refresh():#局刷函数
          power_str1 =power_battery()
          if (power_str1==power_str) ==False:
              draw.rectangle((128, 110, 153, 117), fill = 0) #设置更新时间刷新区域
-             draw.text((130,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
+             draw.text((127,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
              power_str=power_str1
              Local_strong_brush() #局部强刷
              logging.info("电源电量局部刷新")
