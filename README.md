@@ -18,6 +18,7 @@
      https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#rtc-on-board
      https://www.pisugar.com/
 ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
+
 ps:代码里需要nc命令需要安装netcat，安装内容已集成到“需要安装的软件“https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6
      
 ### 墨水屏2.13inch e-Paper HAT+硬件连接
