@@ -30,6 +30,14 @@ sudo raspi-config
 选择Interfacing Options -> SPI -> Yes 开启SPI接口
 ![image](https://www.waveshare.net/w/upload/1/1e/RPI_open_spi.png)
 
+#### 按需开启
+PiSugar 3 板载一个 RTC，可以通过 hwclock 轻松使用
+将以下内容写入/boot/firmware/config.txt文件：
+```Bash
+dtoverlay=i2c-rtc,ds3231
+```
+![image](https://github.com/kxgx/2.13-Ink-screen-clock/blob/main/pic/1.png?raw=true)
+
 ### 重启树莓派：
 sudo reboot
 检查 /boot/config.txt，可以看到 'dtparam=spi=on' 已被写入
