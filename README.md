@@ -24,7 +24,7 @@
 
 ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
 
-ps:代码里需要nc命令需要安装netcat，安装内容已集成到“需要安装的软件“https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6
+ps:代码里需要nc命令需要安装netcat，安装内容已集成到“需要安装的软件和依赖“https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6%E5%92%8C%E4%BE%9D%E8%B5%96
      
 ### 墨水屏2.13inch e-Paper HAT+硬件连接
 连接树莓派的时候，可以直接将板子插到树莓派的 40PIN 排针上去，注意对好引脚。
