@@ -31,10 +31,10 @@ sudo raspi-config
 ### 重启树莓派：
 sudo reboot
 检查 /boot/config.txt，可以看到 'dtparam=spi=on' 已被写入
-![image](https://www.waveshare.net/wiki/%E6%96%87%E4%BB%B6:RPI_open_spi_1.jpg)
+![image](https://www.waveshare.net/w/upload/4/46/RPI_open_spi_1.jpg)
 
 为了确保 SPI 没有被占用，建议其他的驱动覆盖暂时先关闭。可以使用 ls /dev/spi* 来检查 SPI 占用情况，终端输出 /dev/spidev0.0 和 /dev/spidev0.1 表示 SPI 情况正常
-![image](https://www.waveshare.net/wiki/%E6%96%87%E4%BB%B6:RPI_open_spi_2.jpg)
+![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
 #### 需要安装的软件:
 参考微雪电子https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
