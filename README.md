@@ -14,7 +14,7 @@
     手动伪造一个来源即可正常的获取到该数据内容
 
 ### 外壳及电池模块
-    使用的是PiSugar3的外壳,获取电源及树莓派(Raspberry)RTC时间都是靠这一部分模块完成的,附上github地址
+使用的是PiSugar3的外壳,获取电源及树莓派(Raspberry)RTC时间都是靠这一部分模块完成的,附上github地址
      https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#rtc-on-board
      https://www.pisugar.com/
 ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
