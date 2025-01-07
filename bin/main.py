@@ -77,13 +77,13 @@ def power_battery():
 
         # 检查电量信息
         if not battery_percentage:
-            return "电量信息无效"
+            return "无效"
 
         # 返回电量百分比
         return f"{int(battery_percentage)}%"
     except Exception as e:
         # 返回错误信息
-        return "获取电量失败"
+        return "失败"
 
 # 打印电量信息
 print(power_battery())
