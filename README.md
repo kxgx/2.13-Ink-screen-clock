@@ -4,19 +4,24 @@
 ## API说明:
 
 #### 一言API
-    此网站可以获取指定长度指定类型的一个句子,可以限定返回长度及返回类型 
+此网站可以获取指定长度指定类型的一个句子,可以限定返回长度及返回类型 
+    
     https://international.v1.hitokoto.cn/?c=a&encode=text&max_length=20
 
 #### 天气API
-    获取的天气是通过网页的接口,获取的内容保存在当前目录下的json文件接口的地址是在这里抓取的 
+获取的天气是通过网页的接口,获取的内容保存在当前目录下的json文件接口的地址是在这里抓取的 
+    
     http://www.weather.com.cn/
-    在控制台f12就可以抓取到
-    手动伪造一个来源即可正常的获取到该数据内容
+    
+在控制台f12就可以抓取到
+手动伪造一个来源即可正常的获取到该数据内容
 
 ### 外壳及电池模块
 使用的是PiSugar3的外壳,获取电源及树莓派(Raspberry)RTC时间都是靠这一部分模块完成的,附上github地址
+    
      https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#rtc-on-board
      https://www.pisugar.com/
+
 ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
 
 ps:代码里需要nc命令需要安装netcat，安装内容已集成到“需要安装的软件“https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6
