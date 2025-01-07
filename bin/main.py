@@ -16,7 +16,7 @@ picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__)
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir): 
     sys.path.append(libdir)#将引入文件添加到环境变量
-    from waveshare_epd import epd2in13_V2  #引入墨水屏驱动文件
+    from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 logging.debug("Loading Fonts")
 font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
@@ -30,7 +30,7 @@ def Local_strong_brush(): #局部强制刷新显示
      while i < 5:
          epd.displayPartial(epd.getbuffer(info_image.rotate(180)))#局刷开始
          i = i + 1
-def getWeath(city='101280601'): #天气函数,下载json天气至本地
+def getWeath(city='101060111'): #天气函数,下载json天气至本地
      headers = {
          'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36 Edg/94.0.992.50',
          'Referer':'http://www.weather.com.cn/'
@@ -235,7 +235,7 @@ def Partial_refresh():#局刷函数
 try:
 ##################屏幕初始化#########################
     getWeath()#天气获取函数开始运行
-    epd = epd2in13_V2.EPD() #初始化
+    epd = epd2in13_V4.EPD() #初始化
     epd.init(epd.FULL_UPDATE)#设定屏幕刷新模式
     epd.Clear(0xFF) #清除屏幕内容
 ##################屏幕初始化#########################   
@@ -254,5 +254,5 @@ except KeyboardInterrupt:
     logging.info("ctrl + c:")
     epd.init(epd.FULL_UPDATE)
     epd.sleep()
-    epd2in13_V2.epdconfig.module_exit()
+    epd2in13_V4.epdconfig.module_exit()
     exit()
