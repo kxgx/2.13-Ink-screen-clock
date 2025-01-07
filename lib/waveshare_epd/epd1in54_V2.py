@@ -4,8 +4,8 @@
 # * | Function    :   Electronic paper driver
 # * | Info        :
 # *----------------
-# * | This version:   V1
-# * | Date        :   2019-06-20
+# * | This version:   V1.1
+# * | Date        :   2022-08-10
 # # | Info        :   python demo
 # -----------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,6 +33,8 @@ from . import epdconfig
 # Display resolution
 EPD_WIDTH       = 200
 EPD_HEIGHT      = 200
+
+logger = logging.getLogger(__name__)
 
 class EPD:
     def __init__(self):
@@ -88,29 +90,6 @@ class EPD:
     0x22,0x22,0x22,0x22,0x22,0x22,0x0,0x0,0x0,
     0x02,0x17,0x41,0xB0,0x32,0x28,
     ]
-
-    # waveform partial refresh(quality)
-    WF_PARTIAL_1IN54_1 = [
-    0x0,0x00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0xA,0x0,0x0,0x0,0x0,0x0,0x1,
-    0x1,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x0,0x0,0x0,0x0,0x0,0x0,0x0,
-    0x22,0x22,0x22,0x22,0x22,0x22,0x0,0x0,0x0,
-    0x22,0x17,0x41,0x0,0x32,0x20,
-    ]
         
     # Hardware reset
     def reset(self):
@@ -132,12 +111,19 @@ class EPD:
         epdconfig.digital_write(self.cs_pin, 0)
         epdconfig.spi_writebyte([data])
         epdconfig.digital_write(self.cs_pin, 1)
+    
+    # send a lot of data   
+    def send_data2(self, data):
+        epdconfig.digital_write(self.dc_pin, 1)
+        epdconfig.digital_write(self.cs_pin, 0)
+        epdconfig.spi_writebyte2(data)
+        epdconfig.digital_write(self.cs_pin, 1)
         
     def ReadBusy(self):
-        logging.debug("e-Paper busy")
+        logger.debug("e-Paper busy")
         while(epdconfig.digital_read(self.busy_pin) == 1):
             epdconfig.delay_ms(20)
-        logging.debug("e-Paper busy release")
+        logger.debug("e-Paper busy release")
 
     def TurnOnDisplay(self):
         self.send_command(0x22) # DISPLAY_UPDATE_CONTROL_2
@@ -153,8 +139,7 @@ class EPD:
 
     def lut(self, lut):
         self.send_command(0x32) # WRITE_LUT_REGISTER
-        for i in range(0, len(lut)):
-            self.send_data(lut[i])
+        self.send_data2(lut)
             
     def set_lut(self, lut):
         self.lut(lut)
@@ -186,19 +171,19 @@ class EPD:
     
 
     def SetCursor(self, Xstart, Ystart):
-        self.send_command(0x4E) # SET_RAM_X_ADDRESS_COUNTER
-        self.send_data(Xstart & 0xFF)
+        self.send_command(0x4E); # SET_RAM_X_ADDRESS_COUNTER
+        self.send_data(Xstart & 0xFF);
 
-        self.send_command(0x4F) # SET_RAM_Y_ADDRESS_COUNTER
-        self.send_data(Ystart & 0xFF)
-        self.send_data((Ystart >> 8) & 0xFF)
+        self.send_command(0x4F); # SET_RAM_Y_ADDRESS_COUNTER
+        self.send_data(Ystart & 0xFF);
+        self.send_data((Ystart >> 8) & 0xFF);
 
     def init(self, isPartial):
         if (epdconfig.module_init() != 0):
             return -1
             
         if(isPartial):
-            logging.debug("partial refresh")
+            logger.debug("partial refresh")
             self.reset()
             self.ReadBusy()
             
@@ -225,7 +210,7 @@ class EPD:
             self.ReadBusy()
         
         else:
-            logging.debug("full refresh")
+            logger.debug("full refresh")
             # EPD hardware init start
             self.reset()
             
@@ -259,11 +244,14 @@ class EPD:
             
             self.set_lut(self.WF_Full_1IN54) # Set lut
         
-    def Clear(self, color):
+    def Clear(self, color=0xFF):
+        if self.width%8 == 0:
+            linewidth = int(self.width/8)
+        else:
+            linewidth = int(self.width/8) + 1
+
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(color)
+        self.send_data2([color] * self.height * linewidth)
                 
         self.TurnOnDisplay()
         
@@ -273,14 +261,14 @@ class EPD:
         imwidth, imheight = image_monocolor.size
         pixels = image_monocolor.load()
         if(imwidth == self.width and imheight == self.height):
-            logging.debug("Horizontal")
+            logger.debug("Horizontal")
             for y in range(imheight):
                 for x in range(imwidth):
                     # Set the bits for the column of pixels at the current position.
                     if pixels[x, y] == 0:
                         buf[int((x + y * self.width) / 8)] &= ~(0x80 >> (x % 8))
         elif(imwidth == self.height and imheight == self.width):
-            logging.debug("Vertical")
+            logger.debug("Vertical")
             for y in range(imheight):
                 for x in range(imwidth):
                     newx = y
@@ -294,9 +282,7 @@ class EPD:
             return
             
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(image[i + j * int(self.width / 8)])   
+        self.send_data2(image)   
         self.TurnOnDisplay()
         
     def displayPartBaseImage(self, image):
@@ -304,25 +290,19 @@ class EPD:
             return
         
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(image[i + j * int(self.width / 8)])
+        self.send_data2(image)
         
         self.send_command(0x26)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(image[i + j * int(self.width / 8)])
+        self.send_data2(image)
                 
-        self.TurnOnDisplayPart()
+        self.TurnOnDisplay()
         
     def displayPart(self, image):
         if (image == None):
             return
         
         self.send_command(0x24)
-        for j in range(0, self.height):
-            for i in range(0, int(self.width / 8)):
-                self.send_data(image[i + j * int(self.width / 8)])
+        self.send_data2(image)
                 
         self.TurnOnDisplayPart()
         

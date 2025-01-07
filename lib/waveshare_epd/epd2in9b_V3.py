@@ -4,8 +4,8 @@
 # * | Function    :   Electronic paper driver
 # * | Info        :
 # *----------------
-# * | This version:   V1.1
-# * | Date        :   2020-12-03
+# * | This version:   V1.2
+# * | Date        :   2022-08-10
 # # | Info        :   python demo
 # -----------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -34,6 +34,8 @@ from . import epdconfig
 # Display resolution
 EPD_WIDTH       = 128
 EPD_HEIGHT      = 296
+
+logger = logging.getLogger(__name__)
 
 class EPD:
     def __init__(self):
@@ -64,14 +66,21 @@ class EPD:
         epdconfig.digital_write(self.cs_pin, 0)
         epdconfig.spi_writebyte([data])
         epdconfig.digital_write(self.cs_pin, 1)
+
+    # send a lot of data   
+    def send_data2(self, data):
+        epdconfig.digital_write(self.dc_pin, 1)
+        epdconfig.digital_write(self.cs_pin, 0)
+        epdconfig.spi_writebyte2(data)
+        epdconfig.digital_write(self.cs_pin, 1)
         
     def ReadBusy(self):
-        logging.debug("e-Paper busy")
+        logger.debug("e-Paper busy")
         self.send_command(0X71)
         while(epdconfig.digital_read(self.busy_pin) == 0):      #  0: idle, 1: busy
             self.send_command(0X71)
             epdconfig.delay_ms(200)                
-        logging.debug("e-Paper busy release")
+        logger.debug("e-Paper busy release")
         
     def init(self):
         if (epdconfig.module_init() != 0):
@@ -98,21 +107,21 @@ class EPD:
         return 0
 
     def getbuffer(self, image):
-        # logging.debug("bufsiz = ",int(self.width/8) * self.height)
+        # logger.debug("bufsiz = ",int(self.width/8) * self.height)
         buf = [0xFF] * (int(self.width/8) * self.height)
         image_monocolor = image.convert('1')
         imwidth, imheight = image_monocolor.size
         pixels = image_monocolor.load()
-        # logging.debug("imwidth = %d, imheight = %d",imwidth,imheight)
+        # logger.debug("imwidth = %d, imheight = %d",imwidth,imheight)
         if(imwidth == self.width and imheight == self.height):
-            logging.debug("Vertical")
+            logger.debug("Vertical")
             for y in range(imheight):
                 for x in range(imwidth):
                     # Set the bits for the column of pixels at the current position.
                     if pixels[x, y] == 0:
                         buf[int((x + y * self.width) / 8)] &= ~(0x80 >> (x % 8))
         elif(imwidth == self.height and imheight == self.width):
-            logging.debug("Horizontal")
+            logger.debug("Horizontal")
             for y in range(imheight):
                 for x in range(imwidth):
                     newx = y
@@ -124,12 +133,10 @@ class EPD:
     def display(self, blackimage, ryimage): # ryimage: red or yellow image
         if (blackimage != None):
             self.send_command(0X10)
-            for i in range(0, int(self.width * self.height / 8)):
-                self.send_data(blackimage[i])        
+            self.send_data2(blackimage)        
         if (ryimage != None):
             self.send_command(0X13)
-            for i in range(0, int(self.width * self.height / 8)):
-                self.send_data(ryimage[i])
+            self.send_data2(ryimage)
 
         self.send_command(0x12)
         epdconfig.delay_ms(200) 
@@ -137,11 +144,9 @@ class EPD:
         
     def Clear(self):
         self.send_command(0X10)
-        for i in range(0, int(self.width * self.height / 8)):
-            self.send_data(0xff)
+        self.send_data2([0xff] * int(self.width * self.height / 8))
         self.send_command(0X13)
-        for i in range(0, int(self.width * self.height / 8)):
-            self.send_data(0xff)
+        self.send_data2([0xff] * int(self.width * self.height / 8))
 
         self.send_command(0x12)
         epdconfig.delay_ms(200) 
