@@ -77,7 +77,11 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 ```Bash
 sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev borax pillow requests --break-system-packages && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
 ```
-
+##### 使用脚本直接安装
+```Bash
+#国内源
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
+```
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 
 
