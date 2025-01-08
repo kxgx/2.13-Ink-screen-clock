@@ -41,13 +41,15 @@ EOF
 sudo apt-get update
 sudo apt-get install -y git
 sudo apt-get install -y netcat*
+sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt-get install -y python3-gpiozero
+sudo apt-get install -y build-essential
 sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
-wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
-bash pisugar-power-manager.sh -c release
+#wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
+#bash pisugar-power-manager.sh -c release
 cd ~/
 git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git
 cd ~/2.13-Ink-screen-clock/bin/
@@ -83,13 +85,15 @@ EOF
 sudo apt-get update
 sudo apt-get install -y git
 sudo apt-get install -y netcat*
+sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt-get install -y python3-gpiozero
+sudo apt-get install -y build-essential
 sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
-wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
-bash pisugar-power-manager.sh -c release
+#wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
+#bash pisugar-power-manager.sh -c release
 cd ~/
 git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git
 cd ~/2.13-Ink-screen-clock/bin/
