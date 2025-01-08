@@ -39,12 +39,12 @@ deb https://mirrors.cernet.edu.cn/debian-security bullseye-security main contrib
 # # deb-src https://security.debian.org/debian-security bullseye-security main contrib non-free
 EOF
 sudo apt-get update
-sudo apt install -y git
+sudo apt-get install -y git
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
-sudo apt install -y python3-gpiozero
+sudo apt-get install -y python3-gpiozero
 sudo pip3 install spidev borax pillow requests --break-system-packages
             ;;
         12*)
@@ -74,12 +74,12 @@ deb https://mirrors.cernet.edu.cn/debian-security bookworm-security main contrib
 # # deb-src https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
 EOF
 sudo apt-get update
-sudo apt install -y git
+sudo apt-get install -y git
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
-sudo apt install -y python3-gpiozero
+sudo apt-get install -y python3-gpiozero
 sudo pip3 install spidev borax pillow requests --break-system-packages
             ;;
         *)
