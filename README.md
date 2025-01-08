@@ -82,19 +82,9 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 #国内源
 curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
 ```
+
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 
-
-
-启动:
-   在文档中的***bin***文件夹下存在有start.sh文件,执行  
-```Bash
-   chmod +x start.sh 
-```
-   授权, 直接运行start.sh时间即可 
-```Bash
-   ./start.sh
-```
 特别注意:
 在代码文件第三十三行,此次代码需要更改,否则将展示默认城市天气数据
 ![image](https://raw.githubusercontent.com/huanglinsd/2.13-Ink-screen-clock/main/pic/IMG_1245.JPG)
