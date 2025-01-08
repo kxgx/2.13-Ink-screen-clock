@@ -46,7 +46,7 @@ sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
-sudo apt-get install -y python3-gpiozero
+sudo apt-get install -y python3-gpiozero python3-pigpio
 sudo apt-get install -y build-essential
 sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
 wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
@@ -91,7 +91,7 @@ sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
-sudo apt-get install -y python3-gpiozero
+sudo apt-get install -y python3-gpiozero python3-pigpio
 sudo apt-get install -y build-essential
 sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
 wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
