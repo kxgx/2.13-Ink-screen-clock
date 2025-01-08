@@ -41,7 +41,7 @@ EOF
 sudo apt-get update
 sudo apt-get install -y git pigpio
 sudo apt-get install -y raspi-config
-sudo apt-get install -y netcat*
+sudo apt-get install -y netcat* gawk
 sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
@@ -86,7 +86,7 @@ EOF
 sudo apt-get update
 sudo apt-get install -y git pigpio
 sudo apt-get install -y raspi-config
-sudo apt-get install -y netcat*
+sudo apt-get install -y netcat* gawk
 sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
