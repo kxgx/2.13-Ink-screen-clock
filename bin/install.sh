@@ -45,7 +45,7 @@ sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt-get install -y python3-gpiozero
-sudo pip3 install spidev borax pillow requests --break-system-packages
+sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
             ;;
         12*)
             echo "Debian 12 (Bookworm)"
@@ -80,7 +80,7 @@ sudo apt-get install -y python3-pip
 sudo apt-get install -y python3-pil
 sudo apt-get install -y python3-numpy
 sudo apt-get install -y python3-gpiozero
-sudo pip3 install spidev borax pillow requests --break-system-packages
+sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
             ;;
         *)
                 echo "Unknown Debian version"
