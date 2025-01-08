@@ -7,11 +7,18 @@ if [ -f /etc/debian_version ]; then
 
     echo "Detected Debian system with version: $debian_version"
 
+    # 检测是否是Raspberry Pi
+    if grep -q 'Raspberry Pi' /proc/cpuinfo; then
+        echo "This is a Raspberry Pi."
     # 根据版本号执行不同的操作
     case $debian_version in
         11*)
             echo "Debian 11 (Bullseye)"
-            # 在这里执行针对Debian 11的操作            
+            # 在这里执行针对Debian 11的操作
+sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
+sudo cat <<'EOF' > /etc/apt/sources.list.d/raspi.list
+deb https://mirrors.cernet.edu.cn/raspberrypi/ bullseye main
+EOF
 sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
 sudo cat <<'EOF' > /etc/apt/sources.list
 # 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
@@ -43,6 +50,10 @@ sudo pip3 install spidev borax pillow requests --break-system-packages
         12*)
             echo "Debian 12 (Bookworm)"
             # 在这里执行针对Debian 12的操作
+sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
+sudo cat <<'EOF' > /etc/apt/sources.list.d/raspi.list
+deb https://mirrors.cernet.edu.cn/raspberrypi/ bookworm main
+EOF
 sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
 sudo cat <<'EOF' > /etc/apt/sources.list
 # 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
