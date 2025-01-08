@@ -83,11 +83,16 @@ sudo apt install -y python3-gpiozero
 sudo pip3 install spidev borax pillow requests --break-system-packages
             ;;
         *)
-            echo "Unknown Debian version"
-            # 在这里处理未知版本的情况
-            exit 0
-            ;;
-    esac
+                echo "Unknown Debian version"
+                # 在这里处理未知版本的情况
+                exit 0
+                ;;
+        esac
+    else
+        echo "This is not a Raspberry Pi."
+        # 在这里处理非Raspberry Pi的情况
+        exit 0
+    fi
 else
     echo "This is not a Debian system."
     # 在这里处理非Debian系统的情况
