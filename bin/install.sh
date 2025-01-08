@@ -39,7 +39,7 @@ deb https://mirrors.cernet.edu.cn/debian-security bullseye-security main contrib
 # # deb-src https://security.debian.org/debian-security bullseye-security main contrib non-free
 EOF
 sudo apt-get update
-sudo apt-get install -y git
+sudo apt-get install -y git pigpio
 sudo apt-get install -y raspi-config
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-dev
@@ -84,7 +84,7 @@ deb https://mirrors.cernet.edu.cn/debian-security bookworm-security main contrib
 # # deb-src https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
 EOF
 sudo apt-get update
-sudo apt-get install -y git
+sudo apt-get install -y git pigpio
 sudo apt-get install -y raspi-config
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-dev
