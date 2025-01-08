@@ -45,7 +45,7 @@ dtoverlay=i2c-rtc,ds3231
 
 ### 重启树莓派：
 sudo reboot
-检查 /boot/config.txt，可以看到 'dtparam=spi=on' 已被写入
+检查 /boot/firmware/config.txt，可以看到 'dtparam=spi=on' 已被写入
 
 ![image](https://www.waveshare.net/w/upload/4/46/RPI_open_spi_1.jpg)
 
