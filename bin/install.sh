@@ -40,6 +40,7 @@ deb https://mirrors.cernet.edu.cn/debian-security bullseye-security main contrib
 EOF
 sudo apt-get update
 sudo apt-get install -y git
+sudo apt-get install -y raspi-config
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
@@ -84,6 +85,7 @@ deb https://mirrors.cernet.edu.cn/debian-security bookworm-security main contrib
 EOF
 sudo apt-get update
 sudo apt-get install -y git
+sudo apt-get install -y raspi-config
 sudo apt-get install -y netcat*
 sudo apt-get install -y python3-dev
 sudo apt-get install -y python3-pip
