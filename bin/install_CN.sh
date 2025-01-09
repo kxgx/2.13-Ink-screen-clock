@@ -31,47 +31,44 @@ PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manage
 INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
 PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
 
-# Debian 11 (Bullseye) 相关命令
-UPDATE_SOURCES_LIST_BULLSEYE="
-sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak && sudo cat <<'EOF' > /etc/apt/sources.list
-deb $DEBIAN_MIRROR bullseye main contrib non-free
-# deb-src $DEBIAN_MIRROR bullseye main contrib non-free
+# 更新源列表函数
+update_sources_list() {
+  local version=$1
+  sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+  sudo bash -c "cat <<EOF > /etc/apt/sources.list
+deb $DEBIAN_MIRROR $version main contrib non-free
+# deb-src $DEBIAN_MIRROR $version main contrib non-free
 
-deb $DEBIAN_MIRROR bullseye-updates main contrib non-free
-# deb-src $DEBIAN_MIRROR bullseye-updates main contrib non-free
+deb $DEBIAN_MIRROR $version-updates main contrib non-free
+# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free
 
-deb $DEBIAN_MIRROR bullseye-backports main contrib non-free
-# deb-src $DEBIAN_MIRROR bullseye-backports main contrib non-free
+deb $DEBIAN_MIRROR $version-backports main contrib non-free
+# deb-src $DEBIAN_MIRROR $version-backports main contrib non-free
 
-deb $DEBIAN_SECURITY_MIRROR bullseye-security main contrib non-free
-# deb-src $DEBIAN_SECURITY_MIRROR bullseye-security main contrib non-free
-EOF
-"
-INSTALL_PACKAGES_BULLSEYE="sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential"
-INSTALL_PIP_PACKAGES_BULLSEYE="sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests --break-system-packages"
-DOWNLOAD_AND_EXECUTE_BULLSEYE="wget $PI_SUGAR_POWER_MANAGER_URL && bash pisugar-power-manager.sh -c release"
-CLONE_AND_EXECUTE_BULLSEYE="cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh"
+deb $DEBIAN_SECURITY_MIRROR $version-security main contrib non-free
+# deb-src $DEBIAN_SECURITY_MIRROR $version-security main contrib non-free
+EOF"
+}
 
-# Debian 12 (Bookworm) 相关命令
-UPDATE_SOURCES_LIST_BOOKWORM="
-sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak && sudo cat <<'EOF' > /etc/apt/sources.list
-deb $DEBIAN_MIRROR bookworm main contrib non-free non-free-firmware
-# deb-src $DEBIAN_MIRROR bookworm main contrib non-free non-free-firmware
+# 安装包函数
+install_packages() {
+  sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential
+}
 
-deb $DEBIAN_MIRROR bookworm-updates main contrib non-free non-free-firmware
-# deb-src $DEBIAN_MIRROR bookworm-updates main contrib non-free non-free-firmware
+# 安装pip包函数
+install_pip_packages() {
+  sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests --break-system-packages
+}
 
-deb $DEBIAN_MIRROR bookworm-backports main contrib non-free non-free-firmware
-# deb-src $DEBIAN_MIRROR bookworm-backports main contrib non-free non-free-firmware
+# 下载并执行脚本函数
+download_and_execute() {
+  wget $PI_SUGAR_POWER_MANAGER_URL && bash pisugar-power-manager.sh -c release
+}
 
-deb $DEBIAN_SECURITY_MIRROR bookworm-security main contrib non-free non-free-firmware
-# deb-src $DEBIAN_SECURITY_MIRROR bookworm-security main contrib non-free non-free-firmware
-EOF
-"
-INSTALL_PACKAGES_BOOKWORM="sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential"
-INSTALL_PIP_PACKAGES_BOOKWORM="sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests --break-system-packages"
-DOWNLOAD_AND_EXECUTE_BOOKWORM="wget $PI_SUGAR_POWER_MANAGER_URL && bash pisugar-power-manager.sh -c release"
-CLONE_AND_EXECUTE_BOOKWORM="cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh"
+# 克隆并执行脚本函数
+clone_and_execute() {
+  cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
+}
 
 # 主逻辑
 # 检测是否是Debian系统
@@ -89,19 +86,19 @@ if [ -f /etc/debian_version ]; then
     case "$MAJOR_VERSION" in
       11)
         echo "执行Debian 11 (Bullseye) 相关操作"
-        eval $UPDATE_SOURCES_LIST_BULLSEYE
-        eval $INSTALL_PACKAGES_BULLSEYE
-        eval $INSTALL_PIP_PACKAGES_BULLSEYE
-        eval $DOWNLOAD_AND_EXECUTE_BULLSEYE
-        eval $CLONE_AND_EXECUTE_BULLSEYE
+        update_sources_list "bullseye"
+        install_packages
+        install_pip_packages
+        download_and_execute
+        clone_and_execute
         ;;
       12)
         echo "执行Debian 12 (Bookworm) 相关操作"
-        eval $UPDATE_SOURCES_LIST_BOOKWORM
-        eval $INSTALL_PACKAGES_BOOKWORM
-        eval $INSTALL_PIP_PACKAGES_BOOKWORM
-        eval $DOWNLOAD_AND_EXECUTE_BOOKWORM
-        eval $CLONE_AND_EXECUTE_BOOKWORM
+        update_sources_list "bookworm"
+        install_packages
+        install_pip_packages
+        download_and_execute
+        clone_and_execute
         ;;
       *)
         echo "未知的Debian版本: $MAJOR_VERSION"
