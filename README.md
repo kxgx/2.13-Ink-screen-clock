@@ -79,12 +79,20 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 ```
 ## 使用脚本直接安装
 ```Bash
-#国内源
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash --cn
+#国内源默认设置
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
 ```
 ```Bash
-#默认源
+#国内源--cn设置
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash -s -- --cn
+```
+```Bash
+#默认源默认设置
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
+```
+```Bash
+#默认源--cn设置
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash -s -- --cn
 ```
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 
