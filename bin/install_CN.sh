@@ -73,7 +73,7 @@ clone_and_execute() {
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
-  echo "检测到Debian系统。"
+  echo "检测到Debian系统"
 
   # 提取版本号的小数点前的部分
   MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1)
@@ -106,10 +106,10 @@ if [ -f /etc/debian_version ]; then
         ;;
     esac
   else
-    echo "这不是Raspberry Pi系统。"
+    echo "这不是Raspberry Pi系统"
     exit 0
   fi
 else
-  echo "这不是一个Debian系统。"
+  echo "这不是Debian系统"
   exit 0
 fi
