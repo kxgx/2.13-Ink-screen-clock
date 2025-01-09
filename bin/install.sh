@@ -8,6 +8,7 @@ DEFAULT_LANG="zh_CN.UTF-8"
     export LC_ALL=$DEFAULT_LANG
     echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
     dpkg-reconfigure locales
+    locale-gen
 
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
