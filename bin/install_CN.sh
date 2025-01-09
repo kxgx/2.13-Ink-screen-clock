@@ -6,8 +6,41 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# 默认语言环境
+DEFAULT_LANG="en_US.UTF-8"
+# 检查是否使用中国镜像源
+USE_CN_MIRROR=false
+
+# 解析命令行参数
+for arg in "$@"
+do
+  case $arg in
+    --cn)
+    USE_CN_MIRROR=true
+    shift # 移除当前参数
+    ;;
+    *)
+    # 未知参数，可以在这里处理错误或忽略
+    ;;
+  esac
+done
+
 # 语言环境设置
-DEFAULT_LANG="zh_CN.UTF-8"
+echo "请选择语言环境："
+echo "1. 中文 (zh_CN.UTF-8)"
+echo "2. 英文 (en_US.UTF-8)"
+read -p "输入选项 (1/2): " lang_choice
+case $lang_choice in
+  1)
+    DEFAULT_LANG="zh_CN.UTF-8"
+    ;;
+  2)
+    DEFAULT_LANG="en_US.UTF-8"
+    ;;
+  *)
+    echo "无效的选项，将使用默认语言环境: $DEFAULT_LANG"
+    ;;
+esac
 export LANG=$DEFAULT_LANG
 export LC_ALL=$DEFAULT_LANG
 echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
@@ -25,11 +58,18 @@ else
 fi
 
 # 定义链接变量
-DEBIAN_MIRROR="https://mirrors.cernet.edu.cn/debian/"
-DEBIAN_SECURITY_MIRROR="https://mirrors.cernet.edu.cn/debian-security"
+DEBIAN_MIRROR="http://deb.debian.org/debian/"
+DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
 PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
 INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
-PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+PIPY_MIRROR="https://pypi.org/simple"
+
+# 如果使用中国镜像源，则更新链接变量
+if [ "$USE_CN_MIRROR" = true ]; then
+  DEBIAN_MIRROR="https://mirrors.cernet.edu.cn/debian/"
+  DEBIAN_SECURITY_MIRROR="https://mirrors.cernet.edu.cn/debian-security"
+  PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+fi
 
 # 更新源列表函数
 update_sources_list() {
