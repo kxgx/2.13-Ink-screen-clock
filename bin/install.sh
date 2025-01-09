@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 默认语言环境
-DEFAULT_LANG="en_GB.UTF-8"
+DEFAULT_LANG="en_US.UTF-8"
 # 检查是否使用中国镜像源
 USE_CN_MIRROR=false
 # 控制调试输出
@@ -18,6 +18,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --cn)
     USE_CN_MIRROR=true
+    DEFAULT_LANG="zh_CN.UTF-8" # 当使用 --cn 参数时，设置默认语言为中文
     ;;
     --debug)
     DEBUG=true
@@ -30,28 +31,11 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-# 系统语言环境设置
-echo "请选择系统语言环境："
-echo "1. 中文 (zh_CN.UTF-8)"
-echo "2. 英文 (en_GB.UTF-8)"
-read -p "输入选项 (1/2): " lang_choice
-case $lang_choice in
-  1)
-    DEFAULT_LANG="zh_CN.UTF-8"
-    ;;
-  2)
-    DEFAULT_LANG="en_GB.UTF-8"
-    ;;
-  *)
-    echo "无效的选项，将使用默认系统语言环境: $DEFAULT_LANG"
-    ;;
-esac
-
 # 设置语言环境
 export LANG=$DEFAULT_LANG
 export LC_ALL=$DEFAULT_LANG
 
-# 添加到 locale.gen 如果不存在
+# 如果 locale.gen 中不存在，则添加到 locale.gen
 if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
   echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
 fi
@@ -64,8 +48,8 @@ dpkg-reconfigure --frontend=noninteractive locales
 
 # 如果需要调试输出
 if [ "$DEBUG" = true ]; then
-  echo "Language set to: $DEFAULT_LANG"
-  echo "Using CN mirror: $USE_CN_MIRROR"
+  echo "语言设置为: $DEFAULT_LANG"
+  echo "使用中国镜像源: $USE_CN_MIRROR"
 fi
 
 # Debian版本相关命令
