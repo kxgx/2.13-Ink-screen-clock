@@ -46,11 +46,27 @@ case $lang_choice in
     echo "无效的选项，将使用默认系统语言环境: $DEFAULT_LANG"
     ;;
 esac
+
+# 设置语言环境
 export LANG=$DEFAULT_LANG
 export LC_ALL=$DEFAULT_LANG
-echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
-dpkg-reconfigure --frontend=noninteractive locales
+
+# 添加到 locale.gen 如果不存在
+if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
+  echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
+fi
+
+# 生成 locale
 locale-gen
+
+# 重新配置 locales
+dpkg-reconfigure --frontend=noninteractive locales
+
+# 如果需要调试输出
+if [ "$DEBUG" = true ]; then
+  echo "Language set to: $DEFAULT_LANG"
+  echo "Using CN mirror: $USE_CN_MIRROR"
+fi
 
 # Debian版本相关命令
 DEBIAN_VERSION=$(cat /etc/debian_version)
