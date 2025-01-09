@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# 设置默认的语言环境为英文（zh_CN.UTF-8），可以根据需要修改
+DEFAULT_LANG="zh_CN.UTF-8"
+
+# 设置默认语言环境
+    export LANG=$DEFAULT_LANG
+    export LC_ALL=$DEFAULT_LANG
+    echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
+    dpkg-reconfigure locales
+
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
     # 读取Debian版本号
