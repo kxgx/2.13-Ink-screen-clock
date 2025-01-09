@@ -74,13 +74,16 @@ CLONE_AND_EXECUTE_BOOKWORM="cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~
 if [ -f /etc/debian_version ]; then
   echo "检测到Debian系统。"
 
+  # 提取版本号的小数点前的部分
+  MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1)
+
   # 检测是否是Raspberry Pi系统
   if [ "$RASPBERRY_PI" = true ]; then
     echo "检测到Raspberry Pi系统。"
 
-    # 根据Debian版本执行不同的命令
-    case "$DEBIAN_VERSION" in
-      *bullseye*)
+    # 根据版本号的小数点前的部分执行不同的命令
+    case "$MAJOR_VERSION" in
+      11)
         echo "执行Debian 11 (Bullseye) 相关操作"
         eval $UPDATE_SOURCES_LIST_BULLSEYE
         eval $INSTALL_PACKAGES_BULLSEYE
@@ -88,7 +91,7 @@ if [ -f /etc/debian_version ]; then
         eval $DOWNLOAD_AND_EXECUTE_BULLSEYE
         eval $CLONE_AND_EXECUTE_BULLSEYE
         ;;
-      *bookworm*)
+      12)
         echo "执行Debian 12 (Bookworm) 相关操作"
         eval $UPDATE_SOURCES_LIST_BOOKWORM
         eval $INSTALL_PACKAGES_BOOKWORM
@@ -97,7 +100,7 @@ if [ -f /etc/debian_version ]; then
         eval $CLONE_AND_EXECUTE_BOOKWORM
         ;;
       *)
-        echo "未知的Debian版本: $DEBIAN_VERSION"
+        echo "未知的Debian版本: $MAJOR_VERSION"
         exit 1
         ;;
     esac
