@@ -176,7 +176,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bullseye"
         install_packages
         install_pip_packages
-        download_and_execute
+        #download_and_execute
         clone_and_execute
         ;;
       12)
@@ -184,7 +184,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bookworm"
         install_packages
         install_pip_packages
-        download_and_execute
+        #download_and_execute
         clone_and_execute
         ;;
       *)
