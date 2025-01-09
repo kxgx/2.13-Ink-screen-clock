@@ -19,17 +19,6 @@ BLUETOOTH_IP_RANGE="192.168.44.1/24"
 # 蓝牙网络共享的DHCP范围
 BLUETOOTH_DHCP_RANGE="192.168.44.10,192.168.44.50"
 
-# 启用蓝牙网络共享服务
-rfcomm watch hci0 &
-
-# 创建蓝牙网络共享配置文件
-cat > /etc/bluetooth/bt-network.conf <<EOF
-[General]
-Class = 0x000100
-Discoverable = True
-Pairable = True
-EOF
-
 # 启动蓝牙服务
 systemctl start bluetooth
 
@@ -48,14 +37,28 @@ bluetoothctl <<EOF
 register $BLUETOOTH_SERVICE
 EOF
 
-# 配置网络接口
-nmcli con add type bluetooth ifname $BLUETOOTH_ADAPTER con-name $BLUETOOTH_SERVICE
-nmcli con modify $BLUETOOTH_SERVICE bluetooth.type nap
-nmcli con modify $BLUETOOTH_SERVICE bluetooth.name $BLUETOOTH_NAP_NAME
-nmcli con modify $BLUETOOTH_SERVICE ipv4.method shared
-nmcli con modify $BLUETOOTH_SERVICE ipv4.addresses $BLUETOOTH_IP_RANGE
-nmcli con modify $BLUETOOTH_SERVICE ipv4.dhcp-range $BLUETOOTH_DHCP_RANGE
-nmcli con up $BLUETOOTH_SERVICE
+# 创建rfcomm配置文件
+cat > /etc rfcomm.conf <<EOF
+rfcomm0 {
+  bind yes;
+  device $BLUETOOTH_ADAPTER;
+  channel 1;
+  comment "RFCOMM channel for NAP";
+}
+EOF
+
+# 启动rfcomm服务
+rfcomm bind rfcomm0 &
+
+# 配置dhcpcd
+cat > /etc/dhcpcd.conf <<EOF
+interface rfcomm0
+static ip_address=$BLUETOOTH_IP_RANGE
+denyinterfaces $BLUETOOTH_ADAPTER
+EOF
+
+# 启动dhcpcd服务
+systemctl restart dhcpcd
 
 # 启用IP转发
 echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
