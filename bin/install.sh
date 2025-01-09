@@ -2,7 +2,7 @@
 
 # 确保脚本以root用户运行
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run as root or with sudo."
+  echo "请以root用户运行或使用sudo"
   exit
 fi
 
@@ -21,11 +21,11 @@ if [ -f /etc/debian_version ]; then
     # 读取Debian版本号
     debian_version=$(cat /etc/debian_version)
 
-    echo "Detected Debian system with version: $debian_version"
+    echo "检测到Debian系统，版本为: $debian_version"
 
     # 检测是否是Raspberry Pi
     if grep -q 'Raspberry Pi' /proc/cpuinfo; then
-        echo "This is a Raspberry Pi."
+        echo "这是树莓派Raspberry Pi"
     # 根据版本号执行不同的操作
     case $debian_version in
         11*)
