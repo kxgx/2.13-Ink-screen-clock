@@ -14,21 +14,20 @@ USE_CN_MIRROR=false
 DEBUG=false
 
 # 解析命令行参数
-for arg in "$@"
-do
-  case $arg in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --cn)
     USE_CN_MIRROR=true
-    shift # 移除当前参数
     ;;
     --debug)
     DEBUG=true
-    shift # 移除当前参数
     ;;
     *)
-    # 未知参数，可以在这里处理错误或忽略
+    echo "未知参数: $1"
+    exit 1
     ;;
   esac
+  shift
 done
 
 # 系统语言环境设置
@@ -56,12 +55,14 @@ locale-gen
 # Debian版本相关命令
 DEBIAN_VERSION=$(cat /etc/debian_version)
 
-# 树莓派Raspberry Pi相关命令
-if grep -q 'Raspberry Pi' /proc/cpuinfo; then
-  RASPBERRY_PI=true
-else
-  RASPBERRY_PI=false
-fi
+# 检查是否是Raspberry Pi系统
+is_raspberry_pi() {
+  if grep -q 'Raspberry Pi' /proc/cpuinfo; then
+    return 0
+  else
+    return 1
+  fi
+}
 
 # 定义链接变量
 DEBIAN_MIRROR="http://deb.debian.org/debian/"
@@ -84,7 +85,7 @@ update_sources_list() {
     echo "正在更新版本 $version 的源列表"
   fi
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-  sudo bash -c "cat <<EOF > /etc/apt/sources.list
+  sudo bash -c "cat > /etc/apt/sources.list <<EOF
 deb $DEBIAN_MIRROR $version main contrib non-free
 # deb-src $DEBIAN_MIRROR $version main contrib non-free
 
@@ -112,7 +113,7 @@ install_pip_packages() {
   if [ "$DEBUG" = true ]; then
     echo "正在安装pip软件包..."
   fi
-  sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests --break-system-packages
+  sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests
 }
 
 # 下载并执行脚本函数
@@ -125,10 +126,19 @@ download_and_execute() {
 
 # 克隆并执行脚本函数
 clone_and_execute() {
-if [ "$DEBUG" = true ]; then
+  if [ "$DEBUG" = true ]; then
     echo "正在克隆并执行墨水屏时钟仓库..."
   fi
-  cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
+  cd ~
+  git clone $INK_SCREEN_CLOCK_REPO_URL
+  if [ $? -eq 0 ]; then
+    cd ~/2.13-Ink-screen-clock/bin/
+    sudo chmod +x start.sh
+    sudo ./start.sh
+  else
+    echo "克隆墨水屏时钟仓库失败"
+    exit 1
+  fi
 }
 
 # 主逻辑
@@ -140,8 +150,8 @@ if [ -f /etc/debian_version ]; then
   MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1)
 
   # 检测是否是Raspberry Pi系统
-  if [ "$RASPBERRY_PI" = true ]; then
-    echo "检测到Raspberry Pi系统。"
+  if is_raspberry_pi; then
+    echo "检测到Raspberry Pi系统"
 
     # 根据版本号的小数点前的部分执行不同的命令
     case "$MAJOR_VERSION" in
