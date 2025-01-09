@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# 确保脚本以root用户运行
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root or with sudo."
+  exit
+fi
+
 # 设置默认的语言环境为英文（zh_CN.UTF-8），可以根据需要修改
 DEFAULT_LANG="zh_CN.UTF-8"
 
