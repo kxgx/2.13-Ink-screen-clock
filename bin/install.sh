@@ -119,18 +119,18 @@ sudo chmod +x start.sh
 sudo ./start.sh
             ;;
         *)
-                echo "Unknown Debian version"
+                echo "未知Debian版本"
                 # 在这里处理未知版本的情况
                 exit 0
                 ;;
         esac
     else
-        echo "This is not a Raspberry Pi."
+        echo "这不是树莓派Raspberry Pi"
         # 在这里处理非Raspberry Pi的情况
         exit 0
     fi
 else
-    echo "This is not a Debian system."
+    echo "这不是Debian系统"
     # 在这里处理非Debian系统的情况
     exit 0
 fi
