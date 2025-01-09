@@ -22,23 +22,20 @@ BLUETOOTH_DHCP_RANGE="192.168.44.10,192.168.44.50"
 # 启动蓝牙服务
 systemctl start bluetooth
 
-# 设置蓝牙设备名称
+# 设置蓝牙设备名称（使用 hciconfig 而不是 bluetoothctl）
+hciconfig $BLUETOOTH_ADAPTER name $BLUETOOTH_NAP_NAME
+
+# 设置蓝牙设备可发现和可配对
 bluetoothctl <<EOF
 power on
 agent on
 default-agent
 discoverable on
 pairable on
-name $BLUETOOTH_NAP_NAME
-EOF
-
-# 配置蓝牙网络共享服务
-bluetoothctl <<EOF
-register $BLUETOOTH_SERVICE
 EOF
 
 # 创建rfcomm配置文件
-cat > /etc rfcomm.conf <<EOF
+cat > /etc/rfcomm.conf <<EOF
 rfcomm0 {
   bind yes;
   device $BLUETOOTH_ADAPTER;
@@ -57,7 +54,7 @@ static ip_address=$BLUETOOTH_IP_RANGE
 denyinterfaces $BLUETOOTH_ADAPTER
 EOF
 
-# 启动dhcpcd服务
+# 重启dhcpcd服务以应用新配置
 systemctl restart dhcpcd
 
 # 启用IP转发
