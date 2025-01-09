@@ -6,26 +6,10 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# 蓝牙适配器名称
-BLUETOOTH_ADAPTER="hci0"
-# 蓝牙网络共享服务名称
-BLUETOOTH_SERVICE="nap"
-# 蓝牙网络共享服务的名称
-BLUETOOTH_NAP_NAME="RaspberryPiNetwork"
-# 蓝牙网络共享服务的PIN码
-BLUETOOTH_PIN="1234"
-# 蓝牙网络共享的IP地址范围
-BLUETOOTH_IP_RANGE="192.168.44.1/24"
-# 蓝牙网络共享的DHCP范围
-BLUETOOTH_DHCP_RANGE="192.168.44.10,192.168.44.50"
-
 # 启动蓝牙服务
 systemctl start bluetooth
 
-# 设置蓝牙设备名称（使用 hciconfig 而不是 bluetoothctl）
-hciconfig $BLUETOOTH_ADAPTER name $BLUETOOTH_NAP_NAME
-
-# 设置蓝牙设备可发现和可配对
+# 使用 bluetoothctl 设置蓝牙
 bluetoothctl <<EOF
 power on
 agent on
@@ -35,35 +19,36 @@ pairable on
 EOF
 
 # 创建rfcomm配置文件
-cat > /etc/rfcomm.conf <<EOF
+cat > /etc/bluetooth/rfcomm.conf <<EOF
 rfcomm0 {
+  # Bluetooth adapter for the network sharing
+  rfcomm0 /dev/rfcomm0;
+  # Bind to the Bluetooth adapter
   bind yes;
-  device $BLUETOOTH_ADAPTER;
+  # Set the channel for the RFCOMM protocol
   channel 1;
+  # Set the Bluetooth adapter
+  device B8:27:EB:BC:77:3A;
+  # Comment for the RFCOMM channel
   comment "RFCOMM channel for NAP";
 }
 EOF
 
 # 启动rfcomm服务
-rfcomm bind rfcomm0 &
+rfcomm listen rfcomm0 &
 
-# 配置dhcpcd
-cat > /etc/dhcpcd.conf <<EOF
-interface rfcomm0
-static ip_address=$BLUETOOTH_IP_RANGE
-denyinterfaces $BLUETOOTH_ADAPTER
-EOF
-
-# 重启dhcpcd服务以应用新配置
-systemctl restart dhcpcd
+# 设置网络共享
+nmcli connection add type bluetooth ifname bnep0 con-name BluetoothNetwork autoconnect yes
+nmcli connection modify BluetoothNetwork bluetooth.bond B8:27:EB:BC:77:3A
+nmcli connection modify BluetoothNetwork ipv4.method shared
 
 # 启用IP转发
 echo '1' | sudo tee /proc/sys/net/ipv4/ip_forward
 
-# 配置iptables规则以允许流量转发
-iptables -t nat -A POSTROUTING -o $BLUETOOTH_ADAPTER -j MASQUERADE
-iptables -A FORWARD -i $BLUETOOTH_ADAPTER -o $BLUETOOTH_ADAPTER -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-iptables -A FORWARD -i $BLUETOOTH_ADAPTER -o $BLUETOOTH_ADAPTER -j ACCEPT
+# 设置iptables规则以允许流量转发
+iptables -t nat -A POSTROUTING -o bnep0 -j MASQUERADE
+iptables -A FORWARD -i bnep0 -o bnep0 -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -A FORWARD -i bnep0 -o bnep0 -j ACCEPT
 
 # 保存iptables规则
 iptables-save > /etc/iptables.ipv4.nat
@@ -75,4 +60,7 @@ cat >> /etc/rc.local <<EOF
 iptables-restore < /etc/iptables.ipv4.nat
 EOF
 
-echo "蓝牙网络共享配置完成。重启后生效"
+# 使rc.local可执行
+chmod +x /etc/rc.local
+
+echo "蓝牙网络共享配置完成 重启后生效"
