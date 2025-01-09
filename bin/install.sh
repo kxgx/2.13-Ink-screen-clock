@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 默认语言环境
-DEFAULT_LANG="en_US.UTF-8"
+DEFAULT_LANG="en_GB.UTF-8"
 # 检查是否使用中国镜像源
 USE_CN_MIRROR=false
 # 控制调试输出
@@ -33,14 +33,14 @@ done
 # 系统语言环境设置
 echo "请选择系统语言环境："
 echo "1. 中文 (zh_CN.UTF-8)"
-echo "2. 英文 (en_US.UTF-8)"
+echo "2. 英文 (en_GB.UTF-8)"
 read -p "输入选项 (1/2): " lang_choice
 case $lang_choice in
   1)
     DEFAULT_LANG="zh_CN.UTF-8"
     ;;
   2)
-    DEFAULT_LANG="en_US.UTF-8"
+    DEFAULT_LANG="en_GB.UTF-8"
     ;;
   *)
     echo "无效的选项，将使用默认系统语言环境: $DEFAULT_LANG"
