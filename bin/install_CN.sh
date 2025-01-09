@@ -18,7 +18,11 @@ locale-gen
 DEBIAN_VERSION=$(cat /etc/debian_version)
 
 # 树莓派Raspberry Pi相关命令
-RASPBERRY_PI_CPUINFO=$(grep -q 'Raspberry Pi' /proc/cpuinfo)
+if grep -q 'Raspberry Pi' /proc/cpuinfo; then
+  RASPBERRY_PI=true
+else
+  RASPBERRY_PI=false
+fi
 
 # 定义链接变量
 DEBIAN_MIRROR="https://mirrors.cernet.edu.cn/debian/"
@@ -66,37 +70,41 @@ DOWNLOAD_AND_EXECUTE_BOOKWORM="wget $PI_SUGAR_POWER_MANAGER_URL && bash pisugar-
 CLONE_AND_EXECUTE_BOOKWORM="cd ~ && git clone $INK_SCREEN_CLOCK_REPO_URL && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh"
 
 # 主逻辑
-# 检测是否是Raspberry Pi系统
-if [ "$RASPBERRY_PI_CPUINFO" ]; then
-  echo "检测到Raspberry Pi系统。"
+# 检测是否是Debian系统
+if [ -f /etc/debian_version ]; then
+  echo "检测到Debian系统。"
 
-  # 根据Debian版本执行不同的命令
-  case "$DEBIAN_VERSION" in
-    *bullseye*)
-      echo "执行Debian 11 (Bullseye) 相关操作"
-      eval $UPDATE_SOURCES_LIST_BULLSEYE
-      eval $INSTALL_PACKAGES_BULLSEYE
-      eval $INSTALL_PIP_PACKAGES_BULLSEYE
-      eval $DOWNLOAD_AND_EXECUTE_BULLSEYE
-      eval $CLONE_AND_EXECUTE_BULLSEYE
-      ;;
-    *bookworm*)
-      echo "执行Debian 12 (Bookworm) 相关操作"
-      eval $UPDATE_SOURCES_LIST_BOOKWORM
-      eval $INSTALL_PACKAGES_BOOKWORM
-      eval $INSTALL_PIP_PACKAGES_BOOKWORM
-      eval $DOWNLOAD_AND_EXECUTE_BOOKWORM
-      eval $CLONE_AND_EXECUTE_BOOKWORM
-      ;;
-    *)
-      echo "未知的Debian版本: $DEBIAN_VERSION"
-      exit 1
-      ;;
-  esac
-else
-  echo "这不是Raspberry Pi系统。"
-  exit 0
-fi
+  # 检测是否是Raspberry Pi系统
+  if [ "$RASPBERRY_PI" = true ]; then
+    echo "检测到Raspberry Pi系统。"
+
+    # 根据Debian版本执行不同的命令
+    case "$DEBIAN_VERSION" in
+      *bullseye*)
+        echo "执行Debian 11 (Bullseye) 相关操作"
+        eval $UPDATE_SOURCES_LIST_BULLSEYE
+        eval $INSTALL_PACKAGES_BULLSEYE
+        eval $INSTALL_PIP_PACKAGES_BULLSEYE
+        eval $DOWNLOAD_AND_EXECUTE_BULLSEYE
+        eval $CLONE_AND_EXECUTE_BULLSEYE
+        ;;
+      *bookworm*)
+        echo "执行Debian 12 (Bookworm) 相关操作"
+        eval $UPDATE_SOURCES_LIST_BOOKWORM
+        eval $INSTALL_PACKAGES_BOOKWORM
+        eval $INSTALL_PIP_PACKAGES_BOOKWORM
+        eval $DOWNLOAD_AND_EXECUTE_BOOKWORM
+        eval $CLONE_AND_EXECUTE_BOOKWORM
+        ;;
+      *)
+        echo "未知的Debian版本: $DEBIAN_VERSION"
+        exit 1
+        ;;
+    esac
+  else
+    echo "这不是Raspberry Pi系统。"
+    exit 0
+  fi
 else
   echo "这不是一个Debian系统。"
   exit 0
