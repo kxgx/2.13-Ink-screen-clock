@@ -3,41 +3,25 @@
 # 确保脚本以root用户运行
 if [ "$EUID" -ne 0 ]; then
   echo "请以root用户运行或使用sudo"
-  exit
+  exit 1
 fi
 
-# 设置默认的语言环境为英文（zh_CN.UTF-8），可以根据需要修改
-DEFAULT_LANG="zh_CN.UTF-8"
+# 语言环境设置
+DEFAULT_LANG="en_GB.UTF-8"
+export LANG=$DEFAULT_LANG
+export LC_ALL=$DEFAULT_LANG
+echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
+dpkg-reconfigure --frontend=noninteractive locales
+locale-gen
 
-# 设置默认语言环境
-    export LANG=$DEFAULT_LANG
-    export LC_ALL=$DEFAULT_LANG
-    echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
-    dpkg-reconfigure locales
-    locale-gen
+# Debian版本相关命令
+DEBIAN_VERSION=$(cat /etc/debian_version)
 
-# 检测是否是Debian系统
-if [ -f /etc/debian_version ]; then
-    # 读取Debian版本号
-    debian_version=$(cat /etc/debian_version)
+# 树莓派Raspberry Pi相关命令
+RASPBERRY_PI_CPUINFO=$(grep -q 'Raspberry Pi' /proc/cpuinfo)
 
-    echo "检测到Debian系统，版本为: $debian_version"
-
-    # 检测是否是Raspberry Pi
-    if grep -q 'Raspberry Pi' /proc/cpuinfo; then
-        echo "这是树莓派Raspberry Pi"
-    # 根据版本号执行不同的操作
-    case $debian_version in
-        11*)
-            echo "Debian 11 (Bullseye)"
-            # 在这里执行针对Debian 11的操作
-sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
-sudo cat <<'EOF' > /etc/apt/sources.list.d/raspi.list
-deb https://mirrors.cernet.edu.cn/raspberrypi/ bullseye main
-EOF
-sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-sudo cat <<'EOF' > /etc/apt/sources.list
-# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+# Debian 11 (Bullseye) 相关命令
+UPDATE_SOURCES_LIST_BULLSEYE="sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak && sudo cat <<'EOF' > /etc/apt/sources.list
 deb https://mirrors.cernet.edu.cn/debian/ bullseye main contrib non-free
 # deb-src https://mirrors.cernet.edu.cn/debian/ bullseye main contrib non-free
 
@@ -47,42 +31,16 @@ deb https://mirrors.cernet.edu.cn/debian/ bullseye-updates main contrib non-free
 deb https://mirrors.cernet.edu.cn/debian/ bullseye-backports main contrib non-free
 # deb-src https://mirrors.cernet.edu.cn/debian/ bullseye-backports main contrib non-free
 
-# 以下安全更新软件源包含了官方源与镜像站配置，如有需要可自行修改注释切换
 deb https://mirrors.cernet.edu.cn/debian-security bullseye-security main contrib non-free
 # deb-src https://mirrors.cernet.edu.cn/debian-security bullseye-security main contrib non-free
+EOF"
+INSTALL_PACKAGES_BULLSEYE="sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential"
+INSTALL_PIP_PACKAGES_BULLSEYE="sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages"
+DOWNLOAD_AND_EXECUTE_BULLSEYE="wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release"
+CLONE_AND_EXECUTE_BULLSEYE="cd ~ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh"
 
-# deb https://security.debian.org/debian-security bullseye-security main contrib non-free
-# # deb-src https://security.debian.org/debian-security bullseye-security main contrib non-free
-EOF
-sudo apt-get update
-sudo apt-get install -y git pigpio
-sudo apt-get install -y raspi-config
-sudo apt-get install -y netcat* gawk
-sudo apt-get install -y python3-dev
-sudo apt-get install -y python3-pip
-sudo apt-get install -y python3-pil
-sudo apt-get install -y python3-numpy
-sudo apt-get install -y python3-gpiozero python3-pigpio
-sudo apt-get install -y build-essential
-sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
-wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
-bash pisugar-power-manager.sh -c release
-cd ~/
-git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git
-cd ~/2.13-Ink-screen-clock/bin/
-sudo chmod +x start.sh
-sudo ./start.sh
-            ;;
-        12*)
-            echo "Debian 12 (Bookworm)"
-            # 在这里执行针对Debian 12的操作
-sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
-sudo cat <<'EOF' > /etc/apt/sources.list.d/raspi.list
-deb https://mirrors.cernet.edu.cn/raspberrypi/ bookworm main
-EOF
-sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-sudo cat <<'EOF' > /etc/apt/sources.list
-# 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释
+# Debian 12 (Bookworm) 相关命令
+UPDATE_SOURCES_LIST_BOOKWORM="sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak && sudo cat <<'EOF' > /etc/apt/sources.list
 deb https://mirrors.cernet.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
 # deb-src https://mirrors.cernet.edu.cn/debian/ bookworm main contrib non-free non-free-firmware
 
@@ -92,45 +50,51 @@ deb https://mirrors.cernet.edu.cn/debian/ bookworm-updates main contrib non-free
 deb https://mirrors.cernet.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware
 # deb-src https://mirrors.cernet.edu.cn/debian/ bookworm-backports main contrib non-free non-free-firmware
 
-# 以下安全更新软件源包含了官方源与镜像站配置，如有需要可自行修改注释切换
 deb https://mirrors.cernet.edu.cn/debian-security bookworm-security main contrib non-free non-free-firmware
 # deb-src https://mirrors.cernet.edu.cn/debian-security bookworm-security main contrib non-free non-free-firmware
+EOF"
+INSTALL_PACKAGES_BOOKWORM="sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential"
+INSTALL_PIP_PACKAGES_BOOKWORM="sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages"
+DOWNLOAD_AND_EXECUTE_BOOKWORM="wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release"
+CLONE_AND_EXECUTE_BOOKWORM="cd ~ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh"
 
-# deb https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-# # deb-src https://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
-EOF
-sudo apt-get update
-sudo apt-get install -y git pigpio
-sudo apt-get install -y raspi-config
-sudo apt-get install -y netcat* gawk
-sudo apt-get install -y python3-dev
-sudo apt-get install -y python3-pip
-sudo apt-get install -y python3-pil
-sudo apt-get install -y python3-numpy
-sudo apt-get install -y python3-gpiozero python3-pigpio
-sudo apt-get install -y build-essential
-sudo pip3 install -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple spidev borax pillow requests --break-system-packages
-wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
-bash pisugar-power-manager.sh -c release
-cd ~/
-git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git
-cd ~/2.13-Ink-screen-clock/bin/
-sudo chmod +x start.sh
-sudo ./start.sh
-            ;;
-        *)
-                echo "未知Debian版本"
-                # 在这里处理未知版本的情况
-                exit 0
-                ;;
-        esac
-    else
-        echo "这不是树莓派Raspberry Pi"
-        # 在这里处理非Raspberry Pi的情况
-        exit 0
-    fi
-else
-    echo "这不是Debian系统"
-    # 在这里处理非Debian系统的情况
+# 主逻辑
+# 检测是否是Debian系统
+if [ -f /etc/debian_version ]; then
+  echo "检测到Debian系统，版本号为: $DEBIAN_VERSION"
+
+  # 检测是否是Raspberry Pi
+  if $RASPBERRY_PI_CPUINFO; then
+    echo "检测到Raspberry Pi系统。"
+
+    # 根据Debian版本执行不同的命令
+    case $DEBIAN_VERSION in
+      *bullseye*)
+        echo "执行Debian 11 (Bullseye) 相关操作..."
+        eval $UPDATE_SOURCES_LIST_BULLSEYE
+        eval $INSTALL_PACKAGES_BULLSEYE
+        eval $INSTALL_PIP_PACKAGES_BULLSEYE
+        eval $DOWNLOAD_AND_EXECUTE_BULLSEYE
+        eval $CLONE_AND_EXECUTE_BULLSEYE
+        ;;
+      *bookworm*)
+        echo "执行Debian 12 (Bookworm) 相关操作..."
+        eval $UPDATE_SOURCES_LIST_BOOKWORM
+        eval $INSTALL_PACKAGES_BOOKWORM
+        eval $INSTALL_PIP_PACKAGES_BOOKWORM
+        eval $DOWNLOAD_AND_EXECUTE_BOOKWORM
+        eval $CLONE_AND_EXECUTE_BOOKWORM
+        ;;
+      *)
+        echo "未知的Debian版本: $DEBIAN_VERSION"
+        exit 1
+        ;;
+    esac
+  else
+    echo "这不是Raspberry Pi系统。"
     exit 0
+  fi
+else
+  echo "这不是一个Debian系统。"
+  exit 0
 fi
