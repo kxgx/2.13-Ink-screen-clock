@@ -1,9 +1,11 @@
 [Unit]
 Description=Raspi e-Paper Service
-After=network.target
+After=network-online.target
 
 [Service]
 Type=forking
+# 等待网络完全启动
+ExecStartPre=systemd-networkd-wait-online --timeout=30
 ExecStart=/root/2.13-Ink-screen-clock/bin/start.sh
 ExecStop=/usr/bin/screen -S main_screen -X quit
 Restart=on-failure
