@@ -1,0 +1,13 @@
+[Unit]
+Description=Main Python Script Service
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/root/2.13-Ink-screen-clock/bin/start.sh
+ExecStop=/usr/bin/screen -S main_screen -X quit
+Restart=on-failure
+User=root
+
+[Install]
+WantedBy=multi-user.target
