@@ -63,7 +63,7 @@ sudo reboot
 ```Bash
 --zh    设置系统语言为zh_CN,UTF-8
 --cn    替换apt镜像源为中国镜像源
---DRBUG 输出详细信息
+--debug 输出详细信息
 ```
 ```Bash
 #国内源默认设置
