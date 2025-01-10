@@ -39,17 +39,17 @@ export LC_ALL=$DEFAULT_LANG
 
 # 如果 locale.gen 中不存在，则添加到 locale.gen
 if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
-  echo "$DEFAULT_LANG UTF-8" >> /etc/locale.gen
+  echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
 fi
 
 # 生成 locale
-if ! locale-gen; then
+if ! sudo locale-gen; then
   echo "生成 locale 失败" >&2
   exit 1
 fi
 
 # 重新配置 locales
-if ! dpkg-reconfigure --frontend=noninteractive locales; then
+if ! sudo dpkg-reconfigure --frontend=noninteractive locales; then
   echo "重新配置 locales 失败" >&2
   exit 1
 fi
@@ -96,7 +96,6 @@ update_sources_list() {
   {
     echo "deb $DEBIAN_MIRROR $version main contrib non-free"
     echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
-    # ... [其他源列表项]
   } | sudo tee /etc/apt/sources.list
 }
 
@@ -111,7 +110,7 @@ install_packages() {
     echo "系统更新失败" >&2
     exit 1
   fi
-  if ! sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen; then
+  if ! sudo apt-get install -y git pigpio raspi-config netcat gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen; then
     echo "软件包安装失败" >&2
     exit 1
   fi
