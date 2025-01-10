@@ -1,9 +1,9 @@
-＃首先感谢上游https://github.com/Seek-Huang/2.13-Ink-screen-clock 的代码
-
-＃本仓库添加以添加一键安装部署脚本
-注意:请先配置完需要的硬件以及系统配置操作再运行脚本
-
 # 墨水屏展示当前时间及天气数据
+
+首先感谢上游https://github.com/Seek-Huang/2.13-Ink-screen-clock 的代码仓库
+
+## 本仓库已添加一键安装部署脚本
+注意:请先配置完需要的硬件以及系统配置操作再运行脚本
 
 ## API说明:
 
@@ -57,6 +57,30 @@ sudo reboot
 
 ![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
+## 使用脚本直接安装
+### 参数定义
+```Bash
+--zh    设置系统语言为zh_CN,UTF-8
+--cn    替换apt镜像源为中国镜像源
+--DRBUG 输出详细信息
+```
+```Bash
+#国内源默认设置
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
+```
+```Bash
+#国内源--cn设置
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --cn
+```
+```Bash
+#默认源默认设置
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
+```
+```Bash
+#默认源--cn设置
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --cn
+```
+
 #### 需要安装的软件和依赖:
 参考
 微雪电子 https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
@@ -81,28 +105,7 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 ```Bash
 sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev borax pillow requests --break-system-packages && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
 ```
-## 使用脚本直接安装
-### 参数定义
-```Bash
---zh    设置系统语言为zh_CN,UTF-8
---cn    替换apt镜像源为中国镜像源
-```
-```Bash
-#国内源默认设置
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
-```
-```Bash
-#国内源--cn设置
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash -s -- --cn
-```
-```Bash
-#默认源默认设置
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
-```
-```Bash
-#默认源--cn设置
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash -s -- --cn
-```
+
 总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 
 特别注意:
