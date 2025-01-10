@@ -3,14 +3,17 @@
 
 import sys
 import os
-from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
-import logging
+import logging  #日志库
+import subprocess
+from threading import Timer
+import requests
 
 # 设置 picdir 和 libdir 路径
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
-if os.path.exists(libdir):
-    sys.path.append(libdir)
+if os.path.exists(libdir): 
+    sys.path.append(libdir)#将引入文件添加到环境变量
+    from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 
 # 配置日志
 logging.basicConfig(level=logging.DEBUG)
