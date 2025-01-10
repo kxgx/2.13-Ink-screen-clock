@@ -270,8 +270,24 @@ try:
 except IOError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("ctrl + c:")
+    logging.info("Keyboard interrupt detected, exiting gracefully.")
     epd.init()
-    epd.sleep()
-    epd2in13_V4.epdconfig.module_exit()
+    epd.Clear(0xFF)  # 清除屏幕内容
+    epd.sleep()       # 使屏幕进入休眠状态
+    epd2in13_V4.epdconfig.module_exit()  # 清理资源
     exit()
+
+except Exception as e:
+    logging.error("An unexpected error occurred: %s", e)
+    epd.init()
+    epd.Clear(0xFF)  # 清除屏幕内容
+    epd.sleep()       # 使屏幕进入休眠状态
+    epd2in13_V4.epdconfig.module_exit()  # 清理资源
+    exit()
+
+# 脚本正常结束后的清理操作
+epd.init()
+epd.Clear(0xFF)  # 清除屏幕内容
+epd.sleep()       # 使屏幕进入休眠状态
+epd2in13_V4.epdconfig.module_exit()  # 清理资源
+exit()
