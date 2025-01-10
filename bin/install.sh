@@ -142,6 +142,9 @@ setup_service() {
       echo "克隆墨水屏时钟仓库失败"
       exit 1
     fi
+    # 设置start.sh和clean.sh脚本的执行权限
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   fi
 
   SERVICE_PATH="raspi_e-Paper.service"
