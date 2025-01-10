@@ -4,6 +4,11 @@ f_name=clean.py
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir=${dir%/*}
 screen_name="clean_screen"
+service_name="raspi_e-Paper.service"
+
+# 停止raspi_e-Paper服务
+echo "正在停止$service_name服务..."
+sudo systemctl stop $service_name
 
 # 查找并结束所有与指定screen_name相关的screen会话
 pids=$(screen -ls | grep $screen_name | awk -F '.' '{print $1}' | awk '{print $1}')
