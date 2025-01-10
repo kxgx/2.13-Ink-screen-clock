@@ -44,21 +44,22 @@ fi
 
 # 生成 locale
 if ! locale-gen; then
-  echo "生成 locale 失败"
+  echo "生成 locale 失败" >&2
   exit 1
 fi
 
 # 重新配置 locales
 if ! dpkg-reconfigure --frontend=noninteractive locales; then
-  echo "重新配置 locales 失败"
+  echo "重新配置 locales 失败" >&2
   exit 1
 fi
 
 # 如果需要调试输出
-if [ "$DEBUG" = true ]; then
-  echo "语言设置为: $DEFAULT_LANG"
-  echo "使用中国镜像源: $USE_CN_MIRROR"
-fi
+debug() {
+  if [ "$DEBUG" = true ]; then
+    echo "$@"
+  fi
+}
 
 # Debian版本相关命令
 DEBIAN_VERSION=$(cat /etc/debian_version)
@@ -90,9 +91,7 @@ fi
 # 更新源列表函数
 update_sources_list() {
   local version=$1
-  if [ "$DEBUG" = true ]; then
-    echo "正在更新版本 $version 的源列表"
-  fi
+  debug "正在更新版本 $version 的源列表"
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
   {
     echo "deb $DEBIAN_MIRROR $version main contrib non-free"
@@ -103,43 +102,37 @@ update_sources_list() {
 
 # 安装包函数
 install_packages() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在安装软件包..."
-  fi
+  debug "正在安装软件包..."
   if ! sudo apt-get update; then
-    echo "更新源列表失败"
+    echo "更新源列表失败" >&2
     exit 1
   fi
   if ! sudo apt-get upgrade -y; then
-    echo "系统更新失败"
+    echo "系统更新失败" >&2
     exit 1
   fi
   if ! sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen; then
-    echo "软件包安装失败"
+    echo "软件包安装失败" >&2
     exit 1
   fi
 }
 
 # 安装pip包函数
 install_pip_packages() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在安装pip软件包..."
-  fi
+  debug "正在安装pip软件包..."
   if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
-    echo "pip软件包安装失败"
+    echo "pip软件包安装失败" >&2
     exit 1
   fi
 }
 
 # 复制服务文件并设置为开机启动
 setup_service() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在设置墨水屏时钟服务..."
-  fi
+  debug "正在设置墨水屏时钟服务..."
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
     cd ~
     if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
-      echo "克隆墨水屏时钟仓库失败"
+      echo "克隆墨水屏时钟仓库失败" >&2
       exit 1
     fi
     # 设置start.sh和clean.sh脚本的执行权限
@@ -161,11 +154,11 @@ setup_service() {
       sudo systemctl enable $SERVICE1_PATH
       sudo systemctl start $SERVICE_PATH
     else
-      echo "复制服务文件失败"
+      echo "复制服务文件失败" >&2
       exit 1
     fi
   else
-    echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH"
+    echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH" >&2
     exit 1
   fi
 }
@@ -173,36 +166,36 @@ setup_service() {
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
-  echo "检测到Debian系统"
+  debug "检测到Debian系统"
 
   # 提取版本号的小数点前的部分
   if ! MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1); then
-    echo "无法提取Debian版本号"
+    echo "无法提取Debian版本号" >&2
     exit 1
   fi
 
   # 检测是否是Raspberry Pi系统
   if is_raspberry_pi; then
-    echo "检测到Raspberry Pi系统"
+    debug "检测到Raspberry Pi系统"
 
     # 根据版本号的小数点前的部分执行不同的命令
     case "$MAJOR_VERSION" in
       11)
-        echo "执行Debian 11 (Bullseye) 相关操作"
+        debug "执行Debian 11 (Bullseye) 相关操作"
         update_sources_list "bullseye"
         install_packages
         install_pip_packages
         setup_service
         ;;
       12)
-        echo "执行Debian 12 (Bookworm) 相关操作"
+        debug "执行Debian 12 (Bookworm) 相关操作"
         update_sources_list "bookworm"
         install_packages
         install_pip_packages
         setup_service
         ;;
       *)
-        echo "未知的Debian版本: $MAJOR_VERSION"
+        echo "未知的Debian版本: $MAJOR_VERSION" >&2
         exit 1
         ;;
     esac
