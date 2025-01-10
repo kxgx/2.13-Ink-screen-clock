@@ -43,10 +43,16 @@ if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
 fi
 
 # 生成 locale
-locale-gen
+if ! locale-gen; then
+  echo "生成 locale 失败"
+  exit 1
+fi
 
 # 重新配置 locales
-dpkg-reconfigure --frontend=noninteractive locales
+if ! dpkg-reconfigure --frontend=noninteractive locales; then
+  echo "重新配置 locales 失败"
+  exit 1
+fi
 
 # 如果需要调试输出
 if [ "$DEBUG" = true ]; then
@@ -108,7 +114,7 @@ install_packages() {
   if [ "$DEBUG" = true ]; then
     echo "正在安装软件包..."
   fi
-  sudo apt-get update && sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen
+  sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen
 }
 
 # 安装pip包函数
@@ -116,34 +122,38 @@ install_pip_packages() {
   if [ "$DEBUG" = true ]; then
     echo "正在安装pip软件包..."
   fi
-  sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests
+  if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
+    echo "pip软件包安装失败"
+    exit 1
+  fi
 }
 
 # 复制服务文件并设置为开机启动
 setup_service() {
   if [ "$DEBUG" = true ]; then
-  echo "正在设置墨水屏时钟服务..."
+    echo "正在设置墨水屏时钟服务..."
   fi
-  cd ~
-  git clone $INK_SCREEN_CLOCK_REPO_URL
-  if [ $? -eq 0 ]; then
-    # 假设服务文件在仓库的 bin 文件夹下
-    SERVICE_PATH="raspi_e-paper.service"
-    SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
-    if [ -f "$SERVICE_FILE_PATH" ]; then
-      # 复制服务文件到 systemd 目录
-      sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/
-      # 重载 systemd 管理器配置
-      sudo systemctl daemon-reload
-      # 启动服务
-      sudo systemctl enable $SERVICE_PATH
-      sudo systemctl start $SERVICE_PATH
-    else
-      echo "服务文件不存在于路径: $SERVICE_FILE_PATH"
+  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
+    cd ~
+    if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
+      echo "克隆墨水屏时钟仓库失败"
       exit 1
     fi
+  fi
+
+  # 假设服务文件在仓库的 bin 文件夹下
+  SERVICE_PATH="raspi_e-paper.service"
+  SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
+  if [ -f "$SERVICE_FILE_PATH" ]; then
+    # 复制服务文件到 systemd 目录
+    sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/
+    # 重载 systemd 管理器配置
+    sudo systemctl daemon-reload
+    # 启动服务
+    sudo systemctl enable $SERVICE_PATH
+    sudo systemctl start $SERVICE_PATH
   else
-    echo "克隆墨水屏时钟仓库失败"
+    echo "服务文件不存在于路径: $SERVICE_FILE_PATH"
     exit 1
   fi
 }
