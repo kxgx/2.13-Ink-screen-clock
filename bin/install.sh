@@ -16,9 +16,11 @@ DEBUG=false
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    --zh)
+    DEFAULT_LANG="zh_CN.UTF-8" # 当使用 --zh 参数时，设置默认语言为中文
+    ;;
     --cn)
     USE_CN_MIRROR=true
-    DEFAULT_LANG="zh_CN.UTF-8" # 当使用 --cn 参数时，设置默认语言为中文
     ;;
     --debug)
     DEBUG=true
@@ -120,12 +122,12 @@ install_pip_packages() {
 # 复制服务文件并设置为开机启动
 setup_service() {
   if [ "$DEBUG" = true ]; then
-    echo "正在设置墨水屏时钟服务..."
+  echo "正在设置墨水屏时钟服务..."
   fi
   cd ~
-git clone $INK_SCREEN_CLOCK_REPO_URL
+  git clone $INK_SCREEN_CLOCK_REPO_URL
   if [ $? -eq 0 ]; then
-    # 假设服务文件在仓库的 service 文件夹下
+    # 假设服务文件在仓库的 bin 文件夹下
     SERVICE_PATH="raspi_e-paper.service"
     SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
     if [ -f "$SERVICE_FILE_PATH" ]; then
