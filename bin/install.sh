@@ -126,15 +126,16 @@ setup_service() {
 git clone $INK_SCREEN_CLOCK_REPO_URL
   if [ $? -eq 0 ]; then
     # 假设服务文件在仓库的 service 文件夹下
-    SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/raspi_e-paper.service"
+    SERVICE_PATH="raspi_e-paper.service"
+    SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
     if [ -f "$SERVICE_FILE_PATH" ]; then
       # 复制服务文件到 systemd 目录
       sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/
       # 重载 systemd 管理器配置
       sudo systemctl daemon-reload
       # 启动服务
-      sudo systemctl enable ink-screen-clock.service
-      sudo systemctl start ink-screen-clock.service
+      sudo systemctl enable $SERVICE_PATH
+      sudo systemctl start $SERVICE_PATH
     else
       echo "服务文件不存在于路径: $SERVICE_FILE_PATH"
       exit 1
