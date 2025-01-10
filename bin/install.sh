@@ -94,19 +94,11 @@ update_sources_list() {
     echo "正在更新版本 $version 的源列表"
   fi
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-  sudo bash -c "cat > /etc/apt/sources.list <<EOF
-deb $DEBIAN_MIRROR $version main contrib non-free
-# deb-src $DEBIAN_MIRROR $version main contrib non-free
-
-deb $DEBIAN_MIRROR $version-updates main contrib non-free
-# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free
-
-deb $DEBIAN_MIRROR $version-backports main contrib non-free
-# deb-src $DEBIAN_MIRROR $version-backports main contrib non-free
-
-deb $DEBIAN_SECURITY_MIRROR $version-security main contrib non-free
-# deb-src $DEBIAN_SECURITY_MIRROR $version-security main contrib non-free
-EOF"
+  {
+    echo "deb $DEBIAN_MIRROR $version main contrib non-free"
+    echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
+    # ... [其他源列表项]
+  } | sudo tee /etc/apt/sources.list
 }
 
 # 安装包函数
@@ -114,7 +106,18 @@ install_packages() {
   if [ "$DEBUG" = true ]; then
     echo "正在安装软件包..."
   fi
-  sudo apt-get update && sudo apt-get upgrade -y && sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen
+  if ! sudo apt-get update; then
+    echo "更新源列表失败"
+    exit 1
+  fi
+  if ! sudo apt-get upgrade -y; then
+    echo "系统更新失败"
+    exit 1
+  fi
+  if ! sudo apt-get install -y git pigpio raspi-config netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen; then
+    echo "软件包安装失败"
+    exit 1
+  fi
 }
 
 # 安装pip包函数
@@ -141,19 +144,26 @@ setup_service() {
     fi
   fi
 
-  # 假设服务文件在仓库的 bin 文件夹下
   SERVICE_PATH="raspi_e-paper.service"
+  SERVICE1_PATH="e-Paper_clean.service"
   SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
-  if [ -f "$SERVICE_FILE_PATH" ]; then
+  SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
+  if [ -f "$SERVICE_FILE_PATH" ] && [ -f "$SERVICE1_FILE_PATH" ]; then
     # 复制服务文件到 systemd 目录
-    sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/
-    # 重载 systemd 管理器配置
-    sudo systemctl daemon-reload
-    # 启动服务
-    sudo systemctl enable $SERVICE_PATH
-    sudo systemctl start $SERVICE_PATH
+    if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
+      # 重载 systemd 管理器配置
+      sudo systemctl daemon-reload
+      # 启动服务
+      sudo systemctl enable $SERVICE_PATH
+      sudo systemctl enable $SERVICE1_PATH
+      sudo systemctl start $SERVICE_PATH
+      sudo systemctl start $SERVICE1_PATH
+    else
+      echo "复制服务文件失败"
+      exit 1
+    fi
   else
-    echo "服务文件不存在于路径: $SERVICE_FILE_PATH"
+    echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH"
     exit 1
   fi
 }
@@ -164,7 +174,10 @@ if [ -f /etc/debian_version ]; then
   echo "检测到Debian系统"
 
   # 提取版本号的小数点前的部分
-  MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1)
+  if ! MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1); then
+    echo "无法提取Debian版本号"
+    exit 1
+  fi
 
   # 检测是否是Raspberry Pi系统
   if is_raspberry_pi; then
