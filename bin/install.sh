@@ -144,7 +144,7 @@ setup_service() {
     fi
   fi
 
-  SERVICE_PATH="raspi_e-paper.service"
+  SERVICE_PATH="raspi_e-Paper.service"
   SERVICE1_PATH="e-Paper_clean.service"
   SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
   SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
