@@ -6,7 +6,7 @@ Before=reboot.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /path/to/your/script/main.py
+ExecStart=/usr/bin/python3 /root/2.13-Ink-screen-clock/bin/clean.py
 RemainAfterExit=yes
 
 [Install]
