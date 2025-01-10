@@ -1,4 +1,8 @@
-首先感谢上游https://github.com/Seek-Huang/2.13-Ink-screen-clock 的代码
+＃首先感谢上游https://github.com/Seek-Huang/2.13-Ink-screen-clock 的代码
+
+＃本仓库添加以添加一键安装部署脚本
+注意:请先配置完需要的系统操作在运行脚本
+
 # 墨水屏展示当前时间及天气数据
 
 ## API说明:
