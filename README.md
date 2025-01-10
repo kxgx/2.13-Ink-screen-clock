@@ -81,7 +81,7 @@ curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh 
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --cn
 ```
 
-#### 需要安装的软件和依赖:
+## 需要安装的软件和依赖:
 参考
 微雪电子 https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
 PiSugar 3官方文档 https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#software-installation
