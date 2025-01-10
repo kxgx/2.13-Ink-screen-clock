@@ -1,0 +1,14 @@
+[Unit]
+Description=Run e-Paper clean on shutdown and reboot
+DefaultDependencies=no
+Before=shutdown.target
+Before=reboot.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /path/to/your/script/main.py
+RemainAfterExit=yes
+
+[Install]
+WantedBy=shutdown.target
+WantedBy=reboot.target
