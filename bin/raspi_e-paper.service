@@ -1,5 +1,5 @@
 [Unit]
-Description=Main Python Script Service
+Description=Raspi e-Paper Service
 After=network.target
 
 [Service]
