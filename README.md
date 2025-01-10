@@ -57,7 +57,7 @@ sudo reboot
 
 ![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
-## 使用脚本直接安装
+## 使用脚本直接安装（推荐）
 ### 参数定义
 ```Bash
 --zh    设置系统语言为zh_CN,UTF-8
