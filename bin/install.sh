@@ -160,7 +160,6 @@ setup_service() {
       sudo systemctl enable $SERVICE_PATH
       sudo systemctl enable $SERVICE1_PATH
       sudo systemctl start $SERVICE_PATH
-      sudo systemctl start $SERVICE1_PATH
     else
       echo "复制服务文件失败"
       exit 1
