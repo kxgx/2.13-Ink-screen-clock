@@ -78,6 +78,11 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python3-pip && sudo apt-get install -y python3-pil && sudo apt-get install -y python3-numpy && sudo apt install -y python3-gpiozero && sudo apt-get install -y netcat* && sudo pip3 install spidev borax pillow requests --break-system-packages && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
 ```
 ## 使用脚本直接安装
+### 参数定义
+```Bash
+--zh    设置系统语言为zh_CN,UTF-8
+--cn    替换apt镜像源为中国镜像源
+```
 ```Bash
 #国内源默认设置
 curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | bash
