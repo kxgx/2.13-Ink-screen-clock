@@ -3,7 +3,7 @@
 
 import sys
 import os
-from waveshare_epd import epd2in13_V4
+from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 import logging
 
 # 设置 picdir 和 libdir 路径
