@@ -78,13 +78,13 @@ RASPBERRY_PI_SOURCE_DEBIAN12="https://archive.raspberrypi.com/debian/"
 
 # 如果使用中国镜像源，则更新链接变量
 if [ "$USE_CN_MIRROR" = true ]; then
-  DEBIAN_MIRROR="https://mirrors.cernet.edu.cn/debian/"
-  DEBIAN_SECURITY_MIRROR="https://mirrors.cernet.edu.cn/debian-security"
+  DEBIAN_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian/"
+  DEBIAN_SECURITY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian-security"
   INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
   PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
   # 使用中国镜像源时，Raspberry Pi 特定源链接保持不变
-  RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.cernet.edu.cn/raspberrypi/"
-  RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.cernet.edu.cn/raspberrypi/"
+  RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
+  RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
 fi
 
 # 更新源列表函数
