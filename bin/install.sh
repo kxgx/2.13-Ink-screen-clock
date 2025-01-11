@@ -72,6 +72,7 @@ DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
 PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
 INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock.git"
 PIPY_MIRROR="https://pypi.org/simple"
+RASPBERRY_PI_SOURCE="https://mirrors.cernet.edu.cn/raspberrypi/"
 
 # 如果使用中国镜像源，则更新链接变量
 if [ "$USE_CN_MIRROR" = true ]; then
@@ -79,33 +80,39 @@ if [ "$USE_CN_MIRROR" = true ]; then
   DEBIAN_SECURITY_MIRROR="https://mirrors.cernet.edu.cn/debian-security"
   INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
   PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+  RASPBERRY_PI_SOURCE="https://mirrors.cernet.edu.cn/raspberrypi/"
 fi
 
 # 更新源列表函数
 update_sources_list() {
   local version=$1
-  if grep -q "$DEBIAN_MIRROR" /etc/apt/sources.list; then
-    echo "源链接已更新，跳过替换"
-    return
-  fi
-  sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
-  {
-    if [ "$version" = "bookworm" ]; then
+  local debian_mirror_in_use=$(grep -oP 'deb\s+\K.+' /etc/apt/sources.list | head -1)
+  local raspberry_pi_source_in_use=$(grep -oP 'deb\s+\K.+' /etc/apt/sources.list.d/raspi.list | head -1)
+
+  # 检查并替换 Debian 源
+  if [ "$debian_mirror_in_use" != "$DEBIAN_MIRROR" ]; then
+    sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+    {
       echo "deb $DEBIAN_MIRROR $version main contrib non-free non-free-firmware"
       echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free non-free-firmware"
       echo "deb $DEBIAN_MIRROR $version-updates main contrib non-free non-free-firmware"
       echo "# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free non-free-firmware"
       echo "deb $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free non-free-firmware"
       echo "# deb-src $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free non-free-firmware"
-    else
-      echo "deb $DEBIAN_MIRROR $version main contrib non-free"
-      echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
-      echo "deb $DEBIAN_MIRROR $version-updates main contrib non-free"
-      echo "# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free"
-      echo "deb $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free"
-      echo "# deb-src $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free"
+    } | sudo tee /etc/apt/sources.list > /dev/null
+  else
+    echo "Debian 源链接已更新，跳过替换" >&2
+  fi
+
+  # 检查并替换 Raspberry Pi 特定源
+  if [ "$raspberry_pi_source_in_use" != "$RASPBERRY_PI_SOURCE$version" ]; then
+    if [ -f "/etc/apt/sources.list.d/raspi.list" ]; then
+      sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
     fi
-  } | sudo tee /etc/apt/sources.list > /dev/null
+    echo "deb ${RASPBERRY_PI_SOURCE}${version} main" | sudo tee /etc/apt/sources.list.d/raspi.list > /dev/null
+  else
+    echo "Raspberry Pi 源链接已更新，跳过替换" >&2
+  fi
 }
 
 # 安装包函数
