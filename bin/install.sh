@@ -72,7 +72,9 @@ DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
 PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
 INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock.git"
 PIPY_MIRROR="https://pypi.org/simple"
-RASPBERRY_PI_SOURCE="https://mirrors.cernet.edu.cn/raspberrypi/"
+# 修改 Raspberry Pi 特定源链接
+RASPBERRY_PI_SOURCE_DEBIAN11="https://archive.raspberrypi.org/debian/"
+RASPBERRY_PI_SOURCE_DEBIAN12="https://archive.raspberrypi.com/debian/"
 
 # 如果使用中国镜像源，则更新链接变量
 if [ "$USE_CN_MIRROR" = true ]; then
@@ -80,7 +82,9 @@ if [ "$USE_CN_MIRROR" = true ]; then
   DEBIAN_SECURITY_MIRROR="https://mirrors.cernet.edu.cn/debian-security"
   INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
   PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
-  RASPBERRY_PI_SOURCE="https://mirrors.cernet.edu.cn/raspberrypi/"
+  # 使用中国镜像源时，Raspberry Pi 特定源链接保持不变
+  RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.cernet.edu.cn/raspberrypi/"
+  RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.cernet.edu.cn/raspberrypi/"
 fi
 
 # 更新源列表函数
@@ -105,6 +109,15 @@ update_sources_list() {
   fi
 
   # 检查并替换 Raspberry Pi 特定源
+  if [ "$version" == "bullseye" ]; then
+    RASPBERRY_PI_SOURCE=$RASPBERRY_PI_SOURCE_DEBIAN11
+  elif [ "$version" == "bookworm" ]; then
+    RASPBERRY_PI_SOURCE=$RASPBERRY_PI_SOURCE_DEBIAN12
+  else
+    echo "未知的Debian版本: $version" >&2
+    exit 1
+  fi
+
   if [ "$raspberry_pi_source_in_use" != "$RASPBERRY_PI_SOURCE$version" ]; then
     if [ -f "/etc/apt/sources.list.d/raspi.list" ]; then
       sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
