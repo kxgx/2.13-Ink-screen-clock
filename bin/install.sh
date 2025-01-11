@@ -54,13 +54,6 @@ if ! sudo dpkg-reconfigure --frontend=noninteractive locales; then
   exit 1
 fi
 
-# 如果需要调试输出
-debug() {
-  if [ "$DEBUG" = true ]; then
-    echo "$@"
-  fi
-}
-
 # Debian版本相关命令
 DEBIAN_VERSION=$(cat /etc/debian_version)
 
@@ -91,9 +84,6 @@ fi
 # 更新源列表函数
 update_sources_list() {
   local version=$1
-  if [ "$DEBUG" = true ]; then
-    echo "正在更新版本 $version 的源列表"
-  fi
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
   {
     echo "deb $DEBIAN_MIRROR $version main contrib non-free"
@@ -103,9 +93,6 @@ update_sources_list() {
 
 # 安装包函数
 install_packages() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在安装软件包..."
-  fi
   if ! sudo apt-get update; then
     echo "更新源列表失败" >&2
     exit 1
@@ -122,9 +109,6 @@ install_packages() {
 
 # 安装pip包函数
 install_pip_packages() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在安装pip软件包..."
-  fi
   if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
     echo "pip软件包安装包失败" >&2
     exit 1
@@ -133,9 +117,6 @@ install_pip_packages() {
 
 # 复制服务文件并设置为开机启动
 setup_service() {
-  if [ "$DEBUG" = true ]; then
-    echo "正在设置墨水屏时钟服务..."
-  fi
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
     cd ~
     if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
@@ -146,9 +127,7 @@ setup_service() {
     chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
     chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   else
-    if [ "$DEBUG" = true ]; then
-      echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
-    fi
+    echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
   fi
 
   SERVICE_PATH="raspi_e-Paper.service"
@@ -177,9 +156,7 @@ setup_service() {
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
-  if [ "$DEBUG" = true ]; then
-    echo "检测到Debian系统"
-  fi
+  echo "检测到Debian系统"
 
   # 提取版本号的小数点前的部分
   if ! MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1); then
@@ -189,25 +166,19 @@ if [ -f /etc/debian_version ]; then
 
   # 检测是否是Raspberry Pi系统
   if is_raspberry_pi; then
-    if [ "$DEBUG" = true ]; then
-      echo "检测到Raspberry Pi系统"
-    fi
+    echo "检测到Raspberry Pi系统"
 
     # 根据版本号的小数点前的部分执行不同的命令
     case "$MAJOR_VERSION" in
       11)
-        if [ "$DEBUG" = true ]; then
-          echo "执行Debian 11 (Bullseye) 相关操作"
-        fi
+        echo "执行Debian 11 (Bullseye) 相关操作"
         update_sources_list "bullseye"
         install_packages
         install_pip_packages
         setup_service
         ;;
       12)
-        if [ "$DEBUG" = true ]; then
-          echo "执行Debian 12 (Bookworm) 相关操作"
-        fi
+        echo "执行Debian 12 (Bookworm) 相关操作"
         update_sources_list "bookworm"
         install_packages
         install_pip_packages
