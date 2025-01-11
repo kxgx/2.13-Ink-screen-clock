@@ -122,7 +122,7 @@ update_sources_list() {
     if [ -f "/etc/apt/sources.list.d/raspi.list" ]; then
       sudo cp /etc/apt/sources.list.d/raspi.list /etc/apt/sources.list.d/raspi.list.bak
     fi
-    echo "deb ${RASPBERRY_PI_SOURCE}${version} main" | sudo tee /etc/apt/sources.list.d/raspi.list > /dev/null
+    echo "deb $RASPBERRY_PI_SOURCE $version main" | sudo tee /etc/apt/sources.list.d/raspi.list > /dev/null
   else
     echo "Raspberry Pi 源链接已更新，跳过替换" >&2
   fi
