@@ -113,14 +113,19 @@ install_packages() {
 
 # 安装pip包函数
 install_pip_packages() {
-  if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
+  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests; then
     echo "pip软件包安装包失败" >&2
-    exit 1
   fi
 }
 
 # 复制服务文件并设置为开机启动
 setup_service() {
+  local service_path="raspi_e-Paper.service"
+  local service1_path="e-Paper_clean.service"
+  local service_file_path="$HOME/2.13-Ink-screen-clock/bin/$service_path"
+  local service1_file_path="$HOME/2.13-Ink-screen-clock/bin/$service1_path"
+
+  # 检查墨水屏时钟仓库是否存在
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
     cd ~
     if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
@@ -134,30 +139,27 @@ setup_service() {
     echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
   fi
 
-  SERVICE_PATH="raspi_e-Paper.service"
-  SERVICE1_PATH="e-Paper_clean.service"
-  SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
-  SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
-  if [ -f "$SERVICE_FILE_PATH" ] && [ -f "$SERVICE1_FILE_PATH" ]; then
-    # 检查服务文件是否已经存在，如果存在则跳过复制
-    if ! systemctl list-unit-files | grep -q "$SERVICE_PATH" && ! systemctl list-unit-files | grep -q "$SERVICE1_PATH"; then
+  # 检查服务文件是否存在
+  if [ -f "$service_file_path" ] && [ -f "$service1_file_path" ]; then
+    # 检查服务是否已经启用
+    if ! systemctl is-enabled $service_path &>/dev/null && ! systemctl is-enabled $service1_path &>/dev/null; then
       # 复制服务文件到 systemd 目录
-      if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
+      if sudo cp "$service_file_path" /etc/systemd/system/ && sudo cp "$service1_file_path" /etc/systemd/system/; then
         # 重载 systemd 管理器配置
         sudo systemctl daemon-reload
         # 启动服务
-        sudo systemctl enable $SERVICE_PATH
-        sudo systemctl enable $SERVICE1_PATH
-        sudo systemctl start $SERVICE_PATH
+        sudo systemctl enable $service_path
+        sudo systemctl enable $service1_path
+        sudo systemctl start $service_path
       else
         echo "复制服务文件失败" >&2
         exit 1
       fi
     else
-      echo "服务文件已存在，跳过复制"
+      echo "服务文件已存在并启用，跳过复制"
     fi
   else
-    echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH" >&2
+    echo "服务文件不存在于路径: $service_file_path 或 $service1_file_path" >&2
     exit 1
   fi
 }
