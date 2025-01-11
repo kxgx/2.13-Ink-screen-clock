@@ -136,20 +136,20 @@ setup_service() {
   if [ "$DEBUG" = true ]; then
     echo "正在设置墨水屏时钟服务..."
   fi
-  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
-    cd ~
-    if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
-      echo "克隆墨水屏时钟仓库失败" >&2
-      exit 1
-    fi
-    # 设置start.sh和clean.sh脚本的执行权限
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
-  else
-    if [ "$DEBUG" = true ]; then
-      echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
-    fi
+if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
+  cd ~
+  if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
+    echo "克隆墨水屏时钟仓库失败" >&2
+    exit 1
   fi
+  # 设置start.sh和clean.sh脚本的执行权限
+  chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+  chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
+else
+  if [ "$DEBUG" = true ]; then
+    echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
+  fi
+fi
 
   SERVICE_PATH="raspi_e-Paper.service"
   SERVICE1_PATH="e-Paper_clean.service"
