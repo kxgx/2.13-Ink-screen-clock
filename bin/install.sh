@@ -84,6 +84,10 @@ fi
 # 更新源列表函数
 update_sources_list() {
   local version=$1
+  if grep -q "$DEBIAN_MIRROR" /etc/apt/sources.list; then
+    echo "源链接已更新，跳过替换"
+    return
+  fi
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
   {
     echo "deb $DEBIAN_MIRROR $version main contrib non-free"
@@ -135,17 +139,22 @@ setup_service() {
   SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
   SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
   if [ -f "$SERVICE_FILE_PATH" ] && [ -f "$SERVICE1_FILE_PATH" ]; then
-    # 复制服务文件到 systemd 目录
-    if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
-      # 重载 systemd 管理器配置
-      sudo systemctl daemon-reload
-      # 启动服务
-      sudo systemctl enable $SERVICE_PATH
-      sudo systemctl enable $SERVICE1_PATH
-      sudo systemctl start $SERVICE_PATH
+    # 检查服务文件是否已经存在，如果存在则跳过复制
+    if ! systemctl list-unit-files | grep -q "$SERVICE_PATH" && ! systemctl list-unit-files | grep -q "$SERVICE1_PATH"; then
+      # 复制服务文件到 systemd 目录
+      if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
+        # 重载 systemd 管理器配置
+        sudo systemctl daemon-reload
+        # 启动服务
+        sudo systemctl enable $SERVICE_PATH
+        sudo systemctl enable $SERVICE1_PATH
+        sudo systemctl start $SERVICE_PATH
+      else
+        echo "复制服务文件失败" >&2
+        exit 1
+      fi
     else
-      echo "复制服务文件失败" >&2
-      exit 1
+      echo "服务文件已存在，跳过复制"
     fi
   else
     echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH" >&2
