@@ -126,8 +126,9 @@ install_pip_packages() {
     echo "正在安装pip软件包..."
   fi
   if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
-    echo "pip软件包安装失败" >&
-    fi
+    echo "pip软件包安装失败" >&2
+    exit 1
+  fi
 }
 
 # 复制服务文件并设置为开机启动
