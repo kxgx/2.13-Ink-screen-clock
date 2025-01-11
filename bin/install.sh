@@ -111,6 +111,7 @@ update_sources_list() {
       echo "# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free"
       echo "deb $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free"
       echo "# deb-src $DEBIAN_SECURITY_MIRROR $version-security bookworm-security main contrib non-free"
+    fi
     } | sudo tee /etc/apt/sources.list > /dev/null
   else
     echo "Debian 源链接已更新，跳过替换" >&2
