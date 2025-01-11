@@ -6,7 +6,6 @@ Before=reboot.target
 
 [Service]
 Type=oneshot
-ExecStartPre=/bin/bash -c "while pgrep -f '/bin/bash /root/2.13-Ink-screen-clock/bin/clean.sh' > /dev/null; do sleep 1; done"
 ExecStart=/bin/bash /root/2.13-Ink-screen-clock/bin/clean.sh
 RemainAfterExit=yes
 TimeoutSec=10
