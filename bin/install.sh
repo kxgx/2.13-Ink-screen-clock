@@ -90,8 +90,21 @@ update_sources_list() {
   fi
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
   {
-    echo "deb $DEBIAN_MIRROR $version main contrib non-free"
-    echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
+    if [ "$version" = "bookworm" ]; then
+      echo "deb $DEBIAN_MIRROR $version main contrib non-free non-free-firmware"
+      echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free non-free-firmware"
+      echo "deb $DEBIAN_MIRROR $version-updates main contrib non-free non-free-firmware"
+      echo "# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free non-free-firmware"
+      echo "deb $DEBIAN_MIRROR $version-security bookworm-security main contrib non-free non-free-firmware"
+      echo "# deb-src $DEBIAN_MIRROR $version-security bookworm-security main contrib non-free non-free-firmware"
+    else
+      echo "deb $DEBIAN_MIRROR $version main contrib non-free"
+      echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
+      echo "deb $DEBIAN_MIRROR $version-updates main contrib non-free"
+      echo "# deb-src $DEBIAN_MIRROR $version-updates main contrib non-free"
+      echo "deb $DEBIAN_MIRROR $version-security bookworm-security main contrib non-free"
+      echo "# deb-src $DEBIAN_MIRROR $version-security bookworm-security main contrib non-free"
+    fi
   } | sudo tee /etc/apt/sources.list > /dev/null
 }
 
