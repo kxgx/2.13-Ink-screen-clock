@@ -129,37 +129,39 @@ install_pip_packages() {
 setup_service() {
   debug "正在设置墨水屏时钟服务..."
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
-  cd ~
-  if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
-    echo "克隆墨水屏时钟仓库失败" >&2
-    exit 1
-  fi
-  # 设置start.sh和clean.sh脚本的执行权限
-  chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
-  chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
-fi
-
-SERVICE_PATH="raspi_e-Paper.service"
-SERVICE1_PATH="e-Paper_clean.service"
-SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
-SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
-if [ -f "$SERVICE_FILE_PATH" ] && [ -f "$SERVICE1_FILE_PATH" ]; then
-  # 复制服务文件到 systemd 目录
-  if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
-    # 重载 systemd 管理器配置
-    sudo systemctl daemon-reload
-    # 启动服务
-    sudo systemctl enable $SERVICE_PATH
-    sudo systemctl enable $SERVICE1_PATH
-    sudo systemctl start $SERVICE_PATH
+    cd ~
+    if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
+      echo "克隆墨水屏时钟仓库失败" >&2
+      exit 1
+    fi
+    # 设置start.sh和clean.sh脚本的执行权限
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   else
-    echo "复制服务文件失败" >&2
+    debug "墨水屏时钟仓库文件夹已存在，跳过克隆"
+  fi
+
+  SERVICE_PATH="raspi_e-Paper.service"
+  SERVICE1_PATH="e-Paper_clean.service"
+  SERVICE_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE_PATH"
+  SERVICE1_FILE_PATH="$HOME/2.13-Ink-screen-clock/bin/$SERVICE1_PATH"
+  if [ -f "$SERVICE_FILE_PATH" ] && [ -f "$SERVICE1_FILE_PATH" ]; then
+    # 复制服务文件到 systemd 目录
+    if sudo cp "$SERVICE_FILE_PATH" /etc/systemd/system/ && sudo cp "$SERVICE1_FILE_PATH" /etc/systemd/system/; then
+      # 重载 systemd 管理器配置
+      sudo systemctl daemon-reload
+      # 启动服务
+      sudo systemctl enable $SERVICE_PATH
+      sudo systemctl enable $SERVICE1_PATH
+      sudo systemctl start $SERVICE_PATH
+    else
+      echo "复制服务文件失败" >&2
+      exit 1
+    fi
+  else
+    echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH" >&2
     exit 1
   fi
-else
-  echo "服务文件不存在于路径: $SERVICE_FILE_PATH 或 $SERVICE1_FILE_PATH" >&2
-  exit 1
-fi
 }
 
 # 主逻辑
