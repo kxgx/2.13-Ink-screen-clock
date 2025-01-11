@@ -80,6 +80,10 @@ fi
 update_sources_list() {
   local version=$1
   sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
+  if [ $? -ne 0 ]; then
+    echo "备份源列表失败" >&2
+    exit 1
+  fi
   {
     echo "deb $DEBIAN_MIRROR $version main contrib non-free"
     echo "# deb-src $DEBIAN_MIRROR $version main contrib non-free"
@@ -104,10 +108,14 @@ install_packages() {
 
 # 安装pip包函数
 install_pip_packages() {
-  if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
-    echo "pip软件包安装失败" >&2
+  if ! sudo pip3 --version > /dev/null 2>&1; then
+    echo "pip3 不可用，请安装 python3-pip" >&2
     exit 1
   fi
+  if ! sudo pip3 install -i $PIPY_MIRROR spidev borax pillow requests; then
+  echo "pip软件包安装失败" >&2
+  exit 1
+fi
 }
 
 # 复制服务文件并设置为开机启动
