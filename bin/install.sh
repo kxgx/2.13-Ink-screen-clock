@@ -33,8 +33,11 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+# 获取当前语言环境
+CURRENT_LANG=$(echo $LANG)
+
 # 设置语言环境
-if [ "$LANG" != "$DEFAULT_LANG" ]; then
+if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
   export LANG=$DEFAULT_LANG
   export LC_ALL=$DEFAULT_LANG
 
