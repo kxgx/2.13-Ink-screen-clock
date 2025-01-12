@@ -280,6 +280,6 @@ if [ -f /etc/debian_version ]; then
     exit 0
   fi
 else
-  echo "这不是Debian $MAJOR_VERSION 系统"
+  echo "这不是Debian系统"
   exit 0
 fi
