@@ -143,8 +143,6 @@ def Basic_refresh(): #全刷函数
     logging.info("Refresh and prepare the basic content before starting the canvas")#开始画布前刷新准备基础内容
     epd.init()
     epd.Clear(0xFF)
-    epd.init()
-    epd.Clear(0xFF)
     global get_date_var
     get_date_var=get_date() #记录开始数据
     draw.text((2,2),get_date_var,font = font02,fill =0)#将日期及星期几显示到屏幕
