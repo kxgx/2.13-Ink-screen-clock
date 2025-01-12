@@ -112,4 +112,4 @@ sudo apt-get update && sudo apt install -y git && sudo apt-get install -y python
 
 特别注意:
 在代码文件第三十三行,此次代码需要更改,否则将展示默认城市天气数据
-![image](https://raw.githubusercontent.com/huanglinsd/2.13-Ink-screen-clock/main/pic/1736672578025.jpg)
+![image](https://raw.github.com/kxgx/2.13-Ink-screen-clock/main/pic/1736672578025.jpg)
