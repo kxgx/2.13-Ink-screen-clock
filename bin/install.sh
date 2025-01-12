@@ -38,6 +38,8 @@ CURRENT_LANG=$(echo $LANG)
 
 # 设置语言环境
 if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
+  echo "当前语言环境不是 $DEFAULT_LANG，将进行设置"
+
   # 设置新的语言环境变量
   export LANG=$DEFAULT_LANG
   export LC_ALL=$DEFAULT_LANG
@@ -59,6 +61,16 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
     echo "生成 locale 失败" >&2
     exit 1
   fi
+
+  # 更新 locale 配置
+  if ! sudo update-locale LANG=$DEFAULT_LANG; then
+    echo "更新 locale 配置失败" >&2
+    exit 1
+  fi
+
+  echo "语言环境设置完成。"
+else
+  echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置。"
 fi
 
 # Debian版本相关命令
