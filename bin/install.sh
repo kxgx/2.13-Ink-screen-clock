@@ -209,16 +209,17 @@ setup_service() {
 
   # 检查墨水屏时钟仓库是否存在
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
+    echo "正在克隆仓库"
     cd ~
     if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
-      echo "克隆墨水屏时钟仓库失败" >&2
+      echo "克隆仓库失败" >&2
       exit 1
     fi
     # 设置start.sh和clean.sh脚本的执行权限
     chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
     chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   else
-    echo "墨水屏时钟仓库文件夹已存在，跳过克隆"
+    echo "仓库文件夹已存在，跳过克隆"
   fi
 
   # 检查服务文件是否存在
