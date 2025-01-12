@@ -66,25 +66,8 @@ def Memory_footprint():#显示内存占用百分比
      return(subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell = True ).decode('gbk'))
 def CPU_usage(): #显示CPU占用百分比
      return(str(int(float(os.popen("top -b -n1 | awk '/Cpu\(s\):/ {print $2}'").readline().strip()))))
-def power_battery():
-    try:
-        # 获取电池电量
-        battery_percentage = subprocess.check_output(
-            "echo \"get battery\" | nc -q 0 127.0.0.1 8423 | awk -F':' '{print $2}'",
-            shell=True,
-            text=True
-        ).strip()
-
-        # 检查电量信息
-        if not battery_percentage:
-            return "无效"
-
-        # 返回电量百分比
-        return f"{int(battery_percentage)}%"
-    except Exception as e:
-        # 返回错误信息
-        return "失败"
-
+def power_battery():#获取当前电池电量
+     return(str(int(subprocess.check_output(u"echo \"get battery\" | nc -q 0 127.0.0.1 8423|awk -F':' '{print int($2)}'", shell = True ).decode('gbk')))+u'%') 
 # 打印电量信息
 print(power_battery())
 def Bottom_edge():  #在图片中添加底边内容
