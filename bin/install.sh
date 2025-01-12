@@ -183,7 +183,7 @@ install_packages() {
 
 # 安装pip包函数
 install_pip_packages() {
-  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests --break-system-packages; then
+  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests; then
     echo "pip软件包安装包失败" >&2
     exit 1
   fi
