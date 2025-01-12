@@ -242,7 +242,7 @@ setup_service() {
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
-  echo "检测到Debian系统"
+  echo "检测到Debian $MAJOR_VERSION 系统"
 
   # 提取版本号的小数点前的部分
   if ! MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1); then
@@ -280,6 +280,6 @@ if [ -f /etc/debian_version ]; then
     exit 0
   fi
 else
-  echo "这不是Debian系统"
+  echo "这不是Debian $MAJOR_VERSION 系统"
   exit 0
 fi
