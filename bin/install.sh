@@ -81,7 +81,7 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
     exit 1
   fi
 
-  echo "语言环境设置完成。"
+  echo "语言环境设置完成"
 else
   echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置"
 fi
