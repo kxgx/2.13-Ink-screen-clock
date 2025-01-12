@@ -33,8 +33,8 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-# 获取当前语言环境
-CURRENT_LANG=$LANG
+# 获取当前语言环境变量
+CURRENT_LANG=$(echo $LANG)
 
 # 设置语言环境
 if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
