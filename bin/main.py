@@ -32,7 +32,7 @@ def Local_strong_brush(): #局部强制刷新显示
          i = i + 1
 def getWeath(city='101060111'): #天气函数,下载json天气至本地
      headers = {
-         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.81 Safari/537.36 Edg/94.0.992.50',
+         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
          'Referer':'http://www.weather.com.cn/'
      }
      response = requests.get('http://d1.weather.com.cn/sk_2d/'+city+'.html',headers=headers)
@@ -141,8 +141,6 @@ def Weather(): #在图片中添加天气内容
 
 def Basic_refresh(): #全刷函数
     logging.info("Refresh and prepare the basic content before starting the canvas")#开始画布前刷新准备基础内容
-    epd.init()
-    epd.Clear(0xFF)
     global get_date_var
     get_date_var=get_date() #记录开始数据
     draw.text((2,2),get_date_var,font = font02,fill =0)#将日期及星期几显示到屏幕
