@@ -45,7 +45,15 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
   export LC_ALL=$DEFAULT_LANG
 
 # 检查 locale.gen 中是否已存在 DEFAULT_LANG
-if ! grep -qxE "^\s*$DEFAULT_LANG UTF-8\s*$" /etc/locale.gen; then
+found=0
+while read -r line; do
+  if [[ "$line" == "$DEFAULT_LANG UTF-8" ]]; then
+    found=1
+    break
+  fi
+done < /etc/locale.gen
+
+if [ $found -eq 0 ]; then
   # 如果不存在，则添加到 locale.gen
   echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
   # 确保 locale.gen 被正确更新
