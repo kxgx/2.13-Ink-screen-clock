@@ -12,6 +12,8 @@ DEFAULT_LANG="en_US.UTF-8"
 USE_CN_MIRROR=false
 # 控制调试输出
 DEBUG=false
+# 检查是否使用中国git仓库
+USE_CN_GIT=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -21,6 +23,9 @@ while [ "$#" -gt 0 ]; do
     ;;
     --cn)
     USE_CN_MIRROR=true
+    ;;
+    --gitcn)
+    USE_CN_GIT=true
     ;;
     --debug)
     DEBUG=true
@@ -102,7 +107,6 @@ is_raspberry_pi() {
 DEBIAN_MIRROR="http://deb.debian.org/debian/"
 DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
 PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
-INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock.git"
 PIPY_MIRROR="https://pypi.org/simple"
 # 修改 Raspberry Pi 特定源链接
 RASPBERRY_PI_SOURCE_DEBIAN11="https://archive.raspberrypi.org/debian/"
@@ -112,11 +116,17 @@ RASPBERRY_PI_SOURCE_DEBIAN12="https://archive.raspberrypi.com/debian/"
 if [ "$USE_CN_MIRROR" = true ]; then
   DEBIAN_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian/"
   DEBIAN_SECURITY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian-security"
-  INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
   PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
   # 使用中国镜像源时，Raspberry Pi 特定源链接保持不变
   RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
   RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
+fi
+
+# 定义仓库链接变量
+INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock.git"
+# 如果使用中国仓库，则更新链接变量
+if [ "$USE_CN_GIT" = true ]; then
+  INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
 fi
 
 # 更新源列表函数
@@ -215,6 +225,7 @@ setup_service() {
   if [ -f "$service_file_path" ] && [ -f "$service1_file_path" ]; then
     # 检查服务是否已经启用
     if ! systemctl is-enabled $service_path &>/dev/null && ! systemctl is-enabled $service1_path &>/dev/null; then
+        echo "正在复制服务文件并启用服务"
       # 复制服务文件到 systemd 目录
       if sudo cp "$service_file_path" /etc/systemd/system/ && sudo cp "$service1_file_path" /etc/systemd/system/; then
         # 重载 systemd 管理器配置
