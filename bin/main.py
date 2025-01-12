@@ -197,6 +197,3 @@ def main():
     epd.sleep()  # 使屏幕进入休眠状态
     epd2in13V4.epdconfig.moduleexit()  # 清理资源
     exit()
-
-if __name__ == '__main__':
-    main()
