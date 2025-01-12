@@ -62,7 +62,7 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
       exit 1
     fi
   else
-    echo "语言环境 $DEFAULT_LANG 已在 locale.gen 中设置，跳过添加。"
+    echo "语言环境 $DEFAULT_LANG 已在 locale.gen 中设置，跳过添加"
   fi
 
   # 生成 locale
@@ -80,25 +80,7 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
 
   echo "语言环境设置完成。"
 else
-  echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置。"
-fi
-
-  # 生成 locale
-  if ! sudo locale-gen; then
-    # 如果生成失败，打印错误消息并退出
-    echo "生成 locale 失败" >&2
-    exit 1
-  fi
-
-  # 更新 locale 配置
-  if ! sudo update-locale LANG=$DEFAULT_LANG; then
-    echo "更新 locale 配置失败" >&2
-    exit 1
-  fi
-
-  echo "语言环境设置完成。"
-else
-  echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置。"
+  echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置"
 fi
 
 # Debian版本相关命令
