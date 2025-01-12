@@ -5,7 +5,7 @@ dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir=${dir%/*}
 screen_name="clean_screen"
 service_name="raspi_e-Paper.service"
-hold_time_seconds=5  # 设置维持时间，例如300秒（5分钟）
+hold_time_seconds=3  # 设置维持时间，例如300秒（5分钟）
 
 # 创建一个新的screen会话并运行Python脚本
 screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name > $logdir/log/clean-info.log 2>&1
