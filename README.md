@@ -64,23 +64,25 @@ sudo reboot
 ```Bash
 --zh    设置系统语言为zh_CN,UTF-8
 --cn    替换apt镜像源为中国镜像源
+--gitcn 克隆中国仓库
 --debug 输出详细信息
 ```
+### 
 ```Bash
-#国内源默认设置
+#中国源默认设置
 curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
 ```
 ```Bash
-#国内源--cn设置
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --cn
+#中国源全参数设置(不使用--debug参数)
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn
 ```
 ```Bash
 #默认源默认设置
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
 ```
 ```Bash
-#默认源--cn设置
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --cn
+#中国源全参数设置(不使用--debug参数)
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn
 ```
 
 ## 需要安装的软件和依赖:
