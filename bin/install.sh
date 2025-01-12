@@ -44,25 +44,43 @@ if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
   export LANG=$DEFAULT_LANG
   export LC_ALL=$DEFAULT_LANG
 
-# 检查 locale.gen 中是否已存在 DEFAULT_LANG
-found=0
-while read -r line; do
-  if [[ "$line" == "$DEFAULT_LANG UTF-8" ]]; then
-    found=1
-    break
-  fi
-done < /etc/locale.gen
+  # 检查 locale.gen 中是否已存在 DEFAULT_LANG
+  found=0
+  while read -r line; do
+    if [[ "$line" == "$DEFAULT_LANG UTF-8" ]]; then
+      found=1
+      break
+    fi
+  done < /etc/locale.gen
 
-if [ $found -eq 0 ]; then
-  # 如果不存在，则添加到 locale.gen
-  echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
-  # 确保 locale.gen 被正确更新
-  if [ $? -ne 0 ]; then
-    echo "无法更新 locale.gen 文件" >&2
+  if [ $found -eq 0 ]; then
+    # 如果不存在，则添加到 locale.gen
+    echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
+    # 确保 locale.gen 被正确更新
+    if [ $? -ne 0 ]; then
+      echo "无法更新 locale.gen 文件" >&2
+      exit 1
+    fi
+  else
+    echo "语言环境 $DEFAULT_LANG 已在 locale.gen 中设置，跳过添加。"
+  fi
+
+  # 生成 locale
+  if ! sudo locale-gen; then
+    # 如果生成失败，打印错误消息并退出
+    echo "生成 locale 失败" >&2
     exit 1
   fi
+
+  # 更新 locale 配置
+  if ! sudo update-locale LANG=$DEFAULT_LANG; then
+    echo "更新 locale 配置失败" >&2
+    exit 1
+  fi
+
+  echo "语言环境设置完成。"
 else
-  echo "语言环境 $DEFAULT_LANG 已在 locale.gen 中设置，跳过添加。"
+  echo "当前语言环境已经是 $DEFAULT_LANG，跳过设置。"
 fi
 
   # 生成 locale
