@@ -34,7 +34,10 @@ while [ "$#" -gt 0 ]; do
 done
 
 # 获取当前语言环境变量
-CURRENT_LANG=$(echo $LANG)
+CURRENT_LANG=$(locale | grep LANG | sed 's/.*=//')
+
+# 打印当前语言环境变量
+echo "当前语言环境: $CURRENT_LANG"
 
 # 设置语言环境
 if [ "$CURRENT_LANG" != "$DEFAULT_LANG" ]; then
