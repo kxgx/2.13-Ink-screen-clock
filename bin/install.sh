@@ -34,24 +34,28 @@ while [ "$#" -gt 0 ]; do
 done
 
 # 设置语言环境
-export LANG=$DEFAULT_LANG
-export LC_ALL=$DEFAULT_LANG
+if [ "$LANG" != "$DEFAULT_LANG" ]; then
+  export LANG=$DEFAULT_LANG
+  export LC_ALL=$DEFAULT_LANG
 
-# 如果 locale.gen 中不存在，则添加到 locale.gen
-if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
-  echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
-fi
+  # 如果 locale.gen 中不存在，则添加到 locale.gen
+  if ! grep -q "^$DEFAULT_LANG UTF-8" /etc/locale.gen; then
+    echo "$DEFAULT_LANG UTF-8" | sudo tee -a /etc/locale.gen
+  fi
 
-# 生成 locale
-if ! sudo locale-gen; then
-  echo "生成 locale 失败" >&2
-  exit 1
-fi
+  # 生成 locale
+  if ! sudo locale-gen; then
+    echo "生成 locale 失败" >&2
+    exit 1
+  fi
 
-# 重新配置 locales
-if ! sudo dpkg-reconfigure --frontend=noninteractive locales; then
-  echo "重新配置 locales 失败" >&2
-  exit 1
+  # 重新配置 locales
+  if ! sudo dpkg-reconfigure --frontend=noninteractive locales; then
+    echo "重新配置 locales 失败" >&2
+    exit 1
+  fi
+else
+  echo "语言环境已设置为 $DEFAULT_LANG，跳过设置语言环境步骤。"
 fi
 
 # Debian版本相关命令
