@@ -66,7 +66,8 @@ sudo reboot
 --zh                      设置系统语言为zh_CN,UTF-8
 --cn                      替换apt镜像源为中国镜像源
 --gitcn                   克隆中国仓库
---pi-sugar-wifi-conf      安装sugar-wifi-conf
+--pisugar-wifi-conf       安装pisugar-wifi-conf
+--pisugar-power-manager   安装pisugar-power-manager
 --debug                   输出详细信息
 ```
 ### 
@@ -76,7 +77,7 @@ curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/instal
 ```
 ```Bash
 #中国源全参数设置(不使用--debug参数)
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pi-sugar-wifi-conf
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf
 ```
 ```Bash
 #默认源默认设置
@@ -84,7 +85,7 @@ curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh 
 ```
 ```Bash
 #默认源全参数设置(不使用--debug参数)
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pi-sugar-wifi-conf
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf
 ```
 
 ## 需要安装的软件和依赖:
