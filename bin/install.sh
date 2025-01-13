@@ -187,7 +187,7 @@ update_sources_list() {
 # 安装包函数
 install_packages() {
     echo "正在更新源列表"
-  if ! sudo apt-get update; then
+  if ! sudo apt-get update -q; then
     echo "更新源列表失败" >&2
     exit 1
   fi
