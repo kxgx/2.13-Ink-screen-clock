@@ -14,6 +14,8 @@ USE_CN_MIRROR=false
 DEBUG=false
 # 检查是否使用中国git仓库
 USE_CN_GIT=false
+# 检查是否安装sugar-wifi-conf
+USE_PI_SUGAR_WIFI_CONF=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -26,6 +28,9 @@ while [ "$#" -gt 0 ]; do
     ;;
     --gitcn)
     USE_CN_GIT=true
+    ;;
+    --pi-sugar-wifi-conf)
+    USE_PI_SUGAR_WIFI_CONF=true
     ;;
     --debug)
     DEBUG=true
@@ -247,6 +252,17 @@ setup_service() {
     fi
   else
     echo "服务文件不存在于路径: $service_file_path 或 $service1_file_path" >&2
+    exit 1
+  fi
+}
+
+# 安装pip包函数
+install_pip_packages() {
+    if [ "$USE_PI_SUGAR_WIFI_CONF" = true ]; then
+    echo "正在安装sugar-wifi-conf"
+  if ! curl $PI_SUGAR_WIFI_CONF_URL | sudo bash; then
+    echo "sugar-wifi-conf安装失败" >&2
+    echo "如需要请手动运行curl $PI_SUGAR_WIFI_CONF_URL | sudo bash" >&2
     exit 1
   fi
 }
