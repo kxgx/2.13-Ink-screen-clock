@@ -260,7 +260,7 @@ setup_service() {
 install_sugar-wifi-conf() {
   if [ "$USE_PI_SUGAR_WIFI_CONF" = true ]; then
     echo "正在安装sugar-wifi-conf"
-  if ! curl $PI_SUGAR_WIFI_CONF_URL | sudo bash; then
+  if ! curl "$PI_SUGAR_WIFI_CONF_URL" | sudo bash; then
     echo "sugar-wifi-conf安装失败" >&2
     echo "如需要请手动运行curl $PI_SUGAR_WIFI_CONF_URL | sudo bash" >&2
     exit 1
