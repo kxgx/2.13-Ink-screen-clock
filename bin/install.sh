@@ -256,8 +256,8 @@ setup_service() {
   fi
 }
 
-# 安装pip包函数
-install_pip_packages() {
+# 安装sugar-wifi-conf函数
+install_sugar-wifi-conf() {
     if [ "$USE_PI_SUGAR_WIFI_CONF" = true ]; then
     echo "正在安装sugar-wifi-conf"
   if ! curl $PI_SUGAR_WIFI_CONF_URL | sudo bash; then
@@ -290,6 +290,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
+        install_sugar-wifi-conf
         ;;
       12)
         echo "执行Debian 12 (Bookworm) 相关操作"
@@ -297,6 +298,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
+        install_sugar-wifi-conf
         ;;
       *)
         echo "未知的Debian版本: $MAJOR_VERSION" >&2
