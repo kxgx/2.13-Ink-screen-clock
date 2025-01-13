@@ -262,11 +262,11 @@ except Exception as e:
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
     epd2in13_V4.epdconfig.module_exit()  # 清理资源
-    exit()
+    #exit()
 
 # 脚本正常结束后的清理操作
 epd.init()
 epd.Clear(0xFF)  # 清除屏幕内容
 epd.sleep()       # 使屏幕进入休眠状态
 epd2in13_V4.epdconfig.module_exit()  # 清理资源
-exit()
+#exit()
