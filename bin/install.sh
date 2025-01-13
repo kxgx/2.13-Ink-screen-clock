@@ -181,10 +181,12 @@ update_sources_list() {
 
 # 安装包函数
 install_packages() {
+    echo "正在更新源列表"
   if ! sudo apt-get update; then
     echo "更新源列表失败" >&2
     exit 1
   fi
+    echo "正在安装软件包"
   if ! sudo apt-get install -y git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential; then
     echo "软件包安装失败" >&2
     exit 1
@@ -193,8 +195,9 @@ install_packages() {
 
 # 安装pip包函数
 install_pip_packages() {
+    echo "正在安装pip软件包"
   if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests; then
-    echo "pip软件包安装包失败，如果是最新版系统" >&2
+    echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
     echo "请手动运行sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests --break-system-packages" >&2
     exit 1
   fi
@@ -209,7 +212,7 @@ setup_service() {
 
   # 检查墨水屏时钟仓库是否存在
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
-    echo "正在克隆仓库"
+      echo "正在克隆仓库"
     cd ~
     if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
       echo "克隆仓库失败" >&2
@@ -251,7 +254,7 @@ setup_service() {
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
-  echo "检测到Debian$DEBIAN_VERSION系统"
+    echo "检测到Debian$DEBIAN_VERSION系统"
 
   # 提取版本号的小数点前的部分
   if ! MAJOR_VERSION=$(echo $DEBIAN_VERSION | cut -d '.' -f 1); then
