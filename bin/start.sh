@@ -8,12 +8,6 @@ dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir=${dir%/*}
 # screen会话名称
 screen_name="main_screen"
-# 最大重试次数
-max_retries=5
-# 重试间隔时间（秒）
-retry_interval=180
-# 重试计数器
-retry_count=0
 
 # 函数用于启动Python脚本
 start_script() {
@@ -22,8 +16,8 @@ start_script() {
     screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name 2>&1
 }
 
-# 主循环
-while [ $retry_count -lt $max_retries ]; do
+# 无限循环，直到脚本被手动停止
+while true; do
     # 检查是否有与指定screen_name相关的screen会话正在运行
     existing_sessions=$(screen -ls | grep -w $screen_name)
 
@@ -39,13 +33,8 @@ while [ $retry_count -lt $max_retries ]; do
     start_script
 
     # 等待一段时间，检查脚本是否还在运行
-    sleep $retry_interval
+    sleep 180
     if ! screen -list | grep -q $screen_name; then
         echo "脚本意外停止。正在重启..."
-        ((retry_count++))  # 增加重试计数
-    else
-        retry_count=0  # 如果脚本还在运行，重置重试计数
     fi
 done
-
-echo "达到最大重试次数。退出..."
