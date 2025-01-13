@@ -23,5 +23,5 @@ fi
 nohup /usr/bin/python3 -u "$dir/$f_name" > "${logdir}/info-clean.log" 2>&1 &
 
 # 等待维持时间
-echo "正在运行脚本，将在 ${hold_time_seconds} 秒后停止服务..."
+echo "正在运行脚本，将在 ${hold_time_seconds} 秒后停止..."
 sleep $hold_time_seconds
