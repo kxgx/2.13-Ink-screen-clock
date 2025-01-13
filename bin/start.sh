@@ -9,7 +9,7 @@ logdir=${dir%/*}
 # screen会话名称
 screen_name="main_screen"
 # 最大重试次数
-max_retries=180
+max_retries=5
 # 重试间隔时间（秒）
 retry_interval=5
 # 重试计数器
