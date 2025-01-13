@@ -83,7 +83,7 @@ curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/instal
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
 ```
 ```Bash
-#中国源全参数设置(不使用--debug参数)
+#默认源全参数设置(不使用--debug参数)
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pi-sugar-wifi-conf
 ```
 
