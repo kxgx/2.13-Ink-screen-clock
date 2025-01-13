@@ -109,9 +109,7 @@ sudo apt-get update && sudo apt-get install -y git pigpio i2c-tools netcat* gawk
 # 如果使用的是非lite系统请在pip3安装部分添加
 --break-system-packages
 ```
-总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
-
-特别注意:
 在代码文件第三十三行,此次代码需要更改,否则将展示默认城市天气数据
 # 效果展示
+总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
 ![image](https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/pic/1736672578025.jpg)
