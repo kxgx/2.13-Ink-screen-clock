@@ -37,6 +37,14 @@ while [ "$#" -gt 0 ]; do
     --pisugar-power-manager)
     USE_PISUGAR_POWER_MANAGER=true
     ;;
+    --version)
+      if [ -z "$2" ]; then
+        echo "错误: --version 参数后需要跟版本号"
+        exit 1
+      fi
+      VERSION="$2"  # 将版本号赋值给变量 VERSION
+      shift 2  # 移动参数，跳过版本号参数及其值
+      ;;
     --debug)
     DEBUG=true
     ;;
@@ -225,7 +233,7 @@ setup_service() {
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
       echo "正在克隆仓库"
     cd ~
-    if ! git clone $INK_SCREEN_CLOCK_REPO_URL; then
+    if ! git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
       echo "克隆仓库失败" >&2
       exit 1
     fi
