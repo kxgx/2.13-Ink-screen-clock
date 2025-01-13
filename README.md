@@ -26,9 +26,7 @@
     
      https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#rtc-on-board
      https://www.pisugar.com/
-
 ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
-以上可能python脚本已解决
 
 ps:代码里需要nc命令需要安装netcat，安装内容已集成到“[需要安装的软件和依赖](https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6%E5%92%8C%E4%BE%9D%E8%B5%96)"
      
@@ -59,6 +57,8 @@ sudo reboot
 
 ![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
+wifi连接管理可以使用[PiSugar/sugar-wifi-conf:让树莓派提供蓝牙BLE服务，使用小程序可以随时更改树莓派的wifi连接
+](https://github.com/PiSugar/PiSugar/wiki/PiSugar-WiFi-config#sugar-wifi-conf)
 ## 使用脚本直接安装（推荐）
 ### 参数定义
 ```Bash
