@@ -4,7 +4,7 @@ f_name="clean.py"
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir="${dir}/log"
 service_name="raspi_e-Paper.service"
-hold_time_seconds=3  # 设置维持时间，例如300秒（5分钟）
+hold_time_seconds=5  # 设置维持时间，例如300秒（5分钟）
 
 # 停止raspi_e-Paper服务
 echo "正在停止$service_name服务..."
