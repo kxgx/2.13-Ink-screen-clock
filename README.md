@@ -57,7 +57,8 @@ sudo reboot
 
 ![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
 
-wifi连接管理可以使用[PiSugar/sugar-wifi-conf:让树莓派提供蓝牙BLE服务，使用小程序可以随时更改树莓派的wifi连接
+#### wifi连接管理
+可以使用[PiSugar/sugar-wifi-conf:让树莓派提供蓝牙BLE服务，使用小程序可以随时更改树莓派的wifi连接
 ](https://github.com/PiSugar/PiSugar/wiki/PiSugar-WiFi-config#sugar-wifi-conf)
 ## 使用脚本直接安装（推荐）
 ### 参数定义
