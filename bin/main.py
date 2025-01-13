@@ -235,7 +235,7 @@ try:
     getWeath()#天气获取函数开始运行
     epd = epd2in13_V4.EPD() #初始化
     epd.init()#设定屏幕刷新模式
-    epd.Clear(0xFF) #清除屏幕内容
+    #epd.Clear(0xFF) #清除屏幕内容
 ##################屏幕初始化#########################   
     logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
     logging.info("Initialize and clear the display")#屏幕开始准备相关展示
@@ -244,7 +244,7 @@ try:
     Basic_refresh() #全局刷新
     Partial_refresh() #局部刷新
     epd.init()
-    #epd.Clear(0xFF)
+    epd.Clear(0xFF)
     epd.sleep()
 except IOError as e:
     logging.info(e)
