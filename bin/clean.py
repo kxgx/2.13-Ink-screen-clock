@@ -34,7 +34,7 @@ def clear_screen():
         epd.Clear(0xFF)
         
         # 等待一段时间，确保清除操作完成
-        time.sleep(1)
+        #time.sleep(1)
         
         # 将屏幕置于睡眠模式
         logging.info("Putting e-Paper display to sleep")
