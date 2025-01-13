@@ -12,4 +12,4 @@ for pid in $pids; do
 done
 
 # 创建一个新的screen会话并运行Python脚本
-screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name > $logdir/log/info.log 2>&1
+screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name 2>&1
