@@ -187,12 +187,12 @@ update_sources_list() {
 # 安装包函数
 install_packages() {
     echo "正在更新源列表"
-  if ! sudo apt-get update -q; then
+  if ! sudo apt-get -q -y update; then
     echo "更新源列表失败" >&2
     exit 1
   fi
     echo "正在安装软件包"
-  if ! sudo apt-get install -y -q git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential; then
+  if ! sudo apt-get -q -y install git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential; then
     echo "软件包安装失败" >&2
     exit 1
   fi
