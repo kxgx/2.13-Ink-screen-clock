@@ -11,7 +11,7 @@ screen_name="main_screen"
 # 最大重试次数
 max_retries=5
 # 重试间隔时间（秒）
-retry_interval=5
+retry_interval=180
 # 重试计数器
 retry_count=0
 
