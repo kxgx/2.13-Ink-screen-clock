@@ -233,7 +233,7 @@ setup_service() {
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
       echo "正在克隆仓库"
     cd ~
-    if ! git config --local advice.detachedHead false && git config --local advice.statusHints false && git config --local advice.pushNonFastforward false && git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
+    if ! git config advice.detachedHead false && git config advice.statusHints false && git config advice.pushNonFastforward false && git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
       echo "克隆仓库失败" >&2
       exit 1
     fi
