@@ -19,7 +19,7 @@ retry_count=0
 start_script() {
     # 创建一个新的screen会话并运行Python脚本
     # 输出重定向到日志文件
-    screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name > $logdir/log/info.log 2>&1
+    screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name 2>&1
 }
 
 # 主循环
