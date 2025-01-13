@@ -106,7 +106,7 @@ is_raspberry_pi() {
 # 定义链接变量
 DEBIAN_MIRROR="http://deb.debian.org/debian/"
 DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
-PI_SUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
+PI_SUGAR_WIFI_CONF_URL="https://cdn.pisugar.com/PiSugar-wificonfig/script/install.sh"
 PIPY_MIRROR="https://pypi.org/simple"
 # 修改 Raspberry Pi 特定源链接
 RASPBERRY_PI_SOURCE_DEBIAN11="https://archive.raspberrypi.org/debian/"
