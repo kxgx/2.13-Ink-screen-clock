@@ -142,10 +142,10 @@ if [ "$USE_CN_MIRROR" = true ]; then
 fi
 
 # 定义仓库链接变量
-INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock.git"
+INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock"
 # 如果使用中国仓库，则更新链接变量
 if [ "$USE_CN_GIT" = true ]; then
-  INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock.git"
+  INK_SCREEN_CLOCK_REPO_URL="https://gitee.com/xingguangk/2.13-Ink-screen-clock"
 fi
 
 # 更新源列表函数
