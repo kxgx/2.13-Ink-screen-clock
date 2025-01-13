@@ -92,7 +92,7 @@ PiSugar 3官方文档 https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#s
 ```Bash
 sudo apt-get update
 sudo apt-get install -y git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential
-sudo pip3 install spidev borax pillow requests --break-system-packages
+sudo pip3 install spidev borax pillow requests
 wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
 bash pisugar-power-manager.sh -c release
 ```
