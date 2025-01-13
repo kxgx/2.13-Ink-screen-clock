@@ -14,8 +14,10 @@ USE_CN_MIRROR=false
 DEBUG=false
 # 检查是否使用中国git仓库
 USE_CN_GIT=false
-# 检查是否安装sugar-wifi-conf
-USE_PI_SUGAR_WIFI_CONF=false
+# 检查是否安装pisugar-wifi-conf
+USE_PISUGAR_WIFI_CONF=false
+# 检查是否安装pisugar-power-manager
+USE_PISUGAR_POWER_MANAGER=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -29,8 +31,11 @@ while [ "$#" -gt 0 ]; do
     --gitcn)
     USE_CN_GIT=true
     ;;
-    --pi-sugar-wifi-conf)
-    USE_PI_SUGAR_WIFI_CONF=true
+    --pisugar-wifi-conf)
+    USE_PISUGAR_WIFI_CONF=true
+    ;;
+    --pisugar-power-manager)
+    USE_PISUGAR_POWER_MANAGER=true
     ;;
     --debug)
     DEBUG=true
@@ -111,7 +116,8 @@ is_raspberry_pi() {
 # 定义链接变量
 DEBIAN_MIRROR="http://deb.debian.org/debian/"
 DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
-PI_SUGAR_WIFI_CONF_URL="https://cdn.pisugar.com/PiSugar-wificonfig/script/install.sh"
+PISUGAR_WIFI_CONF_URL="https://cdn.pisugar.com/PiSugar-wificonfig/script/install.sh"
+PISUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
 PIPY_MIRROR="https://pypi.org/simple"
 # 修改 Raspberry Pi 特定源链接
 RASPBERRY_PI_SOURCE_DEBIAN11="https://archive.raspberrypi.org/debian/"
@@ -256,13 +262,25 @@ setup_service() {
   fi
 }
 
-# 安装sugar-wifi-conf函数
-install_sugar-wifi-conf() {
-  if [ "$USE_PI_SUGAR_WIFI_CONF" = true ]; then
-    echo "正在安装sugar-wifi-conf"
-    if ! curl "$PI_SUGAR_WIFI_CONF_URL" | sudo bash; then
-      echo "sugar-wifi-conf安装失败" >&2
-      echo "如需要请手动运行curl $PI_SUGAR_WIFI_CONF_URL | sudo bash" >&2
+# 安装pisugar-power-manager函数
+install_pisugar-power-manager() {
+  if [ "$USE_PISUGAR_POWER_MANAGER" = true ]; then
+    echo "正在安装pisugar-power-manager"
+    if ! curl -sSL "$PISUGAR_POWER_MANAGER_URL" | sudo bash -s - -c release; then
+      echo "pisugar-power-manager安装失败" >&2
+      echo "如需要请手动运行curl -sSL $PISUGAR_POWER_MANAGER_URL | sudo bash -s - -c release" >&2
+      exit 1
+    fi
+  fi
+}
+
+# 安装pisugar-wifi-conf函数
+install_pisugar-wifi-conf() {
+  if [ "$USE_PISUGAR_WIFI_CONF" = true ]; then
+    echo "正在安装pisugar-wifi-conf"
+    if ! curl -sSL "$PISUGAR_WIFI_CONF_URL" | sudo bash; then
+      echo "pisugar-wifi-conf安装失败" >&2
+      echo "如需要请手动运行curl $PISUGAR_WIFI_CONF_URL | sudo bash" >&2
       exit 1
     fi
   fi
@@ -291,7 +309,8 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
-        install_sugar-wifi-conf
+        install_pisugar-wifi-conf
+        install_pisugar-power-manager
         ;;
       12)
         echo "执行Debian 12 (Bookworm) 相关操作"
@@ -299,7 +318,8 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
-        install_sugar-wifi-conf
+        install_pisugar-wifi-conf
+        install_pisugar-power-manager
         ;;
       *)
         echo "未知的Debian版本: $MAJOR_VERSION" >&2
