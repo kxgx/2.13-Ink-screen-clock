@@ -71,7 +71,7 @@ def get_address():  # 获取当前的IP地址
 def cpu_temperature():  # CPU温度获取
     temperatura = os.popen('vcgencmd measure_temp').readline()
     temperatura = temperatura.replace('temp=', '').strip()
-    return str(temperatura
+    return str(temperatura)
 def memory_footprint():  # 显示内存占用百分比
     return (subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell=True).decode('gbk'))
 
