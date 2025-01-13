@@ -198,7 +198,7 @@ install_packages() {
     exit 1
   fi
     echo "正在安装软件包"
-  if ! sudo apt-get -q -y install git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential; then
+  if ! sudo apt-get -q -y install git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential screen; then
     echo "软件包安装失败" >&2
     exit 1
   fi
