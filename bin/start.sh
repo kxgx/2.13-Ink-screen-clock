@@ -27,7 +27,7 @@ start_process
 
 # 无限循环，检查main.py是否在运行
 while true; do
-    sleep 5  # 每5秒检查一次
+    sleep 180  # 每5秒检查一次
     pid=$(ps -ef | grep "$dir/$f_name" | grep -v grep | awk '{print $2}')
     if [ -z "$pid" ]; then
         echo "main.py is not running, restarting..."
