@@ -28,7 +28,7 @@ while true; do
     start_script
 
     # 等待一段时间，检查脚本是否还在运行
-    sleep 5
+    sleep 180
     if ! screen -list | grep -q $screen_name; then
         echo "Script stopped unexpectedly. Restarting..."
     fi
