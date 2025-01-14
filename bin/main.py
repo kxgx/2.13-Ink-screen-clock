@@ -55,7 +55,7 @@ def start_timer():
     global timer_started
     if not timer_started:
         # 设置定时器，每隔1800秒（30分钟）调用一次getWeath函数
-        Timer(1800, getWeath).start()
+        Timer(180, getWeath).start()
         timer_started = True
 
 # 在脚本开始时调用start_timer函数
