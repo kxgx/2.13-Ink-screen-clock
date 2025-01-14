@@ -33,7 +33,7 @@ while true; do
     start_script
 
     # 等待一段时间，检查脚本是否还在运行
-    sleep 180
+    sleep 86400
     if ! screen -list | grep -q $screen_name; then
         echo "脚本意外停止。正在重启..."
     fi
