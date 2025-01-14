@@ -13,7 +13,7 @@ screen_name="main_screen"
 start_script() {
     # 创建一个新的screen会话并运行Python脚本
     # 输出重定向到日志文件
-    screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name 2>&1
+    screen -dmS $screen_name /usr/bin/python3 -u $dir/$f_name
 }
 
 # 无限循环，直到脚本被手动停止
