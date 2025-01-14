@@ -233,7 +233,7 @@ setup_service() {
   if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
       echo "正在克隆仓库"
     cd ~
-    if ! git -c advice.detachedHead=false clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
+    if ! git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
       echo "克隆仓库失败" >&2
       exit 1
     fi
