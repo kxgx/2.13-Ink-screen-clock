@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 默认语言环境
-DEFAULT_LANG="en_US.UTF-8"
+DEFAULT_LANG="en_GB.UTF-8"
 # 检查是否使用中国镜像源
 USE_CN_MIRROR=false
 # 控制调试输出
