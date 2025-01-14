@@ -5,27 +5,25 @@ import os,sys,re,json,time,datetime  #引入系统相关库
 from borax.calendars.lunardate import LunarDate #农历日期以及天干地支纪年法的 Python 库
 import logging  #日志库
 import subprocess
+import os
 from threading import Timer
 import requests
-
 white = 255 #颜色
 black = 0
-logging.basicConfig(level=logging.INFO)
-
+logging.basicConfig(level=logging.DEBUG)
 ################################引入配置文件开始################################################
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
 if os.path.exists(libdir): 
     sys.path.append(libdir)#将引入文件添加到环境变量
     from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
-logging.info("Loading Fonts")
+logging.debug("Loading Fonts")
 font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
 font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 38) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
 font05 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 12) #字体文件
 font06 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 13) #字体文件
-
 ################################引入配置文件结束################################################
 def Local_strong_brush(): #局部强制刷新显示
      i = 0
@@ -33,42 +31,23 @@ def Local_strong_brush(): #局部强制刷新显示
          epd.displayPartial(epd.getbuffer(info_image.rotate(180)))#局刷开始
          i = i + 1
 def getWeath(city='101060111'): #天气函数,下载json天气至本地
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Referer': 'http://www.weather.com.cn/'
-        }
-        response = requests.get('http://d1.weather.com.cn/sk_2d/' + city + '.html', headers=headers)
-        response.encoding = 'utf-8'
-        Weath = response.text[11:]
-        with open('weather.json', 'w') as fileHandle:
-            fileHandle.write(str(Weath))
-        Timer(1800, getWeath).start() #定时器函数,间隔三分钟下载文件至本地
-        print("天气文件更新")
-    except requests.exceptions.RequestException as e:
-        logging.error("天气信息获取失败: %s", e)
-        return "获取失败"  # 直接返回"获取失败"
-# 设置一个标志，用于检查定时器是否已经启动
-timer_started = False
-
-def start_timer():
-    global timer_started
-    if not timer_started:
-        # 设置定时器，每隔1800秒（30分钟）调用一次getWeath函数
-        Timer(180, getWeath).start()
-        timer_started = True
-
-# 在脚本开始时调用start_timer函数
-start_timer()     
+     headers = {
+         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+         'Referer':'http://www.weather.com.cn/'
+     }
+     response = requests.get('http://d1.weather.com.cn/sk_2d/'+city+'.html',headers=headers)
+     response.encoding = 'utf-8'
+     Weath=response.text[11:]
+     fileHandle=open('weather.json','w')
+     fileHandle.write(str(Weath))
+     fileHandle.close()
+     Timer(1800, getWeath).start() #定时器函数,间隔三分钟下载文件至本地
+     print("天气文件更新")
 def gey_yiyan(): #一言API
-    try:
-        response = requests.get("https://international.v1.hitokoto.cn/?c=k&c=f&c=d&c=a&encode=text&min_length=7&max_length=19") 
-        response.encoding = 'utf-8'
-        yiyan = response.text
-        return yiyan
-    except requests.exceptions.RequestException as e:
-        logging.error("一言API获取失败: %s", e)
-        return "获取失败"  # 直接返回"获取失败"
+     response = requests.get("https://international.v1.hitokoto.cn/?c=k&c=f&c=d&c=a&encode=text&min_length=7&max_length=19") 
+     response.encoding = 'utf-8'
+     yiyan=response.text
+     return yiyan
 def get_date():#返回当前年月日及星期几
     date = datetime.datetime.now()
     today=LunarDate.today()
@@ -79,7 +58,13 @@ def get_time():#返回当前时间,不到秒,大写
     return time.strftime('%H:%M')
 def Get_address():#获取当前的IP地址
      return (subprocess.check_output(u"hostname -I | cut -d\' \' -f1 | head --bytes -1", shell = True ).decode('gbk'))
+def CPU_temperature():#CPU温度获取
+     temperatura = os.popen('vcgencmd measure_temp').readline()
+     temperatura = temperatura.replace('temp=','').strip()
+     return str(temperatura)
 def Memory_footprint():#显示内存占用百分比
+     return(subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell = True ).decode('gbk'))
+def CPU_usage(): #显示CPU占用百分比
      return(str(int(float(os.popen("top -b -n1 | awk '/Cpu\(s\):/ {print $2}'").readline().strip()))))
 def power_battery():#获取当前电池电量
      return(str(int(subprocess.check_output(u"echo \"get battery\" | nc -q 0 127.0.0.1 8423|awk -F':' '{print int($2)}'", shell = True ).decode('gbk')))+u'%') 
@@ -150,7 +135,7 @@ def Basic_refresh(): #全刷函数
     epd.display(epd.getbuffer(info_image.rotate(180)))
 def Partial_full_brush(): #局部定时全刷函数
      Basic_refresh() #全局刷新
-     logging.info("局部定时全局刷新")
+     logging.debug("局部定时全局刷新")
      epd.init()
 def Partial_refresh():#局刷函数
      logging.info("Partial content update, this update is recommended to be synchronized with the minute to save the life of the ink screen")#局部内容更新,此更新建议与分钟同步,以节省墨水屏寿命
@@ -170,7 +155,7 @@ def Partial_refresh():#局刷函数
              draw.rectangle((2, 2, 250, 16), fill = 255) #设置头部刷新区域
              draw.text((2,2),get_date_var1,font = font02,fill =0)#将日期及星期几刷新显示到屏幕
              get_date_var=get_date_var1 #将更新的值保存到初始变量,直到下一次变化时执行该刷新操作
-             logging.info("头部日期部位发生刷新变化.")
+             logging.debug("头部日期部位发生刷新变化.")
              Local_strong_brush() #局部强刷
          global local_addr #当前IP地址
          local_addr1 = Get_address()
@@ -180,11 +165,6 @@ def Partial_refresh():#局刷函数
              local_addr=local_addr1
              Local_strong_brush() #局部强刷
          '''天气局部更新函数'''
-         weather_result = getWeath()  # 调用天气获取函数
-         if weather_result == "获取失败":
-             logging.error("天气信息获取失败，跳过局部更新")
-             time.sleep(2)
-             continue  # 获取失败时跳过后续操作
          Weather_json = open('weather.json','r')
          Weather_data = Weather_json.read()
          Weather_json.close()
@@ -248,13 +228,8 @@ def Partial_refresh():#局刷函数
          '''一言API显示'''
          #epd.displayPartial(epd.getbuffer(info_image.rotate(180)))#局刷开始
          time.sleep(2)
-         if time.strftime('%H%M%S')=='000000': #如果时间是晚上00点,执行全局刷新
-             Partial_full_brush() #每天全局刷新一次
-         yiyan_result = gey_yiyan()  # 调用一言API
-         if yiyan_result == "获取失败":
-             logging.error("一言API获取失败，跳过局部更新")
-             time.sleep(2)
-             continue  # 获取失败时跳过后续操作
+         #if time.strftime('%H%M%S')=='000000': #如果时间是晚上00点,执行全局刷新
+             #Partial_full_brush() #每天全局刷新一次
 try:
 ##################屏幕初始化#########################
     getWeath()#天气获取函数开始运行
@@ -263,7 +238,7 @@ try:
     #epd.Clear(0xFF) #清除屏幕内容
 ##################屏幕初始化#########################   
     logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
-    logging.info("**初始化并清除显示**")#屏幕开始准备相关展示
+    logging.info("Initialize and clear the display")#屏幕开始准备相关展示
     info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
     draw = ImageDraw.Draw(info_image)
     Basic_refresh() #全局刷新
@@ -274,7 +249,7 @@ try:
 except IOError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("**检测到键盘中断，正在退出**")
+    logging.info("Keyboard interrupt detected, exiting gracefully.")
     epd.init()
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
@@ -282,7 +257,7 @@ except KeyboardInterrupt:
     exit()
 
 except Exception as e:
-    logging.error("**发生了一个意外错误: %s **", e)
+    logging.error("An unexpected error occurred: %s", e)
     epd.init()
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
@@ -294,4 +269,4 @@ epd.init()
 epd.Clear(0xFF)  # 清除屏幕内容
 epd.sleep()       # 使屏幕进入休眠状态
 epd2in13_V4.epdconfig.module_exit()  # 清理资源
-exit()
+#exit()
