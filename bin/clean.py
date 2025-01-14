@@ -39,7 +39,7 @@ def clear_screen():
         # 将屏幕置于睡眠模式
         logging.info("Putting e-Paper display to sleep")
         epd.sleep()
-epd2in13_V4.epdconfig.module_exit(cleanup=True)
+        epd2in13_V4.epdconfig.module_exit(cleanup=True)
         exit()
         
         logging.info("e-Paper display cleared successfully")
