@@ -1,6 +1,6 @@
 #!/bin/bash
 f_name=main.py
-f1_name=wenter.py
+f1_name=weather.py
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir="${dir%/*}/log"
 # 确保日志目录存在
