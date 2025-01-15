@@ -10,7 +10,7 @@ from threading import Timer
 import requests
 white = 255 #颜色
 black = 0
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 ################################引入配置文件开始################################################
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
@@ -30,24 +30,6 @@ def Local_strong_brush(): #局部强制刷新显示
      while i < 5:
          epd.displayPartial(epd.getbuffer(info_image.rotate(180)))#局刷开始
          i = i + 1
-def getWeath(city='101060111'): #天气函数,下载json天气至本地
-     headers = {
-         'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-         'Referer':'http://www.weather.com.cn/'
-     }
-     response = requests.get('http://d1.weather.com.cn/sk_2d/'+city+'.html',headers=headers)
-     response.encoding = 'utf-8'
-     Weath=response.text[11:]
-     fileHandle=open('weather.json','w')
-     fileHandle.write(str(Weath))
-     fileHandle.close()
-     Timer(1800, getWeath).start() #定时器函数,间隔三分钟下载文件至本地
-     print("天气文件更新")
-def gey_yiyan(): #一言API
-     response = requests.get("https://international.v1.hitokoto.cn/?c=k&c=f&c=d&c=a&encode=text&min_length=7&max_length=19") 
-     response.encoding = 'utf-8'
-     yiyan=response.text
-     return yiyan
 def get_date():#返回当前年月日及星期几
     date = datetime.datetime.now()
     today=LunarDate.today()
@@ -84,11 +66,6 @@ def Bottom_edge():  #在图片中添加底边内容
      power_str=power_battery()
      draw.text((128,108),power_str,font = font04,fill =255) #显示当前电量百分比
      '''电池图标画图'''
-     '''添加一言API'''
-     global Time_keeping
-     Time_keeping =0
-     draw.text((4,84),gey_yiyan(),font = font06,fill =0)
-     '''添加一言API end'''     
      draw.ellipse((192, 107, 207, 120), 0, 255)# 时钟图标
      draw.line((199,109,199,114),fill=255, width=1)
      draw.line((200,114,204,114),fill=255, width=1)
@@ -216,23 +193,8 @@ def Partial_refresh():#局刷函数
              power_str=power_str1
              Local_strong_brush() #局部强刷
              logging.info("电源电量局部刷新")
-         '''一言API显示'''
-         global Time_keeping
-         Time_keeping+=1
-         if Time_keeping == 300 : #一言API局刷,当变量Time_keeping数据为10即开始执行
-             draw.rectangle((1, 82, 248, 101), fill = 255)
-             draw.text((4,84),gey_yiyan(),font = font06,fill =0)
-             Time_keeping=0
-             Local_strong_brush() #局部强刷
-             logging.info("一言API局部刷新")
-         '''一言API显示'''
-         #epd.displayPartial(epd.getbuffer(info_image.rotate(180)))#局刷开始
-         time.sleep(2)
-         #if time.strftime('%H%M%S')=='000000': #如果时间是晚上00点,执行全局刷新
-             #Partial_full_brush() #每天全局刷新一次
 try:
 ##################屏幕初始化#########################
-    getWeath()#天气获取函数开始运行
     epd = epd2in13_V4.EPD() #初始化
     epd.init()#设定屏幕刷新模式
     #epd.Clear(0xFF) #清除屏幕内容
@@ -262,11 +224,11 @@ except Exception as e:
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
     epd2in13_V4.epdconfig.module_exit()  # 清理资源
-    #exit()
+    exit()
 
 # 脚本正常结束后的清理操作
 epd.init()
 epd.Clear(0xFF)  # 清除屏幕内容
 epd.sleep()       # 使屏幕进入休眠状态
 epd2in13_V4.epdconfig.module_exit()  # 清理资源
-#exit()
+exit()

@@ -2,7 +2,7 @@
 
 f_name="clean.py"
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-logdir="${dir}/log"
+logdir="${dir%/*}/log"
 service_name="raspi_e-Paper.service"
 hold_time_seconds=5  # 设置维持时间，例如300秒（5分钟）
 
