@@ -8,6 +8,8 @@ import subprocess
 import os
 from threading import Timer
 import requests
+import socket
+
 white = 255 #颜色
 black = 0
 logging.basicConfig(level=logging.INFO)
@@ -40,6 +42,17 @@ def get_time():#返回当前时间,不到秒,大写
     return time.strftime('%H:%M')
 def Get_address():#获取当前的IP地址
      return (subprocess.check_output(u"hostname -I | cut -d\' \' -f1 | head --bytes -1", shell = True ).decode('gbk'))
+def Get_ipv4_address():  # 获取当前的IP地址
+    try:
+        # 执行命令获取IP地址，并处理输出以仅返回IPv4地址
+        ip_output = subprocess.check_output("hostname -I | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}'", shell=True).decode('utf-8').strip()
+        # 检查是否为IPv4地址
+        if ip_output and not ip_output.startswith("127."):
+            return ip_output
+        else:
+            return "IPv4获取失败"
+    except subprocess.CalledProcessError as e:
+        return f"获取失败"
 def CPU_temperature():#CPU温度获取
      temperatura = os.popen('vcgencmd measure_temp').readline()
      temperatura = temperatura.replace('temp=','').strip()
@@ -64,13 +77,13 @@ def Bottom_edge():  #在图片中添加底边内容
      draw.line((157,113,157,115),fill=255, width=1)
      global power_str
      power_str=power_battery()
-     draw.text((128,108),power_str,font = font04,fill =255) #显示当前电量百分比
+     draw.text((129,108),power_str,font = font04,fill =255) #显示当前电量百分比
      '''电池图标画图'''
      draw.ellipse((192, 107, 207, 120), 0, 255)# 时钟图标
      draw.line((199,109,199,114),fill=255, width=1)
      draw.line((200,114,204,114),fill=255, width=1)
      global local_addr  #获取当前IP地址
-     local_addr= Get_address()  #获取当前IP地址
+     local_addr= Get_ipv4_address()  #获取当前IP地址
      draw.text((10,107),"IP:"+local_addr,font = font05,fill =255)#显示当前IP地址
 def Weather(): #在图片中添加天气内容
      Weather_json = open('weather.json','r')
@@ -135,9 +148,9 @@ def Partial_refresh():#局刷函数
              logging.debug("头部日期部位发生刷新变化.")
              Local_strong_brush() #局部强刷
          global local_addr #当前IP地址
-         local_addr1 = Get_address()
+         local_addr1 = Get_ipv4_address()
          if (local_addr1==local_addr) ==False:
-             draw.rectangle((1, 107, 94, 120), fill = 0) #设置头部刷新区域
+             draw.rectangle((1, 107, 123, 120), fill = 0) #设置头部刷新区域
              draw.text((10,107),"IP:"+local_addr1,font = font05,fill =255)#显示当前IP地址
              local_addr=local_addr1
              Local_strong_brush() #局部强刷
@@ -189,7 +202,7 @@ def Partial_refresh():#局刷函数
          power_str1 =power_battery()
          if (power_str1==power_str) ==False:
              draw.rectangle((128, 110, 153, 117), fill = 0) #设置更新时间刷新区域
-             draw.text((127,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
+             draw.text((129,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
              power_str=power_str1
              Local_strong_brush() #局部强刷
              logging.info("电源电量局部刷新")
