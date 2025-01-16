@@ -16,39 +16,39 @@ if os.path.exists(libdir):
     from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 
 # 配置日志
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def clear_screen():
     try:
-        logging.info("Starting e-Paper clear screen script")
+        logging.info("启动电子纸清屏脚本")
         
         # 初始化并创建一个 epd2in13_V4 对象
         epd = epd2in13_V4.EPD()
         
         # 初始化屏幕
-        logging.info("Initializing e-Paper display")
+        logging.info("初始化电子纸显示屏")
         epd.init()
         
         # 清除屏幕
-        logging.info("Clearing e-Paper display")
+        logging.info("清除电子纸显示屏内容")
         epd.Clear(0xFF)
         
         # 等待一段时间，确保清除操作完成
         #time.sleep(1)
         
         # 将屏幕置于睡眠模式
-        logging.info("Putting e-Paper display to sleep")
+        logging.info("将电子纸显示屏置入睡眠状态")
         epd.sleep()
         epd2in13_V4.epdconfig.module_exit(cleanup=True)
         exit()
         
-        logging.info("e-Paper display cleared successfully")
+        logging.info("电子纸显示屏清屏成功")
         
     except IOError as e:
         logging.info(e)
         
     except KeyboardInterrupt:
-        logging.info("Ctrl+C pressed, exiting")
+        logging.info("按下了 Ctrl+C，正在退出")
         epd2in13_V4.epdconfig.module_exit(cleanup=True)
         exit()
 
