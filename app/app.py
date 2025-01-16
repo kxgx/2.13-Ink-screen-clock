@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, send_from_directory
 import os
 import re
 
-app = Flask(__name__, template_folder='webui/templates', static_url_path='', static_folder='webui/static')
+app = Flask(__name__, template_folder='webui', static_url_path='', static_folder='webui')
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pic')  # 字体文件夹路径
 
 def list_font_files(font_dir):
