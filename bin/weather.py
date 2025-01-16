@@ -35,7 +35,7 @@ def get_area_id(city_name):
                     for district, info in districts.items():
                         if info['NAMECN'] == city_name:
                             return info['AREAID']
-            logging.error("城市名称 '%s' 在城市数据中未找到", city_name)
+            logging.error("城市名称 '%s' 在城市数据中未找到，将使用默认城市信息", city_name)
         else:
             logging.error("从city.js接收到的数据为空")
     except requests.RequestException as e:
