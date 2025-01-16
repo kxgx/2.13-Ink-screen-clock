@@ -8,10 +8,10 @@
 
 ## API说明:
 
-#### 一言API
-此网站可以获取指定长度指定类型的一个句子,可以限定返回长度及返回类型 
+~~#### 一言API~~
+~~此网站可以获取指定长度指定类型的一个句子,可以限定返回长度及返回类型~~
     
-    https://international.v1.hitokoto.cn/?c=a&encode=text&max_length=20
+   ~~https://international.v1.hitokoto.cn/?c=a&encode=text&max_length=20~~
 
 #### 天气API
 获取的天气是通过网页的接口,获取的内容保存在当前目录下的json文件接口的地址是在这里抓取的 
