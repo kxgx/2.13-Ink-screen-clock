@@ -107,9 +107,11 @@ def Weather(): #在图片中添加天气内容
      draw.text((150,25),"天气:",font = font06,fill =0)#显示当前天气前缀
      draw.text((150,45),"温度:",font = font06,fill =0)#显示当前温度前缀
      draw.text((150,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
+     draw.text((150,85),"城市:",font = font06,fill =0)#显示当前城市前缀
      draw.text((191,25),weather,font = font06,fill =0)
      draw.text((191,45),temperature,font = font06,fill =0)
      draw.text((191,65),humidity,font = font06,fill =0)
+     draw.text((191,85),Weather_position,font = font06,fill =0)
      draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
 
 def Basic_refresh(): #全刷函数
@@ -190,6 +192,12 @@ def Partial_refresh():#局刷函数
              draw.text((191,65),humidity1,font = font06,fill =0)
              humidity = humidity1
              logging.info("湿度局部刷新")
+             Local_strong_brush() #局部强刷
+         if (Weather_position1==Weather_position) ==False:
+             draw.rectangle((191, 85, 249, 98), fill = 255) #局刷区域
+             draw.text((191,85),Weather_position1,font = font06,fill =0)
+             Weather_position = Weather_position1
+             logging.info("城市局部刷新")
              Local_strong_brush() #局部强刷
          if (weather_update1==weather_update) ==False:
              draw.rectangle((211, 107, 248, 118), fill = 0) #设置更新时间刷新区域
