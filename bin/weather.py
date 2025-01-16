@@ -9,7 +9,7 @@ import requests
 
 white = 255  # 颜色
 black = 0
-logging.basicConfig(level=logging.INFO)  # 设置日志级别
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')  # 设置日志级别
 
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
@@ -54,11 +54,11 @@ def get_current_city():
         if data['status'] == 'success':
             return data['city']
         else:
-            logging.error("Failed to get current city: %s", data['message'])
+            logging.error("获取当前城市失败: %s", data['message'])
     except requests.RequestException as e:
-        logging.error("Network error when retrieving current city: %s", e)
+        logging.error("检索当前城市时出现网络错误: %s", e)
     except json.JSONDecodeError as e:
-        logging.error("JSON decode error when parsing current city data: %s", e)
+        logging.error("解析当前城市数据时出现JSON解码错误: %s", e)
     return None
 
 def getWeath(city='101060111'):
@@ -82,18 +82,18 @@ def getWeath(city='101060111'):
         Timer(180, getWeath).start()  # 定时器函数,间隔三分钟下载文件至本地
         print("天气文件更新")
     except requests.RequestException as e:
-        logging.error("Network error when retrieving weather data: %s", e)
+        logging.error("获取天气数据时出现网络错误: %s", e)
     except Exception as e:
-        logging.error("An unexpected error occurred: %s", e)
+        logging.error("发生了意外错误: %s", e)
 
 try:
     getWeath()  # 天气获取函数开始运行
 except IOError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("Keyboard interrupt detected, exiting gracefully.")
+    logging.info("检测到键盘中断，正在优雅地退出")
 except Exception as e:
-    logging.error("An unexpected error occurred: %s", e)
+    logging.error("发生了意外错误: %s", e)
     exit()
 
 # 脚本正常结束后的清理操作
