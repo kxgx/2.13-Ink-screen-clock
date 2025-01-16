@@ -215,7 +215,7 @@ install_packages() {
 # 安装pip包函数
 install_pip_packages() {
     echo "正在安装pip软件包"
-  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests; then
+  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests Flask; then
     echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
     echo "请手动运行sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests --break-system-packages" >&2
     exit 1
