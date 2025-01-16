@@ -68,7 +68,7 @@ sudo reboot
 --gitcn                   克隆中国仓库
 --pisugar-wifi-conf       安装pisugar-wifi-conf
 --pisugar-power-manager   安装pisugar-power-manager
---version <tag>           版本号(使用方法 --version + 仓库标签，例如 v1.1.3 ,可以是主仓库main)
+--version <tag>           版本号(使用方法 --version + 仓库标签，例如 v1.x.x ,可以是主仓库main)
 --debug                   输出详细信息
 ```
 ### 
