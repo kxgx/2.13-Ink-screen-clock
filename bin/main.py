@@ -12,7 +12,7 @@ import socket
 
 white = 255 #颜色
 black = 0
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 ################################引入配置文件开始################################################
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
@@ -115,7 +115,7 @@ def Weather(): #在图片中添加天气内容
      draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
 
 def Basic_refresh(): #全刷函数
-    logging.info("Refresh and prepare the basic content before starting the canvas")#开始画布前刷新准备基础内容
+    logging.info("在启动画布之前，刷新并准备基本内容")#开始画布前刷新准备基础内容
     global get_date_var
     get_date_var=get_date() #记录开始数据
     draw.text((2,2),get_date_var,font = font02,fill =0)#将日期及星期几显示到屏幕
@@ -130,7 +130,7 @@ def Partial_full_brush(): #局部定时全刷函数
      logging.debug("局部定时全局刷新")
      epd.init()
 def Partial_refresh():#局刷函数
-     logging.info("Partial content update, this update is recommended to be synchronized with the minute to save the life of the ink screen")#局部内容更新,此更新建议与分钟同步,以节省墨水屏寿命
+     logging.info("部分内容更新，此更新建议与分钟同步，以节省墨水屏的使用寿命")#局部内容更新,此更新建议与分钟同步,以节省墨水屏寿命
      epd.displayPartBaseImage(epd.getbuffer(info_image.rotate(180)))
      epd.init()
      while (True):
@@ -221,7 +221,7 @@ try:
     #epd.Clear(0xFF) #清除屏幕内容
 ##################屏幕初始化#########################   
     logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
-    logging.info("Initialize and clear the display")#屏幕开始准备相关展示
+    logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
     info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
     draw = ImageDraw.Draw(info_image)
     Basic_refresh() #全局刷新
@@ -232,7 +232,7 @@ try:
 except IOError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("Keyboard interrupt detected, exiting gracefully.")
+    logging.info("检测到键盘中断，正在优雅地退出")
     epd.init()
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
@@ -240,7 +240,7 @@ except KeyboardInterrupt:
     exit()
 
 except Exception as e:
-    logging.error("An unexpected error occurred: %s", e)
+    logging.error("发生了意外的错误: %s", e)
     epd.init()
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
