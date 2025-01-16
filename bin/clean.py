@@ -48,7 +48,7 @@ def clear_screen():
         logging.info(e)
         
     except KeyboardInterrupt:
-        logging.info("按下了 Ctrl+C，正在退出")
+        logging.info("检测到键盘中断，正在退出")
         epd2in13_V4.epdconfig.module_exit(cleanup=True)
         exit()
 
