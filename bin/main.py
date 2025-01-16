@@ -232,7 +232,7 @@ try:
 except OSError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("检测到键盘中断，正在优雅地退出")
+    logging.info("检测到键盘中断，正在清理并退出")
     epd.init()
     epd.Clear(0xFF)  # 清除屏幕内容
     epd.sleep()       # 使屏幕进入休眠状态
