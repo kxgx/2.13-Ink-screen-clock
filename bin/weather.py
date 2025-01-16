@@ -91,7 +91,7 @@ try:
 except IOError as e:
     logging.info(e)
 except KeyboardInterrupt:
-    logging.info("检测到键盘中断，正在优雅地退出")
+    logging.info("检测到键盘中断，正在退出")
 except Exception as e:
     logging.error("发生了意外错误: %s", e)
     exit()
