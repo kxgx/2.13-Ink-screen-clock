@@ -68,7 +68,7 @@ sudo reboot
 --gitcn                   克隆中国仓库
 --pisugar-wifi-conf       安装pisugar-wifi-conf
 --pisugar-power-manager   安装pisugar-power-manager
---version <tag>           版本号
+--version <tag>           版本号(使用方法 --version + 仓库标签，例如 v1.1.3 ,可以是主仓库main)
 --debug                   输出详细信息
 ```
 ### 
@@ -78,7 +78,7 @@ curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/instal
 ```
 ```Bash
 #中国源全参数设置(不使用--debug参数)
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s --  --version <tag> --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf --version <tag>
 ```
 ```Bash
 #默认源默认设置
@@ -86,7 +86,7 @@ curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh 
 ```
 ```Bash
 #默认源全参数设置(不使用--debug参数)
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --version <tag> --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pisugar-power-manager --pisugar-wifi-conf --version <tag>
 ```
 
 ## 需要安装的软件和依赖:
