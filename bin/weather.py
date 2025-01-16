@@ -61,7 +61,7 @@ def get_current_city():
         logging.error("解析当前城市数据时出现JSON解码错误: %s", e)
     return None
 
-def getWeath(city='101060111'):
+def getWeath(city='101060101'):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
         'Referer': 'http://www.weather.com.cn/'
