@@ -35,15 +35,15 @@ def get_area_id(city_name):
                     for district, info in districts.items():
                         if info['NAMECN'] == city_name:
                             return info['AREAID']
-            logging.error("City name '%s' not found in city data", city_name)
+            logging.error("城市名称 '%s' 在城市数据中未找到", city_name)
         else:
-            logging.error("Empty data received from city.js")
+            logging.error("从city.js接收到的数据为空")
     except requests.RequestException as e:
-        logging.error("Network error when retrieving city data: %s", e)
+        logging.error("检索城市数据时发生网络错误: %s", e)
     except json.JSONDecodeError as e:
-        logging.error("JSON decode error when parsing city data: %s", e)
+        logging.error("解析城市数据时发生JSON解码错误: %s", e)
     return None
-    
+
 def get_current_city():
     """获取当前城市名称"""
     url = "http://ip-api.com/json/?lang=zh-CN"
