@@ -86,7 +86,7 @@ def Bottom_edge():  #在图片中添加底边内容
      local_addr= Get_ipv4_address()  #获取当前IP地址
      draw.text((10,107),"IP:"+local_addr,font = font05,fill =255)#显示当前IP地址
 def Weather(): #在图片中添加天气内容
-     Weather_json = open('weather.json','r')
+     Weather_json = open('/root/2.13-Ink-screen-clock/bin/weather.json','r')
      Weather_data = Weather_json.read()
      Weather_json.close()
      Weather_text=json.loads(Weather_data)
@@ -157,7 +157,7 @@ def Partial_refresh():#局刷函数
              local_addr=local_addr1
              Local_strong_brush() #局部强刷
          '''天气局部更新函数'''
-         Weather_json = open('weather.json','r')
+         Weather_json = open('/root/2.13-Ink-screen-clock/bin/weather.json','r')
          Weather_data = Weather_json.read()
          Weather_json.close()
          Weather_text=json.loads(Weather_data)
@@ -229,7 +229,7 @@ try:
     epd.init()
     epd.Clear(0xFF)
     epd.sleep()
-except IOError as e:
+except OSError as e:
     logging.info(e)
 except KeyboardInterrupt:
     logging.info("检测到键盘中断，正在优雅地退出")
