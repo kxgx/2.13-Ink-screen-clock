@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, redirect, url_for
 import os
 import re
 
 app = Flask(__name__, template_folder='webui', static_url_path='', static_folder='webui')
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pic')  # 字体文件夹路径
+MAIN_PY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bin', 'main.py')
 
 def list_font_files(font_dir):
     try:
@@ -12,36 +13,26 @@ def list_font_files(font_dir):
         print(f"Error listing font files: {e}")
         return []  # 返回空列表以避免迭代错误
 
-def update_main_py_font_names(font_names):
-    main_py_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'main.py')
+@app.route('/edit_main_py')
+def edit_main_py():
     try:
-        with open(main_py_path, 'r') as file:
+        with open(MAIN_PY_PATH, 'r') as file:
             content = file.read()
-
-        # 为每个字体变量定义正则表达式模式
-        patterns = {
-            'font01': re.compile(r"(?<=font01\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*20\s*\))"),
-            'font02': re.compile(r"(?<=font02\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*15\s*\))"),
-            'font03': re.compile(r"(?<=font03\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*38\s*\))"),
-            'font04': re.compile(r"(?<=font04\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*10\s*\))"),
-            'font05': re.compile(r"(?<=font05\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*12\s*\))"),
-            'font06': re.compile(r"(?<=font06\s*=\s*ImageFont\.truetype\(\s*os\.path\.join\(picdir,\s*)'[^']+'(?=\s*,\s*13\s*\))"),
-        }
-
-        # 使用正则表达式替换字体文件名
-        for font_var, font_name in font_names.items():
-            pattern = patterns.get(font_var)
-            if pattern:
-                # 确保字体文件名被正确地转义
-                safe_font_name = re.escape(font_name)
-                content = pattern.sub(f"'{safe_font_name}'", content)
-
-        with open(main_py_path, 'w') as file:
-            file.write(content)
     except Exception as e:
-        print(f"Error updating main.py: {e}")
-        return False
-    return True
+        return f"Error reading main.py: {e}", 500
+    return render_template('edit_main_py.html', content=content)
+
+@app.route('/save_main_py', methods=['POST'])
+def save_main_py():
+    new_content = request.form.get('content')
+    if new_content is None:
+        return "No content provided", 400
+    try:
+        with open(MAIN_PY_PATH, 'w') as file:
+            file.write(new_content)
+    except Exception as e:
+        return f"Error saving main.py: {e}", 500
+    return redirect(url_for('index'))
 
 @app.route('/')
 def index():
@@ -64,24 +55,6 @@ def upload():
 def update_font_names():
     font_files = list_font_files(FONT_DIR)
     return render_template('update_font_names.html', font_files=font_files)
-
-@app.route('/save_font_names', methods=['POST'])
-def save_font_names():
-    # 获取表单数据
-    font_names = {
-        'font01': request.form.get('font01'),
-        'font02': request.form.get('font02'),
-        'font03': request.form.get('font03'),
-        'font04': request.form.get('font04'),
-        'font05': request.form.get('font05'),
-        'font06': request.form.get('font06'),
-    }
-    
-    # 更新 main.py 中的字体文件名
-    if update_main_py_font_names(font_names):
-        return '字体文件名已保存'
-    else:
-        return '保存字体文件名时发生错误', 500
 
 @app.route('/fonts/<filename>')
 def fonts(filename):
