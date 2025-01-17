@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, send_from_directory, redirect, url_for
+from flask import Flask, render_template, request, send_from_directory, redirect, url_for, jsonify
 import os
 import re
+import subprocess
 
 app = Flask(__name__, template_folder='webui', static_url_path='', static_folder='webui')
 FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pic')  # 字体文件夹路径
@@ -12,6 +13,16 @@ def list_font_files(font_dir):
     except Exception as e:
         print(f"Error listing font files: {e}")
         return []  # 返回空列表以避免迭代错误
+
+@app.route('/execute-shell')
+def execute_shell():
+    # 替换以下命令为您想要执行的Shell命令
+    command = "sudo reboot now"
+    result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode == 0:
+        return jsonify({'status': 'success', 'output': result.stdout})
+    else:
+        return jsonify({'status': 'error', 'output': result.stderr})
 
 @app.route('/edit_main_py')
 def edit_main_py():
