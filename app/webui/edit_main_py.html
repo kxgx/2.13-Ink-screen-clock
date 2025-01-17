@@ -10,7 +10,7 @@
     <h1>编辑 main.py</h1>
     <!-- 添加一个表单来提交编辑后的代码 -->
     <form method="post" action="{{ url_for('save_main_py') }}">
-        <pre><code class="python" id="code">{{ content }}</code></pre>
+        <pre style="background-color: black !important;"><code class="python" id="code">{{ content }}</code></pre>
         <input type="hidden" name="content" id="hidden-content">
         <input type="submit" value="保存">
     </form>
@@ -23,5 +23,37 @@
             hljs.highlightAll();
         });
     </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var preElements = document.querySelectorAll('pre.code-editor');
+        preElements.forEach(function(pre) {
+            pre.style.backgroundColor = 'black';
+        });
+    });
+    </script>
+
+    <h2>重启</h2>
+</head>
+<body>
+    <button id="executeShellBtn">重启</button>
+
+    <script>
+        document.getElementById('executeShellBtn').addEventListener('click', function() {
+            fetch('/execute-shell')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alert('Command executed successfully:\n' + data.output);
+                    } else {
+                        alert('Error executing command:\n' + data.output);
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+        });
+    </script>
 </body>
 </html>
+ 
