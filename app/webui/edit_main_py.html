@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑 main.py</title>
+    <!-- 引用本地的highlight.js CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='default.min.css') }}">
+</head>
+<body>
+    <h1>编辑 main.py</h1>
+    <!-- 添加一个表单来提交编辑后的代码 -->
+    <form method="post" action="{{ url_for('save_main_py') }}">
+        <pre><code class="python" id="code">{{ content }}</code></pre>
+        <input type="hidden" name="content" id="hidden-content">
+        <input type="submit" value="保存">
+    </form>
+
+    <!-- 引用本地的highlight.js JavaScript -->
+    <script src="{{ url_for('static', filename='highlight.min.js') }}"></script>
+    <script>
+        // 初始化highlight.js
+        document.addEventListener('DOMContentLoaded', (event) => {
+            hljs.highlightAll();
+        });
+    </script>
+</body>
+</html>
