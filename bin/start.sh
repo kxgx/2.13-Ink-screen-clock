@@ -14,4 +14,4 @@ do
 done
 nohup /usr/bin/python3 -u $dir/$f_name > $logdir/info.log 2>&1 &
 nohup /usr/bin/python3 -u $dir/$f1_name > $logdir/info-wenter.log 2>&1 &
-nohup /usr/bin/python3 -u $appdir/$f2_name > $logdir/info-app.log 2>&1 &
+#nohup /usr/bin/python3 -u $appdir/$f2_name > $logdir/info-app.log 2>&1 &
