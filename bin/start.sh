@@ -1,10 +1,8 @@
 #!/bin/bash
 f_name=main.py
 f1_name=weather.py
-f2_name=app.py
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 logdir="${dir%/*}/log"
-appdir="${dir%/*}/app"
 # 确保日志目录存在
 mkdir -p "${logdir}"
 pid=`ps -ef |grep $dir/$f_name | grep -v grep |awk '{print $2}'`
