@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ace-editor@1.4.12/css/ace.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/ace-editor@1.4.12/js/ace.min.js"></script>
+    <meta charset="UTF-8">
+    <title>编辑 main.py</title>
+    <style>
+        #editor {
+            width: 100%;
+            height: 500px;
+            font-family: monospace;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>编辑 main.py</h1>
+    <form action="/save.py" method="post">
+        <div id="editor"><?php echo file_get_contents('/root/2.13-Ink-screen-clock/bin/main.py'); ?></div>
+        <input type="hidden" name="content" id="hidden-content">
+        <br>
+        <input type="submit" value="保存">
+    </form>
+    <script>
+        // 初始化 Ace Editor
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/monokai");
+        editor.getSession().setMode("ace/mode/python");
+        editor.setValue(<?php echo json_encode(file_get_contents($filePath)); ?>);
+
+        // 在表单提交前将编辑器内容赋值给隐藏的textarea
+        document.querySelector('form').addEventListener('submit', function() {
+            document.getElementById('hidden-content').value = editor.getValue();
+        });
+    </script>
+</body>
+    </form>
+</body>
+</html>
