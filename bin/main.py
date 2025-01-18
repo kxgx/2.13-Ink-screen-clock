@@ -19,7 +19,7 @@ if os.path.exists(libdir):
     sys.path.append(libdir)#将引入文件添加到环境变量
     from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 logging.debug("Loading Fonts")
-font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
+font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 19) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
 font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 38) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
@@ -121,6 +121,14 @@ def Basic_refresh(): #全刷函数
     global local_time
     local_time=get_time()
     draw.text((5,40),local_time,font = font03,fill =0)#显示当前时间
+    global cpu_temp
+    cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
+    text_to_display = "CPU温度:" + cpu_temp
+    draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
+    global mem_use
+    mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
+    text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
+    draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
     Bottom_edge() #添加底边内容
     Weather() #天气内容
     epd.display(epd.getbuffer(info_image.rotate(180)))
@@ -213,8 +221,32 @@ def Partial_refresh():#局刷函数
              power_str=power_str1
              Local_strong_brush() #局部强刷
              logging.info("电源电量局部刷新")
-             
-retry_interval = 1  # 设置重试间隔时间（秒）
+         '''CPU温度显示'''
+         global cpu_temp
+         cpu_temp1 =CPU_temperature()
+         if (cpu_temp1==cpu_temp) ==False:
+             draw.rectangle((1, 17, 130, 38), fill = 255)
+             cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
+             text_to_display = "CPU温度:" + cpu_temp
+             draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
+             cpu_temp1=cpu_temp
+             Local_strong_brush() #局部强刷
+             logging.info("CPU温度局部刷新")
+         '''CPU温度显示'''          
+         '''内存百分比显示'''
+         global mem_use
+         mem_use1 =Memory_footprint()
+         if (mem_use1==mem_use) ==False:
+             draw.rectangle((1, 82, 130, 101), fill = 255)
+             mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
+             text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
+             draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+             mem_use1=mem_use
+             Local_strong_brush() #局部强刷
+             logging.info("内存百分比局部刷新")
+         '''内存百分比显示'''
+
+retry_interval = 180  # 设置重试间隔时间（秒）
 
 while True:
     try:
