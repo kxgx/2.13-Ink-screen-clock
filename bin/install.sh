@@ -18,6 +18,8 @@ USE_CN_GIT=false
 USE_PISUGAR_WIFI_CONF=false
 # 检查是否安装pisugar-power-manager
 USE_PISUGAR_POWER_MANAGER=false
+# 检查是否安装webui
+INSTALL_WEBUI=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -36,6 +38,9 @@ while [ "$#" -gt 0 ]; do
     ;;
     --pisugar-power-manager)
     USE_PISUGAR_POWER_MANAGER=true
+    ;;
+    --webui)
+    INSTALL_WEBUI=true
     ;;
     --version)
       if [ -z "$2" ]; then
@@ -121,25 +126,14 @@ is_raspberry_pi() {
   fi
 }
 
-# 定义链接变量
-DEBIAN_MIRROR="http://deb.debian.org/debian/"
-DEBIAN_SECURITY_MIRROR="http://security.debian.org/"
-PISUGAR_WIFI_CONF_URL="https://cdn.pisugar.com/PiSugar-wificonfig/script/install.sh"
-PISUGAR_POWER_MANAGER_URL="https://cdn.pisugar.com/release/pisugar-power-manager.sh"
-PIPY_MIRROR="https://pypi.org/simple"
-# 修改 Raspberry Pi 特定源链接
-RASPBERRY_PI_SOURCE_DEBIAN11="https://archive.raspberrypi.org/debian/"
-RASPBERRY_PI_SOURCE_DEBIAN12="https://archive.raspberrypi.com/debian/"
-
-# 如果使用中国镜像源，则更新链接变量
-if [ "$USE_CN_MIRROR" = true ]; then
-  DEBIAN_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian/"
+# 使用中国镜像源
+  DEBIAN_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian"
   DEBIAN_SECURITY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/debian-security"
   PIPY_MIRROR="https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
   # 使用中国镜像源时，Raspberry Pi 特定源链接保持不变
-  RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
-  RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi/"
-fi
+  RASPBERRY_PI_SOURCE_DEBIAN11="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi"
+  RASPBERRY_PI_SOURCE_DEBIAN12="https://mirrors.tuna.tsinghua.edu.cn/raspberrypi"
+
 
 # 定义仓库链接变量
 INK_SCREEN_CLOCK_REPO_URL="https://github.com/kxgx/2.13-Ink-screen-clock"
@@ -155,6 +149,7 @@ update_sources_list() {
   local raspberry_pi_source_in_use=$(grep -oP 'deb\s+\K.+' /etc/apt/sources.list.d/raspi.list | head -1)
 
   # 检查并替换 Debian 源
+  if [ "$USE_CN_MIRROR" = true ]; then
   if [ "$debian_mirror_in_use" != "$DEBIAN_MIRROR" ]; then
     sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak
     {
@@ -196,12 +191,13 @@ update_sources_list() {
   else
     echo "Raspberry Pi 源链接已更新，跳过替换" >&2
   fi
+fi
 }
 
 # 安装包函数
 install_packages() {
     echo "正在更新源列表"
-  if ! sudo apt-get -q -y update; then
+  if ! sudo apt-get -q update; then
     echo "更新源列表失败" >&2
     exit 1
   fi
@@ -294,6 +290,86 @@ install_pisugar-wifi-conf() {
   fi
 }
 
+# 如果指定了--webui参数，则添加Nginx配置
+install_webui() {
+  if [ "$INSTALL_WEBUI" = true ]; then
+    WEBUI_FILE="/root/2.13-Ink-screen-clock/webui"
+    NGINX_WEBUI_FILE="/var/www/html"
+    echo "正在安装并配置webui"
+    echo "正在安装软件包"
+    if ! sudo apt-get update && sudo apt-get -q -y install nginx php7.4-fpm; then
+      echo "软件包安装失败" >&2
+      exit 1
+    fi
+    echo "正在复制webui文件"
+    if ! sudo cp -r "$WEBUI_FILE" "$NGINX_WEBUI_FILE"; then
+      echo "webui文件复制失败" >&2
+      exit 1
+    fi
+    echo "正在修改nginx配置文件"
+    # 定义Nginx主配置文件的路径
+    NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
+    NGINX_CONFIG_BAK="$NGINX_CONFIG_PATH.bak"
+
+    # 备份现有的Nginx配置文件
+    cp "$NGINX_CONFIG_PATH" "$NGINX_CONFIG_BAK"
+    echo "已备份现有Nginx配置文件到 $NGINX_CONFIG_BAK"
+
+    # 定义文件路径变量
+    WEBROOT_PATH="$NGINX_WEBUI_FILE"
+    CGI_BIN_PATH="$WEBROOT_PATH/cgi-bin"
+    CGI_PASS="127.0.0.1:9000" # 根据您的CGI服务器配置
+
+    # 定义要添加的服务器配置
+    SERVER_CONFIG="
+server {
+    listen 80;
+    server_name 0.0.0.0;
+
+    location / {
+        root $WEBROOT_PATH;
+        index index.html index.htm;
+    }
+
+    location /save.py {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock; # 根据您的PHP版本进行调整
+        fastcgi_param SCRIPT_FILENAME \$document_root/save.py;
+        add_header X-Robots-Tag \"noindex,noarchive,nosnippet,nofollow\";
+        auth_basic \"Restricted Content\";
+        auth_basic_user_file /etc/nginx/.htpasswd; # 确保您有.htpasswd文件用于基本认证
+    }
+}
+"
+
+    # 检查是否已经存在类似的server配置
+    if ! grep -q 'server_name 0.0.0.0;' "$NGINX_CONFIG_PATH"; then
+      # 如果不存在，将配置添加到http块中
+awk -v config="$SERVER_CONFIG" '
+/http {/ {
+    print
+    print config
+    next
+}
+1
+' "$NGINX_CONFIG_PATH" > temp && mv temp "$NGINX_CONFIG_PATH"
+    else
+      echo "服务器配置已存在，未进行修改"
+    fi
+
+    # 测试Nginx配置
+    nginx -t
+
+    # 如果配置测试成功，则重启Nginx
+    if [ $? -eq 0 ]; then
+      systemctl restart nginx
+      echo "Nginx配置已成功应用并重启"
+    else
+      echo "Nginx配置测试失败，请检查配置文件"
+    fi
+  fi
+}
+
 # 主逻辑
 # 检测是否是Debian系统
 if [ -f /etc/debian_version ]; then
@@ -317,6 +393,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
+        install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
         ;;
@@ -326,6 +403,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
+        install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
         ;;
