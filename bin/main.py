@@ -220,30 +220,30 @@ def Partial_refresh():#局刷函数
              draw.text((129,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
              power_str=power_str1
              Local_strong_brush() #局部强刷
-             logging.info("电源电量局部刷新")
+             #logging.info("电源电量局部刷新")
          '''CPU温度显示'''
          global cpu_temp
          cpu_temp1 =CPU_temperature()
          if (cpu_temp1==cpu_temp) ==False:
-             draw.rectangle((1, 17, 130, 38), fill = 255)
+             draw.rectangle((1, 19, 130, 38), fill = 255)
              cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
              text_to_display = "CPU温度:" + cpu_temp
              draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
              cpu_temp1=cpu_temp
              Local_strong_brush() #局部强刷
-             logging.info("CPU温度局部刷新")
+             #logging.info("CPU温度局部刷新")
          '''CPU温度显示'''          
          '''内存百分比显示'''
          global mem_use
          mem_use1 =Memory_footprint()
          if (mem_use1==mem_use) ==False:
-             draw.rectangle((1, 82, 130, 101), fill = 255)
+             draw.rectangle((1, 84, 130, 101), fill = 255)
              mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
              text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
              draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
              mem_use1=mem_use
              Local_strong_brush() #局部强刷
-             logging.info("内存百分比局部刷新")
+             #logging.info("内存百分比局部刷新")
          '''内存百分比显示'''
 
 retry_interval = 180  # 设置重试间隔时间（秒）
