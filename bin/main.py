@@ -36,7 +36,7 @@ def get_date():#返回当前年月日及星期几
     today=LunarDate.today()
     week_day_dict = {0: '星期一',1: '星期二',2: '星期三',3: '星期四',4: '星期五',5: '星期六',6: '星期日',}
     day = date.weekday()
-    return time.strftime('%Y年%m月%d日')+'  '+week_day_dict[day]+'  '+today.strftime('农 %M月%D')
+    return time.strftime('%Y年%m月%d日')+''+week_day_dict[day]+''+today.strftime('农历%M月%D')
 def get_time():#返回当前时间,不到秒,大写
     return time.strftime('%H:%M')
 def Get_address():#获取当前的IP地址
