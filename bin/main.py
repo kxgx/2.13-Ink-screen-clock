@@ -125,14 +125,14 @@ def Basic_refresh(): #全刷函数
     cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
     text_to_display = "CPU温度:" + cpu_temp + "°C"
     draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
-    global mem_use
-    mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
-    text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
-    draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
     global cpu_use
     cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
     text_to_display = "CPU占用:" + cpu_use + "%"
-    draw.text((90, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+    draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+    global mem_use
+    mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
+    text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
+    draw.text((86, 84), text_to_display, font=font06, fill=0)  # 绘制文本
     Bottom_edge() #添加底边内容
     Weather() #天气内容
     epd.display(epd.getbuffer(info_image.rotate(180)))
@@ -236,31 +236,31 @@ def Partial_refresh():#局刷函数
              cpu_temp1=cpu_temp
              Local_strong_brush() #局部强刷
              #logging.info("CPU温度局部刷新")
-         '''CPU温度显示'''          
-         '''内存百分比显示'''
-         global mem_use
-         mem_use1 =Memory_footprint()
-         if (mem_use1==mem_use) ==False:
-             draw.rectangle((1, 84, 90, 98), fill = 255)
-             mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
-             text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
-             draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
-             mem_use1=mem_use
-             Local_strong_brush() #局部强刷
-             #logging.info("内存百分比局部刷新")
-         '''内存百分比显示'''
+         '''CPU温度显示'''
          '''CPU占用显示'''
          global cpu_use
          cpu_use1 =CPU_usage()
          if (cpu_use1==cpu_use) ==False:
-             draw.rectangle((90, 84, 170, 98), fill = 255)
+             draw.rectangle((1, 84, 85, 98), fill = 255)
              cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
              text_to_display = "CPU占用:" + cpu_use + "%"
-             draw.text((90, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+             draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
              cpu_use1=cpu_use
              Local_strong_brush() #局部强刷
              #logging.info("CPU温度局部刷新")
          '''CPU占用显示'''
+         '''内存百分比显示'''
+         global mem_use
+         mem_use1 =Memory_footprint()
+         if (mem_use1==mem_use) ==False:
+             draw.rectangle((86, 84, 170, 98), fill = 255)
+             mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
+             text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
+             draw.text((86, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+             mem_use1=mem_use
+             Local_strong_brush() #局部强刷
+             #logging.info("内存百分比局部刷新")
+         '''内存百分比显示'''
 
 retry_interval = 180  # 设置重试间隔时间（秒）
 
