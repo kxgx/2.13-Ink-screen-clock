@@ -18,8 +18,6 @@ USE_CN_GIT=false
 USE_PISUGAR_WIFI_CONF=false
 # 检查是否安装pisugar-power-manager
 USE_PISUGAR_POWER_MANAGER=false
-# 检查是否安装webui
-#INSTALL_WEBUI=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -39,9 +37,6 @@ while [ "$#" -gt 0 ]; do
     --pisugar-power-manager)
     USE_PISUGAR_POWER_MANAGER=true
     ;;
- #   --webui)
-  #  INSTALL_WEBUI=true
-   # ;;
     --version)
       if [ -z "$2" ]; then
         echo "错误: --version 参数后需要跟版本号"
@@ -286,86 +281,6 @@ install_pisugar-wifi-conf() {
       echo "pisugar-wifi-conf安装失败" >&2
       echo "如需要请手动运行curl $PISUGAR_WIFI_CONF_URL | sudo bash" >&2
       exit 1
-    fi
-  fi
-}
-
-# 如果指定了--webui参数，则添加Nginx配置
-install_webui() {
-  if [ "$INSTALL_WEBUI" = true ]; then
-    WEBUI_FILE="/root/2.13-Ink-screen-clock/webui"
-    NGINX_WEBUI_FILE="/var/www/html"
-    echo "正在安装并配置webui"
-    echo "正在安装软件包"
-    if ! sudo apt-get update && sudo apt-get -q -y install nginx php7.4-fpm; then
-      echo "软件包安装失败" >&2
-      exit 1
-    fi
-    echo "正在复制webui文件"
-    if ! sudo cp -r "$WEBUI_FILE" "$NGINX_WEBUI_FILE"; then
-      echo "webui文件复制失败" >&2
-      exit 1
-    fi
-    echo "正在修改nginx配置文件"
-    # 定义Nginx主配置文件的路径
-    NGINX_CONFIG_PATH="/etc/nginx/nginx.conf"
-    NGINX_CONFIG_BAK="$NGINX_CONFIG_PATH.bak"
-
-    # 备份现有的Nginx配置文件
-    cp "$NGINX_CONFIG_PATH" "$NGINX_CONFIG_BAK"
-    echo "已备份现有Nginx配置文件到 $NGINX_CONFIG_BAK"
-
-    # 定义文件路径变量
-    WEBROOT_PATH="$NGINX_WEBUI_FILE"
-    CGI_BIN_PATH="$WEBROOT_PATH/cgi-bin"
-    CGI_PASS="127.0.0.1:9000" # 根据您的CGI服务器配置
-
-    # 定义要添加的服务器配置
-    SERVER_CONFIG="
-server {
-    listen 80;
-    server_name 0.0.0.0;
-
-    location / {
-        root $WEBROOT_PATH;
-        index index.html index.htm;
-    }
-
-    location /save.py {
-        include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock; # 根据您的PHP版本进行调整
-        fastcgi_param SCRIPT_FILENAME \$document_root/save.py;
-        add_header X-Robots-Tag \"noindex,noarchive,nosnippet,nofollow\";
-        auth_basic \"Restricted Content\";
-        auth_basic_user_file /etc/nginx/.htpasswd; # 确保您有.htpasswd文件用于基本认证
-    }
-}
-"
-
-    # 检查是否已经存在类似的server配置
-    if ! grep -q 'server_name 0.0.0.0;' "$NGINX_CONFIG_PATH"; then
-      # 如果不存在，将配置添加到http块中
-awk -v config="$SERVER_CONFIG" '
-/http {/ {
-    print
-    print config
-    next
-}
-1
-' "$NGINX_CONFIG_PATH" > temp && mv temp "$NGINX_CONFIG_PATH"
-    else
-      echo "服务器配置已存在，未进行修改"
-    fi
-
-    # 测试Nginx配置
-    nginx -t
-
-    # 如果配置测试成功，则重启Nginx
-    if [ $? -eq 0 ]; then
-      systemctl restart nginx
-      echo "Nginx配置已成功应用并重启"
-    else
-      echo "Nginx配置测试失败，请检查配置文件"
     fi
   fi
 }
