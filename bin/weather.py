@@ -41,7 +41,7 @@ def get_area_id(city_name):
                 logging.error("从city.js接收到的数据为空")
         except (requests.RequestException, json.JSONDecodeError) as e:
             logging.error("检索或解析城市数据时发生错误: %s", e)
-            time.sleep(5)  # 重试前等待5秒
+            time.sleep(180)  # 重试前等待
 
 def get_current_city():
     """获取当前城市名称，无限重试直到成功"""
@@ -57,7 +57,7 @@ def get_current_city():
                 logging.error("获取当前城市失败: %s", data['message'])
         except (requests.RequestException, json.JSONDecodeError) as e:
             logging.error("检索或解析当前城市时出现错误: %s", e)
-            time.sleep(5)  # 重试前等待5秒
+            time.sleep(180)  # 重试前等待
 # 注意：无限重试可能会在特定情况下导致程序无法终止，请确保在实际使用中考虑适当的退出条件或限制重试次数。
 
 def getWeath(city='101060101'):
@@ -87,7 +87,7 @@ def getWeath(city='101060101'):
 
 try:
     getWeath()  # 天气获取函数开始运行
-except IOError as e:
+except OSError as e:
     logging.info(e)
 except KeyboardInterrupt:
     logging.info("检测到键盘中断，正在退出")
