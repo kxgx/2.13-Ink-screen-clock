@@ -54,7 +54,7 @@ def Get_ipv4_address():  # 获取当前的IP地址
         return f"获取失败"
 def CPU_temperature():#CPU温度获取
      temperatura = os.popen('vcgencmd measure_temp').readline()
-     temperatura = temperatura.replace('temp=','').strip()
+     temperatura = temperatura.replace('temp=','').replace('\'C', '').strip()
      return str(temperatura)
 def Memory_footprint():#显示内存占用百分比
      return(subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell = True ).decode('gbk'))
@@ -103,14 +103,14 @@ def Weather(): #在图片中添加天气内容
      weather_update = Weather_text['time'] #天气更新时间
      weather_date =  Weather_text['date'] #日期
      humidity =  Weather_text['SD'] #湿度
-     draw.text((150,25),"天气:",font = font06,fill =0)#显示当前天气前缀
-     draw.text((150,45),"温度:",font = font06,fill =0)#显示当前温度前缀
-     draw.text((150,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
-     draw.text((150,85),"城市:",font = font06,fill =0)#显示当前城市前缀
-     draw.text((191,25),weather,font = font06,fill =0)
-     draw.text((191,45),temperature,font = font06,fill =0)
-     draw.text((191,65),humidity,font = font06,fill =0)
-     draw.text((191,85),Weather_position,font = font06,fill =0)
+     draw.text((175,25),"天气:",font = font06,fill =0)#显示当前天气前缀
+     draw.text((175,45),"温度:",font = font06,fill =0)#显示当前温度前缀
+     draw.text((175,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
+     draw.text((175,85),"城市:",font = font06,fill =0)#显示当前城市前缀
+     draw.text((205,25),weather,font = font06,fill =0)
+     draw.text((205,45),temperature,font = font06,fill =0)
+     draw.text((205,65),humidity,font = font06,fill =0)
+     draw.text((205,85),Weather_position,font = font06,fill =0)
      draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
 
 def Basic_refresh(): #全刷函数
@@ -123,12 +123,16 @@ def Basic_refresh(): #全刷函数
     draw.text((5,40),local_time,font = font03,fill =0)#显示当前时间
     global cpu_temp
     cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
-    text_to_display = "CPU温度:" + cpu_temp
+    text_to_display = "CPU温度:" + cpu_temp + "°C"
     draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
     global mem_use
     mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
     text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
     draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+    global cpu_use
+    cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
+    text_to_display = "CPU占用:" + cpu_use + "%"
+    draw.text((90, 84), text_to_display, font=font06, fill=0)  # 绘制文本
     Bottom_edge() #添加底边内容
     Weather() #天气内容
     epd.display(epd.getbuffer(info_image.rotate(180)))
@@ -183,26 +187,26 @@ def Partial_refresh():#局刷函数
          weather_date1 =  Weather_text['date'] #日期
          humidity1 =  Weather_text['SD'] #湿度
          if (weather11==weather) ==False:
-             draw.rectangle((191, 25, 249, 38), fill = 255) #天气局刷区域
-             draw.text((191,25),weather11,font = font06,fill =0)
+             draw.rectangle((205, 25, 250, 38), fill = 255) #天气局刷区域
+             draw.text((205,25),weather11,font = font06,fill =0)
              weather=weather11
              logging.info("天气局部刷新")
              Local_strong_brush() #局部强刷
          if (temperature1==temperature) ==False:
-             draw.rectangle((191, 45, 249, 57), fill = 255) #局刷区域
-             draw.text((191,45),temperature1,font = font06,fill =0)
+             draw.rectangle((205, 45, 250, 57), fill = 255) #局刷区域
+             draw.text((205,45),temperature1,font = font06,fill =0)
              temperature=temperature1
              logging.info("温度局部刷新")
              Local_strong_brush() #局部强刷
          if (humidity1==humidity) ==False:
-             draw.rectangle((191, 65, 249, 77), fill = 255) #局刷区域
-             draw.text((191,65),humidity1,font = font06,fill =0)
+             draw.rectangle((205, 65, 250, 77), fill = 255) #局刷区域
+             draw.text((205,65),humidity1,font = font06,fill =0)
              humidity = humidity1
              logging.info("湿度局部刷新")
              Local_strong_brush() #局部强刷
          if (Weather_position1==Weather_position) ==False:
-             draw.rectangle((191, 85, 249, 98), fill = 255) #局刷区域
-             draw.text((191,85),Weather_position1,font = font06,fill =0)
+             draw.rectangle((205, 85, 250, 98), fill = 255) #局刷区域
+             draw.text((205,85),Weather_position1,font = font06,fill =0)
              Weather_position = Weather_position1
              logging.info("城市局部刷新")
              Local_strong_brush() #局部强刷
@@ -227,7 +231,7 @@ def Partial_refresh():#局刷函数
          if (cpu_temp1==cpu_temp) ==False:
              draw.rectangle((1, 19, 130, 38), fill = 255)
              cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
-             text_to_display = "CPU温度:" + cpu_temp
+             text_to_display = "CPU温度:" + cpu_temp + "°C"
              draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
              cpu_temp1=cpu_temp
              Local_strong_brush() #局部强刷
@@ -237,7 +241,7 @@ def Partial_refresh():#局刷函数
          global mem_use
          mem_use1 =Memory_footprint()
          if (mem_use1==mem_use) ==False:
-             draw.rectangle((1, 84, 130, 101), fill = 255)
+             draw.rectangle((1, 84, 90, 98), fill = 255)
              mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
              text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
              draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
@@ -245,6 +249,18 @@ def Partial_refresh():#局刷函数
              Local_strong_brush() #局部强刷
              #logging.info("内存百分比局部刷新")
          '''内存百分比显示'''
+         '''CPU占用显示'''
+         global cpu_use
+         cpu_use1 =CPU_usage()
+         if (cpu_use1==cpu_use) ==False:
+             draw.rectangle((90, 84, 170, 98), fill = 255)
+             cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
+             text_to_display = "CPU占用:" + cpu_use + "%"
+             draw.text((90, 84), text_to_display, font=font06, fill=0)  # 绘制文本
+             cpu_use1=cpu_use
+             Local_strong_brush() #局部强刷
+             #logging.info("CPU温度局部刷新")
+         '''CPU占用显示'''
 
 retry_interval = 180  # 设置重试间隔时间（秒）
 
