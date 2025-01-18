@@ -5,7 +5,6 @@ import os,sys,re,json,time,datetime  #引入系统相关库
 from borax.calendars.lunardate import LunarDate #农历日期以及天干地支纪年法的 Python 库
 import logging  #日志库
 import subprocess
-import os
 from threading import Timer
 import requests
 import socket
@@ -214,38 +213,36 @@ def Partial_refresh():#局刷函数
              power_str=power_str1
              Local_strong_brush() #局部强刷
              logging.info("电源电量局部刷新")
-try:
-##################屏幕初始化#########################
-    epd = epd2in13_V4.EPD() #初始化
-    epd.init()#设定屏幕刷新模式
-    #epd.Clear(0xFF) #清除屏幕内容
-##################屏幕初始化#########################   
-    logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
-    logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
-    info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
-    draw = ImageDraw.Draw(info_image)
-    Basic_refresh() #全局刷新
-    Partial_refresh() #局部刷新
-    epd.init()
-    epd.Clear(0xFF)
-    epd.sleep()
-except OSError as e:
-    logging.info(e)
-except KeyboardInterrupt:
-    logging.info("检测到键盘中断，正在清理并退出")
-    epd.init()
-    epd.Clear(0xFF)  # 清除屏幕内容
-    epd.sleep()       # 使屏幕进入休眠状态
-    epd2in13_V4.epdconfig.module_exit()  # 清理资源
-    exit()
+             
+retry_interval = 1  # 设置重试间隔时间（秒）
 
-except Exception as e:
-    logging.error("发生了意外的错误: %s", e)
-    epd.init()
-    epd.Clear(0xFF)  # 清除屏幕内容
-    epd.sleep()       # 使屏幕进入休眠状态
-    epd2in13_V4.epdconfig.module_exit()  # 清理资源
-    exit()
+while True:
+    try:
+        ##################屏幕初始化#########################
+        epd = epd2in13_V4.EPD() #初始化
+        epd.init()#设定屏幕刷新模式
+        #epd.Clear(0xFF) #清除屏幕内容
+        ##################屏幕初始化#########################   
+        logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
+        logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
+        info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
+        draw = ImageDraw.Draw(info_image)
+        Basic_refresh() #全局刷新
+        Partial_refresh() #局部刷新
+        epd.init()
+        epd.Clear(0xFF)
+        epd.sleep()
+        break  # 如果脚本执行成功，则退出循环
+    except (OSError, Exception) as e:  # 捕获你提到的异常
+        logging.error("发生了错误: %s", e)
+        time.sleep(retry_interval)  # 等待一段时间后重试
+    except KeyboardInterrupt:
+        logging.info("检测到键盘中断，正在清理并退出")
+        epd.init()
+        epd.Clear(0xFF)  # 清除屏幕内容
+        epd.sleep()       # 使屏幕进入休眠状态
+        epd2in13_V4.epdconfig.module_exit()  # 清理资源
+        exit()
 
 # 脚本正常结束后的清理操作
 epd.init()
