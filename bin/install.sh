@@ -19,7 +19,7 @@ USE_PISUGAR_WIFI_CONF=false
 # 检查是否安装pisugar-power-manager
 USE_PISUGAR_POWER_MANAGER=false
 # 检查是否安装webui
-INSTALL_WEBUI=false
+#INSTALL_WEBUI=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -39,9 +39,9 @@ while [ "$#" -gt 0 ]; do
     --pisugar-power-manager)
     USE_PISUGAR_POWER_MANAGER=true
     ;;
-    --webui)
-    INSTALL_WEBUI=true
-    ;;
+ #   --webui)
+  #  INSTALL_WEBUI=true
+   # ;;
     --version)
       if [ -z "$2" ]; then
         echo "错误: --version 参数后需要跟版本号"
@@ -393,7 +393,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
-        install_webui
+        #install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
         ;;
@@ -403,7 +403,7 @@ if [ -f /etc/debian_version ]; then
         install_packages
         install_pip_packages
         setup_service
-        install_webui
+        #install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
         ;;
