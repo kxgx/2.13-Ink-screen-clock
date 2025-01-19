@@ -284,6 +284,7 @@ while True:
     except (OSError, Exception) as e:  # 捕获你提到的异常
         logging.error("发生了错误: %s", e)
         time.sleep(retry_interval)  # 等待一段时间后重试
+        continue
     except KeyboardInterrupt:
         logging.info("检测到键盘中断，正在清理并退出")
         epd.init()
@@ -291,6 +292,7 @@ while True:
         epd.sleep()       # 使屏幕进入休眠状态
         epd2in13_V4.epdconfig.module_exit()  # 清理资源
         exit()
+time.sleep(retry_interval)
 
 # 脚本正常结束后的清理操作
 epd.init()
