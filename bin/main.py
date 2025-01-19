@@ -263,7 +263,6 @@ def Partial_refresh():#局刷函数
          '''内存百分比显示'''
 
 retry_interval = 180  # 设置重试间隔时间（秒）
-
 while True:
     try:
         ##################屏幕初始化#########################
@@ -280,6 +279,7 @@ while True:
         epd.init()
         epd.Clear(0xFF)
         epd.sleep()
+        time.sleep(300)
         break  # 如果脚本执行成功，则退出循环
     except (OSError, Exception) as e:  # 捕获你提到的异常
         logging.error("发生了错误: %s", e)
