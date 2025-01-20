@@ -60,6 +60,11 @@ def get_current_city():
             time.sleep(180)  # 重试前等待
 # 注意：无限重试可能会在特定情况下导致程序无法终止，请确保在实际使用中考虑适当的退出条件或限制重试次数。
 
+def schedule_getWeath():
+    """调度 getWeath 函数每3分钟执行一次"""
+    getWeath()
+    Timer(180, schedule_getWeath).start()  # 重新设置定时器
+
 def getWeath(city='101060101'):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
@@ -78,7 +83,6 @@ def getWeath(city='101060101'):
         fileHandle = open('/root/2.13-Ink-screen-clock/bin/weather.json', 'w')
         fileHandle.write(str(Weath))
         fileHandle.close()
-        Timer(180, getWeath).start()  # 定时器函数,间隔三分钟下载文件至本地
         print("天气文件更新")
     except requests.RequestException as e:
         logging.error("获取天气数据时出现网络错误: %s", e)
@@ -86,7 +90,7 @@ def getWeath(city='101060101'):
         logging.error("发生了意外错误: %s", e)
 
 try:
-    getWeath()  # 天气获取函数开始运行
+    schedule_getWeath()  # 开始调度天气获取函数
 except OSError as e:
     logging.info(e)
 except KeyboardInterrupt:
