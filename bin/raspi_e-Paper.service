@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=forking
 ExecStart=/root/2.13-Ink-screen-clock/bin/start.sh
-ExecStop=/bin/bash -c "pkill -f /root/2.13-Ink-screen-clock/bin/main.py; pkill -f /root/2.13-Ink-screen-clock/bin/weather.py"
+ExecStop=/bin/bash -c "pkill -f /root/2.13-Ink-screen-clock/bin/main.py"
 WorkingDirectory=/root/2.13-Ink-screen-clock/bin
 Restart=always
 User=root
