@@ -54,7 +54,7 @@ def Get_ipv4_address():  # 获取当前的IP地址
         if filtered_ips:
             return filtered_ips[0]
         else:
-            return "IPv4获取失败"
+            return "地址获取失败"
     except subprocess.CalledProcessError as e:
         logging.error("获取IPv4地址失败: %s", e)
         return "获取失败"
