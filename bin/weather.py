@@ -63,7 +63,7 @@ def get_current_city():
 def getWeath(city='101060101'):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Referer': 'http://www.weather.com.cn/'
+        'Referer': 'https://www.weather.com.cn/'
     }
     current_city = get_current_city()
     if current_city:
@@ -71,7 +71,7 @@ def getWeath(city='101060101'):
         if area_id:
             city = area_id
     try:
-        response = requests.get('http://d1.weather.com.cn/sk_2d/'+city+'.html',headers=headers)
+        response = requests.get('https://d1.weather.com.cn/sk_2d/'+city+'.html',headers=headers)
         response.raise_for_status()  # 检查请求是否成功
         response.encoding = 'utf-8'
         Weath = response.text[11:]
