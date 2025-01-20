@@ -4,11 +4,10 @@ After=network.target
 
 [Service]
 Type=forking
-# 等待网络完全启动
-#ExecStartPre=/bin/bash -c 'until ping -c1 baidu.com &>/dev/null; do sleep 1; done'
 ExecStart=/root/2.13-Ink-screen-clock/bin/start.sh
-#ExecStop=/usr/bin/screen -S main_screen -X quit
-Restart=on-failure
+ExecStop=/bin/bash -c "pkill -f /root/2.13-Ink-screen-clock/bin/main.py; pkill -f /root/2.13-Ink-screen-clock/bin/weather.py"
+WorkingDirectory=/root/2.13-Ink-screen-clock/bin
+Restart=always
 User=root
 
 [Install]
