@@ -5,6 +5,7 @@ import os,sys,re,json,time,datetime  #引入系统相关库
 from borax.calendars.lunardate import LunarDate #农历日期以及天干地支纪年法的 Python 库
 import logging  #日志库
 import subprocess
+import os
 from threading import Timer
 import requests
 import socket
@@ -19,7 +20,7 @@ if os.path.exists(libdir):
     sys.path.append(libdir)#将引入文件添加到环境变量
     from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 logging.debug("Loading Fonts")
-font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 19) #字体文件
+font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
 font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 38) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
@@ -45,16 +46,21 @@ def Get_ipv4_address():  # 获取当前的IP地址
     try:
         # 执行命令获取IP地址，并处理输出以仅返回IPv4地址
         ip_output = subprocess.check_output("hostname -I | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}'", shell=True).decode('utf-8').strip()
-        # 检查是否为IPv4地址
-        if ip_output and not ip_output.startswith("127."):
-            return ip_output
+        # 分割输出以获取单个IP地址列表
+        ip_list = ip_output.split()
+        # 过滤掉以172开头的IP地址
+        filtered_ips = [ip for ip in ip_list if not ip.startswith("172.")]
+        # 如果有有效的IP地址，返回第一个，否则返回获取失败
+        if filtered_ips:
+            return filtered_ips[0]
         else:
             return "IPv4获取失败"
     except subprocess.CalledProcessError as e:
-        return f"获取失败"
+        logging.error("获取IPv4地址失败: %s", e)
+        return "获取失败"
 def CPU_temperature():#CPU温度获取
      temperatura = os.popen('vcgencmd measure_temp').readline()
-     temperatura = temperatura.replace('temp=','').replace('\'C', '').strip()
+     temperatura = temperatura.replace('temp=','').strip()
      return str(temperatura)
 def Memory_footprint():#显示内存占用百分比
      return(subprocess.check_output(u"free -m | awk -F '[ :]+' 'NR==2{printf \"%d\", ($3)/$2*100}'", shell = True ).decode('gbk'))
@@ -103,14 +109,14 @@ def Weather(): #在图片中添加天气内容
      weather_update = Weather_text['time'] #天气更新时间
      weather_date =  Weather_text['date'] #日期
      humidity =  Weather_text['SD'] #湿度
-     draw.text((175,25),"天气:",font = font06,fill =0)#显示当前天气前缀
-     draw.text((175,45),"温度:",font = font06,fill =0)#显示当前温度前缀
-     draw.text((175,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
-     draw.text((175,85),"城市:",font = font06,fill =0)#显示当前城市前缀
-     draw.text((205,25),weather,font = font06,fill =0)
-     draw.text((205,45),temperature,font = font06,fill =0)
-     draw.text((205,65),humidity,font = font06,fill =0)
-     draw.text((205,85),Weather_position,font = font06,fill =0)
+     draw.text((150,25),"天气:",font = font06,fill =0)#显示当前天气前缀
+     draw.text((150,45),"温度:",font = font06,fill =0)#显示当前温度前缀
+     draw.text((150,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
+     draw.text((150,85),"城市:",font = font06,fill =0)#显示当前城市前缀
+     draw.text((191,25),weather,font = font06,fill =0)
+     draw.text((191,45),temperature,font = font06,fill =0)
+     draw.text((191,65),humidity,font = font06,fill =0)
+     draw.text((191,85),Weather_position,font = font06,fill =0)
      draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
 
 def Basic_refresh(): #全刷函数
@@ -121,18 +127,6 @@ def Basic_refresh(): #全刷函数
     global local_time
     local_time=get_time()
     draw.text((5,40),local_time,font = font03,fill =0)#显示当前时间
-    global cpu_temp
-    cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
-    text_to_display = "CPU温度:" + cpu_temp + "°C"
-    draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
-    global cpu_use
-    cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
-    text_to_display = "CPU占用:" + cpu_use + "%"
-    draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
-    global mem_use
-    mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
-    text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
-    draw.text((86, 84), text_to_display, font=font06, fill=0)  # 绘制文本
     Bottom_edge() #添加底边内容
     Weather() #天气内容
     epd.display(epd.getbuffer(info_image.rotate(180)))
@@ -187,26 +181,26 @@ def Partial_refresh():#局刷函数
          weather_date1 =  Weather_text['date'] #日期
          humidity1 =  Weather_text['SD'] #湿度
          if (weather11==weather) ==False:
-             draw.rectangle((205, 25, 250, 38), fill = 255) #天气局刷区域
-             draw.text((205,25),weather11,font = font06,fill =0)
+             draw.rectangle((191, 25, 249, 38), fill = 255) #天气局刷区域
+             draw.text((191,25),weather11,font = font06,fill =0)
              weather=weather11
              logging.info("天气局部刷新")
              Local_strong_brush() #局部强刷
          if (temperature1==temperature) ==False:
-             draw.rectangle((205, 45, 250, 57), fill = 255) #局刷区域
-             draw.text((205,45),temperature1,font = font06,fill =0)
+             draw.rectangle((191, 45, 249, 57), fill = 255) #局刷区域
+             draw.text((191,45),temperature1,font = font06,fill =0)
              temperature=temperature1
              logging.info("温度局部刷新")
              Local_strong_brush() #局部强刷
          if (humidity1==humidity) ==False:
-             draw.rectangle((205, 65, 250, 77), fill = 255) #局刷区域
-             draw.text((205,65),humidity1,font = font06,fill =0)
+             draw.rectangle((191, 65, 249, 77), fill = 255) #局刷区域
+             draw.text((191,65),humidity1,font = font06,fill =0)
              humidity = humidity1
              logging.info("湿度局部刷新")
              Local_strong_brush() #局部强刷
          if (Weather_position1==Weather_position) ==False:
-             draw.rectangle((205, 85, 250, 98), fill = 255) #局刷区域
-             draw.text((205,85),Weather_position1,font = font06,fill =0)
+             draw.rectangle((191, 85, 249, 98), fill = 255) #局刷区域
+             draw.text((191,85),Weather_position1,font = font06,fill =0)
              Weather_position = Weather_position1
              logging.info("城市局部刷新")
              Local_strong_brush() #局部强刷
@@ -224,106 +218,39 @@ def Partial_refresh():#局刷函数
              draw.text((129,108),power_battery(),font = font04,fill =255) #显示当前电量百分比
              power_str=power_str1
              Local_strong_brush() #局部强刷
-             #logging.info("电源电量局部刷新")
-         '''CPU温度显示'''
-         global cpu_temp
-         cpu_temp1 =CPU_temperature()
-         if (cpu_temp1==cpu_temp) ==False:
-             draw.rectangle((1, 19, 130, 38), fill = 255)
-             cpu_temp = str(CPU_temperature())       # 调用函数并转换为字符串
-             text_to_display = "CPU温度:" + cpu_temp + "°C"
-             draw.text((4, 19), text_to_display, font=font06, fill=0)  # 绘制文本
-             cpu_temp1=cpu_temp
-             Local_strong_brush() #局部强刷
-             #logging.info("CPU温度局部刷新")
-         '''CPU温度显示'''
-         '''CPU占用显示'''
-         global cpu_use
-         cpu_use1 =CPU_usage()
-         if (cpu_use1==cpu_use) ==False:
-             draw.rectangle((1, 84, 85, 98), fill = 255)
-             cpu_use = str(CPU_usage())       # 调用函数并转换为字符串
-             text_to_display = "CPU占用:" + cpu_use + "%"
-             draw.text((4, 84), text_to_display, font=font06, fill=0)  # 绘制文本
-             cpu_use1=cpu_use
-             Local_strong_brush() #局部强刷
-             #logging.info("CPU温度局部刷新")
-         '''CPU占用显示'''
-         '''内存百分比显示'''
-         global mem_use
-         mem_use1 =Memory_footprint()
-         if (mem_use1==mem_use) ==False:
-             draw.rectangle((86, 84, 170, 98), fill = 255)
-             mem_use = str(Memory_footprint())  # 调用函数并转换为字符串
-             text_to_display = "内存占用:" + mem_use + "%"  # 连接字符串
-             draw.text((86, 84), text_to_display, font=font06, fill=0)  # 绘制文本
-             mem_use1=mem_use
-             Local_strong_brush() #局部强刷
-             #logging.info("内存百分比局部刷新")
-         '''内存百分比显示'''
+#             logging.info("电源电量局部刷新")
+try:
+##################屏幕初始化#########################
+    epd = epd2in13_V4.EPD() #初始化
+    epd.init()#设定屏幕刷新模式
+    #epd.Clear(0xFF) #清除屏幕内容
+##################屏幕初始化#########################   
+    logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
+    logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
+    info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
+    draw = ImageDraw.Draw(info_image)
+    Basic_refresh() #全局刷新
+    Partial_refresh() #局部刷新
+    epd.init()
+    epd.Clear(0xFF)
+    epd.sleep()
+except OSError as e:
+    logging.info(e)
+except KeyboardInterrupt:
+    logging.info("检测到键盘中断，正在清理并退出")
+    epd.init()
+    epd.Clear(0xFF)  # 清除屏幕内容
+    epd.sleep()       # 使屏幕进入休眠状态
+    epd2in13_V4.epdconfig.module_exit()  # 清理资源
+    exit()
 
-retry_interval = 180  # 设置重试间隔时间（秒）
-while True:
-    try:
-        ##################屏幕初始化#########################
-        epd = epd2in13_V4.EPD() #初始化
-        epd.init()#设定屏幕刷新模式
-        #epd.Clear(0xFF) #清除屏幕内容
-        ##################屏幕初始化#########################   
-        logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
-        logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
-        info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
-        draw = ImageDraw.Draw(info_image)
-        Basic_refresh() #全局刷新
-        Partial_refresh() #局部刷新
-        epd.init()
-        epd.Clear(0xFF)
-        epd.sleep()
-        time.sleep(300)
-        break  # 如果脚本执行成功，则退出循环
-    except (OSError, Exception) as e:  # 捕获你提到的异常
-        logging.error("发生了错误: %s", e)
-        time.sleep(retry_interval)  # 等待一段时间后重试
-        continue
-    except KeyboardInterrupt:
-        logging.info("检测到键盘中断，正在清理并退出")
-        epd.init()
-        epd.Clear(0xFF)  # 清除屏幕内容
-        epd.sleep()       # 使屏幕进入休眠状态
-        epd2in13_V4.epdconfig.module_exit()  # 清理资源
-        exit()
-
-retry_interval = 180  # 设置重试间隔时间（秒）
-time.sleep(retry_interval)
-while True:
-    try:
-        ##################屏幕初始化#########################
-        epd = epd2in13_V4.EPD() #初始化
-        epd.init()#设定屏幕刷新模式
-        #epd.Clear(0xFF) #清除屏幕内容
-        ##################屏幕初始化#########################   
-        logging.info("Width = %s, Height = %s", format(epd.width), format(epd.height)) #打印屏幕高度及宽度
-        logging.info("初始化并清空显示屏")#屏幕开始准备相关展示
-        info_image = Image.new('1', (epd.height, epd.width), 255) #画布创建准备
-        draw = ImageDraw.Draw(info_image)
-        Basic_refresh() #全局刷新
-        Partial_refresh() #局部刷新
-        epd.init()
-        epd.Clear(0xFF)
-        epd.sleep()
-        time.sleep(300)
-        break  # 如果脚本执行成功，则退出循环
-    except (OSError, Exception) as e:  # 捕获你提到的异常
-        logging.error("发生了错误: %s", e)
-        time.sleep(retry_interval)  # 等待一段时间后重试
-        continue
-    except KeyboardInterrupt:
-        logging.info("检测到键盘中断，正在清理并退出")
-        epd.init()
-        epd.Clear(0xFF)  # 清除屏幕内容
-        epd.sleep()       # 使屏幕进入休眠状态
-        epd2in13_V4.epdconfig.module_exit()  # 清理资源
-        exit()
+except Exception as e:
+    logging.error("发生了意外的错误: %s", e)
+    epd.init()
+    epd.Clear(0xFF)  # 清除屏幕内容
+    epd.sleep()       # 使屏幕进入休眠状态
+    epd2in13_V4.epdconfig.module_exit()  # 清理资源
+    exit()
 
 # 脚本正常结束后的清理操作
 epd.init()
