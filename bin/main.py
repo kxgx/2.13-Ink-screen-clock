@@ -142,7 +142,7 @@ def Partial_refresh():#局刷函数
          global local_time
          local_time1=get_time()
          if (local_time1==local_time) ==False:
-             draw.rectangle((5, 30, 149, 62), fill = 255) #时间局刷区域
+             draw.rectangle((5, 30, 149, 82), fill = 255) #时间局刷区域
              draw.text((5,30),local_time1,font = font03,fill =0)#刷新当前时间
              local_time=local_time1
              Local_strong_brush() #局部强刷
