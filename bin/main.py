@@ -22,7 +22,7 @@ if os.path.exists(libdir):
 logging.debug("Loading Fonts")
 font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'GB2312.ttf'), 15) #字体文件
-font03 = ImageFont.truetype(os.path.join(picdir, 'Fonttt.ttf'), 38) #字体文件
+font03 = ImageFont.truetype(os.path.join(picdir, 'Fonttt.ttf'), 48) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
 font05 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 12) #字体文件
 font06 = ImageFont.truetype(os.path.join(picdir, '原神cn.ttf'), 13) #字体文件
@@ -126,7 +126,7 @@ def Basic_refresh(): #全刷函数
     draw.text((2,2),get_date_var,font = font02,fill =0)#将日期及星期几显示到屏幕
     global local_time
     local_time=get_time()
-    draw.text((5,40),local_time,font = font03,fill =0)#显示当前时间
+    draw.text((5,30),local_time,font = font03,fill =0)#显示当前时间
     Bottom_edge() #添加底边内容
     Weather() #天气内容
     epd.display(epd.getbuffer(info_image.rotate(180)))
@@ -142,8 +142,8 @@ def Partial_refresh():#局刷函数
          global local_time
          local_time1=get_time()
          if (local_time1==local_time) ==False:
-             draw.rectangle((5, 40, 133, 82), fill = 255) #时间局刷区域
-             draw.text((5,40),local_time1,font = font03,fill =0)#刷新当前时间
+             draw.rectangle((5, 30, 149, 62), fill = 255) #时间局刷区域
+             draw.text((5,30),local_time1,font = font03,fill =0)#刷新当前时间
              local_time=local_time1
              Local_strong_brush() #局部强刷
          get_date_var1=get_date()  #局刷判断,如果时间与前一次不一致说明内容变化,需要刷新显示
