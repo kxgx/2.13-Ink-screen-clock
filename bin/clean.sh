@@ -20,4 +20,4 @@ fi
 
 echo "正在清除屏幕内容"
 # 运行Python脚本，并将输出重定向到日志文件
-/usr/bin/python3 -u "$dir/$f_name" > "${logdir}/info-clean.log" 2>&1 &
+/usr/bin/python3 -u "$dir/$f_name" > "${logdir}/info-clean.log" 2>&1
