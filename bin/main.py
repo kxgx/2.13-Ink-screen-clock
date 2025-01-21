@@ -21,11 +21,11 @@ if os.path.exists(libdir):
     from waveshare_epd import epd2in13_V4  #引入墨水屏驱动文件
 logging.debug("Loading Fonts")
 font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
-font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
-font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 38) #字体文件
+font02 = ImageFont.truetype(os.path.join(picdir, 'GB2312.ttf'), 15) #字体文件
+font03 = ImageFont.truetype(os.path.join(picdir, 'Fonttt.ttf'), 38) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
 font05 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 12) #字体文件
-font06 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 13) #字体文件
+font06 = ImageFont.truetype(os.path.join(picdir, '原神cn.ttf'), 13) #字体文件
 ################################引入配置文件结束################################################
 def Local_strong_brush(): #局部强制刷新显示
      i = 0
@@ -38,8 +38,25 @@ def get_date():#返回当前年月日及星期几
     week_day_dict = {0: '星期一',1: '星期二',2: '星期三',3: '星期四',4: '星期五',5: '星期六',6: '星期日',}
     day = date.weekday()
     return time.strftime('%Y年%m月%d日')+''+week_day_dict[day]+''+today.strftime('农历%M月%D')
-def get_time():#返回当前时间,不到秒,大写
-    return time.strftime('%H:%M')
+def get_time():
+    # 执行系统命令
+    process = subprocess.Popen(['sudo', 'hwclock', '-r'], stdout=subprocess.PIPE)
+    output, error = process.communicate()
+
+    if error:
+        raise Exception("使用hwclock获取时间时出错")
+
+    # 解析输出
+    time_str = output.decode('utf-8')
+    # 假设 hwclock 的输出格式为 "2024-01-21 12:34:56.789+08:00"
+    # 我们只需要小时和分钟部分
+    match = re.search(r'(\d{2}:\d{2})', time_str)
+    if not match:
+        raise Exception("无法从hwclock输出中解析时间")
+
+    # 格式化时间
+    formatted_time = match.group(1).upper()
+    return formatted_time
 def Get_address():#获取当前的IP地址
      return (subprocess.check_output(u"hostname -I | cut -d\' \' -f1 | head --bytes -1", shell = True ).decode('gbk'))
 def Get_ipv4_address():  # 获取当前的IP地址
