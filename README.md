@@ -1,5 +1,5 @@
 # 墨水屏展示当前时间及天气数据
-比分支专属于本人的个人设备实验分支
+# 比分支专属于本人的个人设备实验分支
 本项目复刻自[Seek-Huang](https://github.com/Seek-Huang/2.13-Ink-screen-clock)的代码仓库
 并在此基础上进行改进
 
