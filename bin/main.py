@@ -38,7 +38,7 @@ def get_date():#返回当前年月日及星期几
     week_day_dict = {0: '星期一',1: '星期二',2: '星期三',3: '星期四',4: '星期五',5: '星期六',6: '星期日',}
     day = date.weekday()
     return time.strftime('%Y年%m月%d日')+''+week_day_dict[day]+''+today.strftime('农历%M月%D')
-def get_time():
+def get_time_with_hwclock():
     # 执行系统命令
     process = subprocess.Popen(['sudo', 'hwclock', '-r'], stdout=subprocess.PIPE)
     output, error = process.communicate()
@@ -57,6 +57,19 @@ def get_time():
     # 格式化时间
     formatted_time = match.group(1).upper()
     return formatted_time
+
+def get_time_with_strftime():
+    # 返回当前时间,不到秒,大写
+    return time.strftime('%H:%M').upper()
+
+def get_time():
+    try:
+        # 首先尝试使用hwclock获取时间
+        return get_time_with_hwclock()
+    except Exception as e:
+        # 如果hwclock失败，则使用strftime获取时间
+        print(f"hwclock失败: {e}, 正在尝试使用strftime获取时间")
+        return get_time_with_strftime()
 def Get_address():#获取当前的IP地址
      return (subprocess.check_output(u"hostname -I | cut -d\' \' -f1 | head --bytes -1", shell = True ).decode('gbk'))
 def Get_ipv4_address():  # 获取当前的IP地址
@@ -73,7 +86,7 @@ def Get_ipv4_address():  # 获取当前的IP地址
         else:
             return "地址获取失败"
     except subprocess.CalledProcessError as e:
-        logging.error("获取IPv4地址失败: %s", e)
+        #logging.error("获取IPv4地址失败: %s", e)
         return "获取失败"
 def CPU_temperature():#CPU温度获取
      temperatura = os.popen('vcgencmd measure_temp').readline()
