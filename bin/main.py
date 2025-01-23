@@ -251,8 +251,7 @@ def Partial_refresh():  # 局刷函数
             draw.text((129, 108), power_str1, font=font04, fill=255)  # 显示当前电量百分比
             power_str = power_str1
             Local_strong_brush()  # 局部强刷
-
-
+            logging.debug("电源电量局部刷新")
 try:
     ##################屏幕初始化#########################
     epd = epd2in13_V4.EPD()  # 初始化
