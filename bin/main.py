@@ -37,10 +37,67 @@ def get_date():  # 返回当前年月日及星期几
     day = date.weekday()
     return f"{date.strftime('%Y年%m月%d日')}{week_day_dict[day]}{today.strftime('农历%M月%D')}"
 
+# 定义一个全局标志变量，用于检查是否已经设置了系统时间或尝试过设置
+has_set_system_time = False
+
+def set_system_time_from_hwclock(utc=True):
+    """Set the system time from the hardware clock.
+    
+    Args:
+        utc (bool): Whether the RTC is in UTC. Default is True.
+    """
+    try:
+        # 记录调用 hwclock 前的时间
+        before_time = datetime.datetime.now()
+        logging.debug(f"System time before hwclock call: {before_time}")
+
+        # 构造 hwclock 命令及其参数
+        hwclock_args = ['sudo', 'hwclock', '--hctosys']
+        if not utc:
+            hwclock_args.append('--localtime')
+        
+        logging.debug(f"Executing hwclock command: {' '.join(hwclock_args)}")
+        
+        # 使用 subprocess.run 执行 hwclock --hctosys 并捕获输出
+        result = subprocess.run(hwclock_args, 
+                               check=True,  # 如果命令失败，则抛出 CalledProcessError 异常
+                               stdout=subprocess.PIPE, 
+                               stderr=subprocess.PIPE, 
+                               text=True)
+        
+        # 等待一小段时间以确保时间更新完成
+        time.sleep(0.1)  # 根据需要调整
+        
+        # 记录调用 hwclock 后的时间
+        after_time = datetime.datetime.now()
+        logging.debug("System time successfully set from hardware clock.")
+        logging.debug(f"System time after hwclock call: {after_time}")
+        
+        # 检查时间是否发生了倒退
+        if after_time < before_time:
+            logging.warning(f"Time went backwards after hwclock call: before={before_time}, after={after_time}")
+        
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to set system time from hardware clock: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {str(e)}")
+        return False
 
 def get_time():
-    return time.strftime('%H:%M').upper()
-
+    global has_set_system_time
+    
+    if not has_set_system_time:
+        # 尝试从硬件时钟设置系统时间，默认假设 RTC 是 UTC
+        success = set_system_time_from_hwclock(utc=True)
+        # 无论成功与否，都更新标志变量以避免重复尝试
+        has_set_system_time = True
+    
+    # 获取并返回当前时间，格式为 HH:MM 大写
+    current_time = time.strftime('%H:%M').upper()
+    logging.debug(f"Returning current time: {current_time}")
+    return current_time
 
 def Get_ipv4_address():  # 获取当前的IP地址
     try:
