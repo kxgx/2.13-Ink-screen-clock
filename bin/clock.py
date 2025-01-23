@@ -20,7 +20,7 @@ if os.path.exists(libdir):
 logging.debug("Loading Fonts")
 font01 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 20) #字体文件
 font02 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15) #字体文件
-font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 38) #字体文件
+font03 = ImageFont.truetype(os.path.join(picdir, 'DSEG7Modern-Bold.ttf'), 66) #字体文件
 font04 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 10) #字体文件
 font05 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 12) #字体文件
 font06 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 13) #字体文件
@@ -35,7 +35,7 @@ def get_date():#返回当前年月日及星期几
     today=LunarDate.today()
     week_day_dict = {0: '星期一',1: '星期二',2: '星期三',3: '星期四',4: '星期五',5: '星期六',6: '星期日',}
     day = date.weekday()
-    return time.strftime('%Y年%m月%d日')+'  '+week_day_dict[day]+'  '+today.strftime('农 %M月%D')
+    return time.strftime('%Y年%m月%d日')+''+week_day_dict[day]+''+today.strftime('农历%M月%D')
 def get_time():#返回当前时间,不到秒,大写
     return time.strftime('%H:%M')
 def Get_address():#获取当前的IP地址
@@ -94,8 +94,8 @@ def Partial_refresh():#局刷函数
          global local_time
          local_time1=get_time()
          if (local_time1==local_time) ==False:
-             draw.rectangle((5, 40, 133, 82), fill = 255) #时间局刷区域
-             draw.text((5,40),local_time1,font = font03,fill =0)#刷新当前时间
+             draw.rectangle((5, 17, 133, 95), fill = 255) #时间局刷区域
+             draw.text((5,17),local_time1,font = font03,fill =0)#刷新当前时间
              local_time=local_time1
              Local_strong_brush() #局部强刷
          get_date_var1=get_date()  #局刷判断,如果时间与前一次不一致说明内容变化,需要刷新显示
