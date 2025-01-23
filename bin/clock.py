@@ -36,10 +36,76 @@ def get_date():#返回当前年月日及星期几
     week_day_dict = {0: '星期一',1: '星期二',2: '星期三',3: '星期四',4: '星期五',5: '星期六',6: '星期日',}
     day = date.weekday()
     return time.strftime('%Y年%m月%d日')+''+week_day_dict[day]+''+today.strftime('农历%M月%D')
-def get_time():#返回当前时间,不到秒,大写
-    return time.strftime('%H:%M')
-def Get_address():#获取当前的IP地址
-     return (subprocess.check_output(u"hostname -I | cut -d\' \' -f1 | head --bytes -1", shell = True ).decode('gbk'))
+# 定义一个全局标志变量，用于检查是否已经设置了系统时间或尝试过设置
+has_set_system_time = False
+
+def set_system_time_from_hwclock(utc=True):
+    """Set the system time from the hardware clock.
+    
+    Args:
+        utc (bool): Whether the RTC is in UTC. Default is True.
+    """
+    try:
+        # 记录调用 hwclock 前的时间
+        before_time = datetime.datetime.now()
+        logging.debug(f"System time before hwclock call: {before_time}")
+
+        # 构造 hwclock 命令及其参数
+        hwclock_args = ['sudo', 'hwclock', '--hctosys']
+        if not utc:
+            hwclock_args.append('--localtime')
+        
+        logging.debug(f"Executing hwclock command: {' '.join(hwclock_args)}")
+        
+        # 使用 subprocess.run 执行 hwclock --hctosys 并捕获输出
+        result = subprocess.run(hwclock_args, 
+                               check=True,  # 如果命令失败，则抛出 CalledProcessError 异常
+                               stdout=subprocess.PIPE, 
+                               stderr=subprocess.PIPE, 
+                               text=True)
+        
+        # 等待一小段时间以确保时间更新完成
+        time.sleep(0.1)  # 根据需要调整
+        
+        # 记录调用 hwclock 后的时间
+        after_time = datetime.datetime.now()
+        logging.debug("System time successfully set from hardware clock.")
+        logging.debug(f"System time after hwclock call: {after_time}")
+        
+        # 检查时间是否发生了倒退
+        if after_time < before_time:
+            logging.warning(f"Time went backwards after hwclock call: before={before_time}, after={after_time}")
+        
+        return True
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Failed to set system time from hardware clock: {e.stderr}")
+        return False
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {str(e)}")
+        return False
+
+def get_time():
+    global has_set_system_time
+    
+    if not has_set_system_time:
+        # 尝试从硬件时钟设置系统时间，默认假设 RTC 是 UTC
+        success = set_system_time_from_hwclock(utc=True)
+        # 无论成功与否，都更新标志变量以避免重复尝试
+        has_set_system_time = True
+    
+    # 获取并返回当前时间，格式为 HH:MM 大写
+    current_time = time.strftime('%H:%M').upper()
+    logging.debug(f"Returning current time: {current_time}")
+    return current_time
+def Get_ipv4_address():  # 获取当前的IP地址
+    try:
+        ip_output = subprocess.check_output(
+            "hostname -I | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}'", shell=True).decode('utf-8').strip()
+        ip_list = ip_output.split()
+        filtered_ips = [ip for ip in ip_list if not ip.startswith("172.")]
+        return filtered_ips[0] if filtered_ips else "地址获取失败"
+    except subprocess.CalledProcessError:
+        return "获取失败"
 def CPU_temperature():#CPU温度获取
      temperatura = os.popen('vcgencmd measure_temp').readline()
      temperatura = temperatura.replace('temp=','').strip()
@@ -70,7 +136,7 @@ def Bottom_edge():  #在图片中添加底边内容
      draw.line((199,109,199,114),fill=255, width=1)
      draw.line((200,114,204,114),fill=255, width=1)
      global local_addr  #获取当前IP地址
-     local_addr= Get_address()  #获取当前IP地址
+     local_addr= Get_ipv4_address()  #获取当前IP地址
      draw.text((10,107),"IP:"+local_addr,font = font05,fill =255)#显示当前IP地址
 def Basic_refresh(): #全刷函数
     logging.info("Refresh and prepare the basic content before starting the canvas")#开始画布前刷新准备基础内容
@@ -107,7 +173,7 @@ def Partial_refresh():#局刷函数
              logging.debug("头部日期部位发生刷新变化.")
              Local_strong_brush() #局部强刷
          global local_addr #当前IP地址
-         local_addr1 = Get_address()
+         local_addr1 = Get_ipv4_address()
          if (local_addr1==local_addr) ==False:
              draw.rectangle((1, 107, 94, 120), fill = 0) #设置头部刷新区域
              draw.text((10,107),"IP:"+local_addr1,font = font05,fill =255)#显示当前IP地址
@@ -116,10 +182,9 @@ def Partial_refresh():#局刷函数
 #显示当前电量百分比
              power_str=power_str1
              Local_strong_brush() #局部强刷
-             logging.info("电源电量局部刷新")
+             logging.debug("电源电量局部刷新")
 try:
 ##################屏幕初始化#########################
-    getWeath()#天气获取函数开始运行
     epd = epd2in13_V4.EPD() #初始化
     epd.init()#设定屏幕刷新模式
     #epd.Clear(0xFF) #清除屏幕内容
