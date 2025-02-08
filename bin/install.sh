@@ -18,6 +18,8 @@ USE_CN_GIT=false
 USE_PISUGAR_WIFI_CONF=false
 # 检查是否安装pisugar-power-manager
 USE_PISUGAR_POWER_MANAGER=false
+# 检查是否使用离线安装pip依赖
+USE_OFFLINE_PIP=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -30,6 +32,9 @@ while [ "$#" -gt 0 ]; do
     ;;
     --gitcn)
     USE_CN_GIT=true
+    ;;
+    --pip-offline)
+    USE_OFFLINE_PIP=true
     ;;
     --pisugar-wifi-conf)
     USE_PISUGAR_WIFI_CONF=true
@@ -212,6 +217,9 @@ install_Ink-screen-clock() {
       echo "克隆仓库失败" >&2
       exit 1
     fi
+    # 设置start.sh和clean.sh脚本的执行权限
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   else
     echo "仓库文件夹已存在，跳过克隆"
   fi
@@ -236,27 +244,20 @@ install_offline_pip_packages() {
   fi
 }
 
+install_pip_packages() {
+  if [ "$USE_OFFLINE_PIP" = true ]; then
+    install_offline_pip_packages
+  else
+    install_oline_pip_packages
+  fi
+}
+
 # 复制服务文件并设置为开机启动
 setup_service() {
   local service_path="raspi_e-Paper.service"
   local service1_path="e-Paper_clean.service"
   local service_file_path="$HOME/2.13-Ink-screen-clock/bin/$service_path"
   local service1_file_path="$HOME/2.13-Ink-screen-clock/bin/$service1_path"
-
-  # 检查墨水屏时钟仓库是否存在
-  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
-      echo "正在克隆仓库"
-    cd ~
-    if ! git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
-      echo "克隆仓库失败" >&2
-      exit 1
-    fi
-    # 设置start.sh和clean.sh脚本的执行权限
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
-  else
-    echo "仓库文件夹已存在，跳过克隆"
-  fi
 
   # 检查服务文件是否存在
   if [ -f "$service_file_path" ] && [ -f "$service1_file_path" ]; then
@@ -330,8 +331,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bullseye"
         install_packages
         install_Ink-screen-clock
-        install_offline_pip_packages
-        #install_oline_pip_packages
+        install_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
@@ -342,8 +342,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bookworm"
         install_packages
         install_Ink-screen-clock
-        install_offline_pip_packages
-        #install_oline_pip_packages
+        install_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
