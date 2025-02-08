@@ -203,12 +203,35 @@ install_packages() {
   fi
 }
 
+install_Ink-screen-clock() {
+  # 检查墨水屏时钟仓库是否存在
+  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
+      echo "正在克隆仓库"
+    cd ~
+    if ! git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
+      echo "克隆仓库失败" >&2
+      exit 1
+    fi
+  else
+    echo "仓库文件夹已存在，跳过克隆"
+  fi
+}
+
 # 安装pip包函数
-install_pip_packages() {
+install_oline_pip_packages() {
     echo "正在安装pip软件包"
-  if ! sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests Flask; then
+  if ! sudo pip3 install -i "$PIPY_MIRROR" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt"; then
     echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
-    echo "请手动运行sudo pip3 install -i "$PIPY_MIRROR" spidev borax pillow requests --break-system-packages" >&2
+    echo "请手动运行sudo pip3 install -i "$PIPY_MIRROR" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt" --break-system-packages" >&2
+    exit 1
+  fi
+}
+
+install_offline_pip_packages() {
+    echo "正在安装pip软件包"
+  if ! sudo pip3 install --no-index --find-links="$HOME/2.13-Ink-screen-clock/bin/vendor" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt"; then
+    echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
+    echo "请手动运行sudo pip3 install --no-index --find-links="$HOME/2.13-Ink-screen-clock/bin/vendor" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt" --break-system-packages" >&2
     exit 1
   fi
 }
@@ -306,7 +329,9 @@ if [ -f /etc/debian_version ]; then
         echo "执行Debian 11 (Bullseye) 相关操作"
         update_sources_list "bullseye"
         install_packages
-        install_pip_packages
+        install_Ink-screen-clock
+        install_offline_pip_packages
+        #install_oline_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
@@ -316,7 +341,9 @@ if [ -f /etc/debian_version ]; then
         echo "执行Debian 12 (Bookworm) 相关操作"
         update_sources_list "bookworm"
         install_packages
-        install_pip_packages
+        install_Ink-screen-clock
+        install_offline_pip_packages
+        #install_oline_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
