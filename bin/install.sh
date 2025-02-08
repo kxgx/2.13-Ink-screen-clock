@@ -212,6 +212,9 @@ install_Ink-screen-clock() {
       echo "克隆仓库失败" >&2
       exit 1
     fi
+    # 设置start.sh和clean.sh脚本的执行权限
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
   else
     echo "仓库文件夹已存在，跳过克隆"
   fi
@@ -242,21 +245,6 @@ setup_service() {
   local service1_path="e-Paper_clean.service"
   local service_file_path="$HOME/2.13-Ink-screen-clock/bin/$service_path"
   local service1_file_path="$HOME/2.13-Ink-screen-clock/bin/$service1_path"
-
-  # 检查墨水屏时钟仓库是否存在
-  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
-      echo "正在克隆仓库"
-    cd ~
-    if ! git clone -b $VERSION $INK_SCREEN_CLOCK_REPO_URL; then
-      echo "克隆仓库失败" >&2
-      exit 1
-    fi
-    # 设置start.sh和clean.sh脚本的执行权限
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
-    chmod +x "$HOME/2.13-Ink-screen-clock/bin/clean.sh"
-  else
-    echo "仓库文件夹已存在，跳过克隆"
-  fi
 
   # 检查服务文件是否存在
   if [ -f "$service_file_path" ] && [ -f "$service1_file_path" ]; then
