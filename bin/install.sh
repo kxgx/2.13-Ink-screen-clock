@@ -18,6 +18,8 @@ USE_CN_GIT=false
 USE_PISUGAR_WIFI_CONF=false
 # 检查是否安装pisugar-power-manager
 USE_PISUGAR_POWER_MANAGER=false
+# 检查是否使用离线安装pip依赖
+USE_OFFLINE_PIP=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -30,6 +32,9 @@ while [ "$#" -gt 0 ]; do
     ;;
     --gitcn)
     USE_CN_GIT=true
+    ;;
+    --pip-offline)
+    USE_OFFLINE_PIP=true
     ;;
     --pisugar-wifi-conf)
     USE_PISUGAR_WIFI_CONF=true
@@ -239,6 +244,14 @@ install_offline_pip_packages() {
   fi
 }
 
+install_pip_packages() {
+  if [ "$USE_OFFLINE_PIP" = true ]; then
+    install_offline_pip_packages
+  else
+    install_oline_pip_packages
+  fi
+}
+
 # 复制服务文件并设置为开机启动
 setup_service() {
   local service_path="raspi_e-Paper.service"
@@ -318,8 +331,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bullseye"
         install_packages
         install_Ink-screen-clock
-        install_offline_pip_packages
-        #install_oline_pip_packages
+        install_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
@@ -330,8 +342,7 @@ if [ -f /etc/debian_version ]; then
         update_sources_list "bookworm"
         install_packages
         install_Ink-screen-clock
-        install_offline_pip_packages
-        #install_oline_pip_packages
+        install_pip_packages
         setup_service
         #install_webui
         install_pisugar-wifi-conf
