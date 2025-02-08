@@ -55,28 +55,28 @@ def set_system_time_from_hwclock(utc=True):
         hwclock_args = ['sudo', 'hwclock', '--hctosys']
         if not utc:
             hwclock_args.append('--localtime')
-        
+
         logging.debug(f"Executing hwclock command: {' '.join(hwclock_args)}")
-        
+
         # 使用 subprocess.run 执行 hwclock --hctosys 并捕获输出
         result = subprocess.run(hwclock_args, 
                                check=True,  # 如果命令失败，则抛出 CalledProcessError 异常
                                stdout=subprocess.PIPE, 
                                stderr=subprocess.PIPE, 
                                text=True)
-        
+
         # 等待一小段时间以确保时间更新完成
         time.sleep(0.1)  # 根据需要调整
-        
+
         # 记录调用 hwclock 后的时间
         after_time = datetime.datetime.now()
         logging.debug("System time successfully set from hardware clock.")
         logging.debug(f"System time after hwclock call: {after_time}")
-        
+
         # 检查时间是否发生了倒退
         if after_time < before_time:
             logging.warning(f"Time went backwards after hwclock call: before={before_time}, after={after_time}")
-        
+
         return True
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to set system time from hardware clock: {e.stderr}")
@@ -87,18 +87,17 @@ def set_system_time_from_hwclock(utc=True):
 
 def get_time():
     global has_set_system_time
-    
+
     if not has_set_system_time:
         # 尝试从硬件时钟设置系统时间，默认假设 RTC 是 UTC
         success = set_system_time_from_hwclock(utc=True)
         # 无论成功与否，都更新标志变量以避免重复尝试
         has_set_system_time = True
-    
+
     # 获取并返回当前时间，格式为 HH:MM 大写
     current_time = time.strftime('%H:%M').upper()
     logging.debug(f"Returning current time: {current_time}")
     return current_time
-
 def Get_ipv4_address():  # 获取当前的IP地址
     try:
         ip_output = subprocess.check_output(
@@ -108,14 +107,36 @@ def Get_ipv4_address():  # 获取当前的IP地址
         return filtered_ips[0] if filtered_ips else "地址获取失败"
     except subprocess.CalledProcessError:
         return "获取失败"
-
+# 全局变量声明
+last_power = None  # 用于存储上一次获取的电量值
+last_power_time = 0  # 用于存储上一次获取电量的时间戳
 
 def power_battery():  # 获取当前电池电量
-    return str(int(subprocess.check_output(
-        u"echo \"get battery\" | nc -q 0 127.0.0.1 8423|awk -F':' '{print int($2)}'",
-        shell=True).decode('gbk'))) + u'%'
+    global last_power, last_power_time
+    current_time = time.time()  # 获取当前时间戳
 
+    # 每3分钟或首次获取时更新
+    if (current_time - last_power_time >= 180) or (last_power is None):
+        try:
+            # 执行命令获取电池电量
+            result = subprocess.check_output(
+                u"echo \"get battery\" | nc -q 0 127.0.0.1 8423 | awk -F':' '{print int($2)}'",
+                shell=True, stderr=subprocess.STDOUT
+            ).decode('gbk').strip()
+            new_power = f"{int(result)}%"  # 格式化电量值
 
+            # 仅在电量变化或首次时更新显示
+            if new_power != last_power or last_power is None:
+                logging.info(f"电池电量更新: {new_power}")
+                last_power = new_power  # 更新缓存值
+                last_power_time = current_time  # 更新获取时间
+        except Exception as e:
+            logging.error(f"电量获取失败: {str(e)}")
+            new_power = last_power if last_power else "0%"  # 失败时使用缓存值或默认值
+    else:
+        new_power = last_power  # 未到更新时间，使用缓存值
+
+    return new_power
 def Bottom_edge():  # 在图片中添加底边内容
     draw.rectangle((0, 105, 250, 122), 'black', 'black')
     '''电池图标画图'''
