@@ -1,6 +1,6 @@
 # 墨水屏展示当前时间及天气数据
 # 此分支专属于本人的个人设备实验分支以及备份
-本项目复刻自[Seek-Huang](https://github.com/Seek-Huang/2.13-Ink-screen-clock)的代码仓库
+本项目复刻自[Seek-Huang](https://github.com/Seek-Huang)的[代码仓库](https://github.com/Seek-Huang/2.13-Ink-screen-clock)
 并在此基础上进行改进
 
 ## 本仓库已添加[一键安装部署脚本](https://github.com/kxgx/2.13-Ink-screen-clock#%E4%BD%BF%E7%94%A8%E8%84%9A%E6%9C%AC%E7%9B%B4%E6%8E%A5%E5%AE%89%E8%A3%85%E6%8E%A8%E8%8D%90)
