@@ -5,6 +5,9 @@ import json
 import time
 import logging
 import requests
+import random
+import socket
+from functools import wraps
 from threading import Timer
 
 logging.basicConfig(
@@ -13,6 +16,37 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+def check_network_connection():
+    """检查网络连接状态"""
+    try:
+        # 尝试连接一个可靠的公共DNS服务器
+        socket.create_connection(("223.5.5.5", 53), timeout=5)
+        return True
+    except OSError:
+        return False
+
+def get_ip():
+    """改进的IP获取函数"""
+    if not check_network_connection():
+        logging.warning("网络连接不可用")
+        return None
+        
+    services = [
+        {"url": "https://api.ipify.org?format=json", "field": "ip"},
+        {"url": "https://ipinfo.io/json", "field": "ip"},
+        {"url": "https://ifconfig.me/all.json", "field": "ip_addr"}
+    ]
+    
+    for service in services:
+        try:
+            resp = requests.get(service["url"], timeout=10)
+            data = resp.json()
+            return data.get(service["field"])
+        except Exception:
+            continue
+            
+    logging.error("所有IP服务尝试失败")
+    return None
 def get_ip():
     """从ip.cn获取当前IP地址"""
     url = "https://ip.cn/api/index?ip=&type=0"
@@ -52,45 +86,81 @@ def get_current_city():
         time.sleep(180)
 
 def schedule_getWeath():
-    """定时任务调度"""
-    try:
-        getWeath()
-    finally:
-        Timer(180, schedule_getWeath).start()
+    """改进的定时任务调度"""
+    retry_count = 0
+    max_retries = 3
+    
+    while retry_count < max_retries:
+        try:
+            getWeath()
+            break
+        except Exception as e:
+            retry_count += 1
+            wait_time = min(300, retry_count * 60)  # 指数退避
+            logging.error(f"天气更新失败({retry_count}/{max_retries}): {str(e)}")
+            time.sleep(wait_time)
+    
+    # 无论成功与否，都安排下一次执行
+    Timer(1800, schedule_getWeath).start()  # 30分钟间隔
 
 def getWeath(default_city='101060101'):
-    """获取天气数据核心函数"""
-    city_name = get_current_city()
-    area_id = default_city
+    """改进的天气获取函数"""
+    # 1. 检查网络连接
+    if not check_network_connection():
+        logging.error("网络不可用，跳过天气更新")
+        return
+
+    # 2. 获取城市信息
+    city_name = None
+    try:
+        city_name = get_current_city()
+    except Exception as e:
+        logging.error(f"获取城市失败: {str(e)}")
     
+    # 3. 确定区域ID
+    area_id = default_city
     if city_name:
         try:
-            area_id = get_area_id(city_name) or default_city
+            found_id = get_area_id(city_name)
+            if found_id:
+                area_id = found_id
+                logging.info(f"使用城市区域ID: {area_id} ({city_name})")
         except Exception as e:
-            logging.error("获取区域ID失败: %s", str(e))
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://www.weather.com.cn/'
-    }
+            logging.error(f"获取区域ID失败: {str(e)}")
 
-    try:
-        resp = requests.get(
-            f'https://d1.weather.com.cn/sk_2d/{area_id}.html',
-            headers=headers,
-            timeout=15
-        )
-        resp.encoding = 'utf-8'
-        resp.raise_for_status()
-        
-        weather_data = resp.content[11:].decode('utf-8')
-        
-        with open('/root/2.13-Ink-screen-clock/bin/weather.json', 'w', encoding='utf-8') as f:
-            f.write(weather_data)
+    # 4. 获取天气数据
+    weather_apis = [
+        f'https://d1.weather.com.cn/sk_2d/{area_id}.html',
+        f'https://www.weather.com.cn/weather1d/{area_id}.shtml'
+    ]
+    
+    for api_url in weather_apis:
+        try:
+            resp = requests.get(
+                api_url,
+                headers={'User-Agent': 'Mozilla/5.0'},
+                timeout=15
+            )
+            resp.raise_for_status()
             
-        logging.info("天气数据更新成功")
-    except Exception as e:
-        logging.error("天气更新失败: %s", str(e))
+            # 处理不同API的响应格式
+            if 'sk_2d' in api_url:
+                weather_data = resp.content[11:].decode('utf-8')
+            else:
+                weather_data = parse_html_weather(resp.text)
+            
+            # 验证数据有效性
+            if validate_weather_data(weather_data):
+                with open('/root/2.13-Ink-screen-clock/bin/weather.json', 'w') as f:
+                    json.dump(weather_data, f)
+                logging.info("天气数据更新成功")
+                return
+                
+        except Exception as e:
+            logging.warning(f"天气API {api_url} 失败: {str(e)}")
+            continue
+    
+    logging.error("所有天气API尝试失败")
 
 def get_area_id(city_name):
     """从city.js中检索AREAID，无限重试直到成功"""
