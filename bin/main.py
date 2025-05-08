@@ -161,35 +161,39 @@ def Bottom_edge():  #在图片中添加底边内容
      global local_addr  #获取当前IP地址
      local_addr= Get_ipv4_address()  #获取当前IP地址
      draw.text((10,107),"IP:"+local_addr,font = font05,fill =255)#显示当前IP地址
-def Weather(): #在图片中添加天气内容
-     Weather_json = open('/root/2.13-Ink-screen-clock/bin/weather.json','r')
-     Weather_data = Weather_json.read()
-     Weather_json.close()
-     Weather_text=json.loads(Weather_data)
-     global Weather_position
-     global temperature
-     global weather
-     global wind_direction
-     global weather_update
-     global weather_date
-     global humidity
-     Weather_position = Weather_text['cityname'] #定位位置
-     temperature=Weather_text['temp']+u'°C' #温度
-     weather = Weather_text['weather'] #天气情况
-     wind_direction = Weather_text['WD'] #风向
-     weather_update = Weather_text['time'] #天气更新时间
-     weather_date =  Weather_text['date'] #日期
-     humidity =  Weather_text['SD'] #湿度
-     draw.text((150,25),"天气:",font = font06,fill =0)#显示当前天气前缀
-     draw.text((150,45),"温度:",font = font06,fill =0)#显示当前温度前缀
-     draw.text((150,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
-     draw.text((150,85),"城市:",font = font06,fill =0)#显示当前城市前缀
-     draw.text((191,25),weather,font = font06,fill =0)
-     draw.text((191,45),temperature,font = font06,fill =0)
-     draw.text((191,65),humidity,font = font06,fill =0)
-     draw.text((191,85),Weather_position,font = font06,fill =0)
-     draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
-
+def Weather():
+    try:
+        with open('/root/2.13-Ink-screen-clock/bin/weather.json', 'r') as Weather_json:
+            Weather_data = Weather_json.read()
+            if not Weather_data.strip():  # 检查文件是否为空
+                logging.error("天气数据文件为空")
+                return
+                
+            Weather_text = json.loads(Weather_data)
+            global Weather_position, temperature, weather, wind_direction, weather_update, weather_date, humidity
+            
+            Weather_position = Weather_text.get('cityname', '未知')  # 使用get方法提供默认值
+            temperature = f"{Weather_text.get('temp', '--')}°C"
+            weather = Weather_text.get('weather', '未知')
+            wind_direction = Weather_text.get('WD', '未知')
+            weather_update = Weather_text.get('time', '未知')
+            weather_date = Weather_text.get('date', '未知')
+            humidity = Weather_text.get('SD', '未知')
+            draw.text((150,25),"天气:",font = font06,fill =0)#显示当前天气前缀
+            draw.text((150,45),"温度:",font = font06,fill =0)#显示当前温度前缀
+            draw.text((150,65),"湿度:",font = font06,fill =0)#显示当前湿度前缀
+            draw.text((150,85),"城市:",font = font06,fill =0)#显示当前城市前缀
+            draw.text((191,25),weather,font = font06,fill =0)
+            draw.text((191,45),temperature,font = font06,fill =0)
+            draw.text((191,65),humidity,font = font06,fill =0)
+            draw.text((191,85),Weather_position,font = font06,fill =0)
+            draw.text((211,107),weather_update,font = font05,fill =255) #显示天气更新时间
+    except FileNotFoundError:
+        logging.error("天气数据文件未找到")
+    except json.JSONDecodeError as e:
+        logging.error(f"天气数据解析失败: {str(e)}")
+    except Exception as e:
+        logging.error(f"获取天气信息时发生错误: {str(e)}")
 def Basic_refresh(): #全刷函数
     logging.info("在启动画布之前，刷新并准备基本内容")#开始画布前刷新准备基础内容
     global get_date_var
