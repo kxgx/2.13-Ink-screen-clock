@@ -47,6 +47,7 @@ def get_ip():
             
     logging.error("所有IP服务尝试失败")
     return None
+
 def get_ip():
     """从ip.cn获取当前IP地址"""
     url = "https://ip.cn/api/index?ip=&type=0"
