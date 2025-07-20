@@ -225,8 +225,45 @@ install_Ink-screen-clock() {
   fi
 }
 
+# 检查pip包是否已安装
+check_pip_packages_installed() {
+  local requirements_file="$HOME/2.13-Ink-screen-clock/bin/requirements.txt"
+  if [ ! -f "$requirements_file" ]; then
+    echo "requirements.txt 文件不存在" >&2
+    return 1
+  fi
+
+  # 读取requirements.txt中的包名（忽略版本号）
+  local packages=()
+  while IFS= read -r line; do
+    # 去除注释和空行
+    if [[ -n "$line" && ! "$line" =~ ^\s*# ]]; then
+      # 提取包名（忽略版本号）
+      local package_name=$(echo "$line" | cut -d'=' -f1 | cut -d'>' -f1 | cut -d'<' -f1)
+      packages+=("$package_name")
+    fi
+  done < "$requirements_file"
+
+  # 检查每个包是否已安装
+  for package in "${packages[@]}"; do
+    if ! pip3 show "$package" &> /dev/null; then
+      echo "包 $package 未安装"
+      return 1
+    fi
+  done
+
+  echo "所有pip包已安装"
+  return 0
+}
+
 # 安装pip包函数
 install_oline_pip_packages() {
+  # 首先检查是否所有pip包都已安装
+  if check_pip_packages_installed; then
+    echo "所有pip包已安装，跳过安装"
+    return 0
+  fi
+  # ... 继续安装 ...
     echo "正在安装pip软件包"
   if ! sudo pip3 install -i "$PIPY_MIRROR" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt"; then
     echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
