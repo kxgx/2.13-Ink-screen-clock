@@ -321,7 +321,7 @@ setup_service() {
     exit 1
   fi
 }
-
+PISUGAR_POWER_MANAGER_URL=https://cdn.pisugar.com/release/pisugar-power-manager.sh
 # 安装pisugar-power-manager函数
 install_pisugar-power-manager() {
   if [ "$USE_PISUGAR_POWER_MANAGER" = true ]; then
@@ -333,7 +333,7 @@ install_pisugar-power-manager() {
     fi
   fi
 }
-
+PISUGAR_WIFI_CONF_URL=https://cdn.pisugar.com/PiSugar-wificonfig/script/install.sh
 # 安装pisugar-wifi-conf函数
 install_pisugar-wifi-conf() {
   if [ "$USE_PISUGAR_WIFI_CONF" = true ]; then
