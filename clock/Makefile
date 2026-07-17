@@ -24,9 +24,11 @@ LIB_FILE  = $(LIB_DIR)/lib/libwaveshare_epd.a
 BUILD_DIR = build
 TARGET    = $(BUILD_DIR)/epd_clock
 
-.PHONY: all clean run
+.PHONY: all clean run clock
 
 all: dirs $(TARGET)
+
+clock: all
 
 dirs:
 	@mkdir -p $(BUILD_DIR)
