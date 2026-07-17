@@ -63,6 +63,12 @@ example: dirs $(LIB_DIR)/$(LIB_NAME) example/main.c
 	@$(CC) $(CFLAGS) -Iinclude example/main.c -L$(LIB_DIR) -lwaveshare_epd $(LDFLAGS) -o $(BUILD_DIR)/epd_example
 	@echo "  Build complete: $(BUILD_DIR)/epd_example"
 
+# Clock application (C port of main.py with full/partial refresh)
+clock: dirs $(LIB_DIR)/$(LIB_NAME) example/clock.c
+	@echo "  CC    example/clock.c"
+	@$(CC) $(CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
+	@echo "  Build complete: $(BUILD_DIR)/epd_clock"
+
 # Clean
 clean:
 	@echo "  CLEAN"
