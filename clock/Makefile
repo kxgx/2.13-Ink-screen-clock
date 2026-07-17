@@ -1,9 +1,9 @@
 # Makefile for C clock application (port of main.py)
-# Depends on: ../c_bindings (libwaveshare_epd.a)
+# Depends on: ../waveshare_epd (libwaveshare_epd.a)
 # Platform: Raspberry Pi (Linux, ARM)
 #
 # Prerequisites:
-#   cd ../c_bindings && make        # build library first
+#   cd ../waveshare_epd && make       # build library first
 #   sudo apt install libfreetype6-dev
 #
 # Usage:
@@ -17,7 +17,7 @@ FT_CFLAGS = $(shell pkg-config --cflags freetype2 2>/dev/null)
 FT_LIBS   = $(shell pkg-config --libs   freetype2 2>/dev/null)
 
 # Paths relative to this Makefile
-LIB_DIR   = ../c_bindings
+LIB_DIR   = ../waveshare_epd
 LIB_INC   = $(LIB_DIR)/include
 LIB_FILE  = $(LIB_DIR)/lib/libwaveshare_epd.a
 
