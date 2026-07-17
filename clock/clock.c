@@ -49,12 +49,12 @@
 #define DISP_ROW    ((DISP_WIDTH + 7) / 8)  /* 16 bytes per row */
 #define DISP_SIZE   (DISP_ROW * DISP_HEIGHT) /* 4000 bytes */
 
-/* Font file paths (matching Python picdir) */
-#define FONT_PATH_TTC  "/root/2.13-Ink-screen-clock/pic/Font.ttc"
-#define FONT_PATH_DSEG "/root/2.13-Ink-screen-clock/pic/DSEG7Modern-Bold.ttf"
+/* Font and data paths - relative to clock/ working directory */
+#define FONT_PATH_TTC  "../pic/Font.ttc"
+#define FONT_PATH_DSEG "../pic/DSEG7Modern-Bold.ttf"
 
 /* Weather JSON path */
-#define WEATHER_JSON_PATH "/root/2.13-Ink-screen-clock/bin/weather.json"
+#define WEATHER_JSON_PATH "../bin/weather.json"
 
 /* =========================================================================
  * Global framebuffer
@@ -782,7 +782,7 @@ static void *weather_update_thread(void *arg) {
     (void)arg;
     while (g_running) {
         printf("Updating weather data...\n");
-        system("python3 /root/2.13-Ink-screen-clock/bin/weather.py 2>/dev/null &");
+        system("python3 ../bin/weather.py 2>/dev/null &");
         for (int i = 0; i < 1800 && g_running; i++) sleep(1);
     }
     return NULL;
