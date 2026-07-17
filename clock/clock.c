@@ -304,8 +304,10 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
                            int use_dseg, int color) {
     stbtt_fontinfo *font = use_dseg ? &font_dseg : &font_ttc;
 
-    /* Set character size in points (72dpi) */
-    float scale = stbtt_ScaleForPixelHeight(font, font_size);
+    /* Set character size in points (72dpi).
+     * Use ScaleForMappingEmToPixels to match FreeType's FT_Set_Pixel_Sizes
+     * behavior (scale = font_size / unitsPerEm). */
+    float scale = stbtt_ScaleForMappingEmToPixels(font, font_size);
 
     /* Pillow: y = text top. stb_truetype: y = baseline. Compensate. */
     int ascent, descent, lineGap;
