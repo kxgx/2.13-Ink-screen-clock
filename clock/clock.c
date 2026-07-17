@@ -3,10 +3,10 @@
  * @brief   C port of main.py - Ink screen clock with weather display
  *
  * Uses the waveshare_epd C library for 2.13" V4 e-Paper display (122x250).
- * Font rendering via FreeType2 library.
+ * Font rendering via stb_truetype.h (zero dependencies)
  *
  * Build:
- *   cd c_bindings && make clock
+ *   cd clock && make clock
  *
  * Run (on Raspberry Pi):
  *   sudo ./build/epd_clock
@@ -23,8 +23,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #include "waveshare_epd.h"
 
 /* =========================================================================
@@ -34,7 +36,7 @@
  * then rotates 180°, and the Python driver's getbuffer() rotates 90° CCW.
  *
  * Coordinate mapping: Python (px, py) in 250x122
- *   → display buffer (dx = 121-py, dy = px) in 122x250
+ *   �?display buffer (dx = 121-py, dy = px) in 122x250
  *
  * We draw directly into fb[250][122] (1bpp packed), then convert to
  * the display buffer format (122x250, 16 bytes/row).
@@ -67,11 +69,12 @@ static EPD *g_epd = NULL;
 static volatile int g_running = 1;
 
 /* =========================================================================
- * FreeType globals
+ * Font globals (stb_truetype)
  * ========================================================================= */
-static FT_Library  ft_library;
-static FT_Face     ft_face_ttc;          /* Font.ttc (Chinese + ASCII) */
-static FT_Face     ft_face_dseg;         /* DSEG7Modern-Bold.ttf (digital) */
+static stbtt_fontinfo font_ttc;
+static stbtt_fontinfo font_dseg;
+static unsigned char *font_ttc_buf = NULL;
+static unsigned char *font_dseg_buf = NULL;
 
 /* Font sizes in pt, matching Python */
 #define FONT_SIZE_DATE   15   /* font02 */
@@ -209,53 +212,96 @@ static void fb_draw_ellipse(int cx, int cy, int rx, int ry, int outline, int fil
 }
 
 /* =========================================================================
- * FreeType font rendering
+ * Font rendering (stb_truetype)
  * ========================================================================= */
 
-/* Initialize FreeType and load all fonts */
+/* Initialize fonts and load all fonts */
 static int ft_init(void) {
-    if (FT_Init_FreeType(&ft_library)) {
-        fprintf(stderr, "ERROR: FT_Init_FreeType failed\n");
+    FILE *fp = fopen(FONT_PATH_TTC, "rb");
+    if (!fp) {
+        fprintf(stderr, "ERROR: Cannot open %s\n", FONT_PATH_TTC);
         return -1;
     }
 
-    /* Load Chinese font (Font.ttc is a TrueType Collection, use face 0) */
-    if (FT_New_Face(ft_library, FONT_PATH_TTC, 0, &ft_face_ttc)) {
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    font_ttc_buf = (unsigned char *)malloc(fsize);
+    if (!font_ttc_buf) {
+        fclose(fp);
+        return -1;
+    }
+
+    size_t nread = fread(font_ttc_buf, 1, fsize, fp);
+    fclose(fp);
+
+    if (nread != (size_t)fsize) {
+        free(font_ttc_buf);
+        return -1;
+    }
+
+    if (!stbtt_InitFont(&font_ttc, font_ttc_buf, 0)) {
         fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_TTC);
+        free(font_ttc_buf);
         return -1;
     }
 
-    /* Load digital font */
-    if (FT_New_Face(ft_library, FONT_PATH_DSEG, 0, &ft_face_dseg)) {
+    fp = fopen(FONT_PATH_DSEG, "rb");
+    if (!fp) {
+        fprintf(stderr, "ERROR: Cannot open %s\n", FONT_PATH_DSEG);
+        return -1;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    font_dseg_buf = (unsigned char *)malloc(fsize);
+    if (!font_dseg_buf) {
+        fclose(fp);
+        return -1;
+    }
+
+    nread = fread(font_dseg_buf, 1, fsize, fp);
+    fclose(fp);
+
+    if (nread != (size_t)fsize) {
+        free(font_dseg_buf);
+        return -1;
+    }
+
+    if (!stbtt_InitFont(&font_dseg, font_dseg_buf, 0)) {
         fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_DSEG);
+        free(font_dseg_buf);
         return -1;
     }
 
     return 0;
 }
 
-/* Clean up FreeType resources */
+/* Clean up fonts resources */
 static void ft_cleanup(void) {
-    if (ft_face_dseg) FT_Done_Face(ft_face_dseg);
-    if (ft_face_ttc)  FT_Done_Face(ft_face_ttc);
-    if (ft_library)   FT_Done_FreeType(ft_library);
+    if (font_dseg_buf) free(font_dseg_buf);
+    if (font_ttc_buf)  free(font_ttc_buf);
 }
 
-/* Render text using FreeType into the framebuffer.
+/* Render text using stb_truetype (zero-dependency) into the framebuffer.
  * font_size: point size
  * use_dseg: 1 for digital font, 0 for Chinese font
  * color: 0 = black text, 1 = white text
  */
 static void ft_render_text(int x, int y, const char *text, int font_size,
                            int use_dseg, int color) {
-    FT_Face face = use_dseg ? ft_face_dseg : ft_face_ttc;
+    stbtt_fontinfo *font = use_dseg ? &font_dseg : &font_ttc;
 
     /* Set character size in points (72dpi) */
-    FT_Set_Char_Size(face, 0, font_size * 64, 72, 72);
+    float scale = stbtt_ScaleForPixelHeight(font, font_size);
 
-    /* Pillow: y = text top. FreeType: y = baseline. Compensate. */
-    int ascender = face->size->metrics.ascender / 64;
-    int baseline_y = y + ascender;
+    /* Pillow: y = text top. stb_truetype: y = baseline. Compensate. */
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(font, &ascent, &descent, &lineGap);
+    int baseline_y = y + (int)(ascent * scale);
 
     int pen_x = x;
     const char *p = text;
@@ -294,33 +340,44 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
         }
 
         /* Load and render glyph with monochrome target */
-        if (FT_Load_Char(face, charcode, FT_LOAD_RENDER | FT_LOAD_TARGET_MONO))
-            goto next_char;
+        int glyph = stbtt_FindGlyphIndex(font, charcode);
+        if (glyph == 0) goto next_char;
 
-        FT_Bitmap *bitmap = &face->glyph->bitmap;
+        int advance_width;
+        int left_side_bearing;
+        stbtt_GetGlyphHMetrics(font, glyph, &advance_width, &left_side_bearing);
 
-        if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
-            int gx = pen_x + face->glyph->bitmap_left;
-            int gy = baseline_y - face->glyph->bitmap_top;
+        int x0, y0, x1, y1;
+        stbtt_GetGlyphBitmapBox(font, glyph, scale, scale, &x0, &y0, &x1, &y1);
 
-            for (int row = 0; row < (int)bitmap->rows; row++) {
-                for (int col = 0; col < (int)bitmap->width; col++) {
-                    int byte_idx = row * bitmap->pitch + (col / 8);
-                    int bit_idx  = 7 - (col % 8);
-                    int pixel = (bitmap->buffer[byte_idx] >> bit_idx) & 1;
+        int w = x1 - x0;
+        int h = y1 - y0;
 
-                    if (color == 0) {
-                        /* Black text: draw black pixels */
-                        if (pixel) fb_set_pixel(gx + col, gy + row, 0);
-                    } else {
-                        /* White text: draw white pixels */
-                        if (pixel) fb_set_pixel(gx + col, gy + row, 1);
-                    }
+        unsigned char *bitmap = (unsigned char *)malloc(w * h);
+        if (!bitmap) goto next_char;
+
+        stbtt_MakeGlyphBitmap(font, bitmap, w, h, w, scale, scale, glyph, 0, 0);
+
+        int gx = pen_x + (int)(left_side_bearing * scale);
+        int gy = baseline_y - y1;  /* y1 is top of glyph in stb coords (positive up) */
+
+        for (int row = 0; row < h; row++) {
+            for (int col = 0; col < w; col++) {
+                int pixel = bitmap[row * w + col];
+
+                if (color == 0) {
+                    /* Black text: draw black pixels */
+                    if (pixel) fb_set_pixel(gx + col, gy + row, 0);
+                } else {
+                    /* White text: draw white pixels */
+                    if (pixel) fb_set_pixel(gx + col, gy + row, 1);
                 }
             }
         }
 
-        pen_x += face->glyph->advance.x >> 6;
+        free(bitmap);
+
+        pen_x += advance_width * scale;
 
 next_char:
         p += advance;
@@ -330,7 +387,7 @@ next_char:
 /* =========================================================================
  * Convert framebuffer (250x122) to display buffer (122x250)
  *
- * Mapping: Python (px, py) → display (dx=121-py, dy=px)
+ * Mapping: Python (px, py) �?display (dx=121-py, dy=px)
  * ========================================================================= */
 static void fb_to_display(void) {
     memset(display_buf, 0xFF, DISP_SIZE);  /* Start all white */
@@ -346,7 +403,7 @@ static void fb_to_display(void) {
             int pixel = (fb[src_byte] >> src_bit) & 1;
 
             if (pixel == 0) {
-                /* Black pixel → clear bit in display buffer */
+                /* Black pixel �?clear bit in display buffer */
                 int dst_byte = dy * DISP_ROW + (dx / 8);
                 int dst_bit  = 7 - (dx % 8);
                 display_buf[dst_byte] &= ~(1 << dst_bit);
@@ -406,11 +463,11 @@ static void get_date_str(char *buf, size_t bufsize) {
 
     /* Gregorian date */
     char gregorian[64];
-    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日", tm_info);
+    strftime(gregorian, sizeof(gregorian), "%Y�?m�?d�?, tm_info);
 
     /* Weekday in Chinese */
     static const char *weekdays[] = {
-        "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"
+        "星期一", "星期�?, "星期�?, "星期�?, "星期�?, "星期�?, "星期�?
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
@@ -418,7 +475,7 @@ static void get_date_str(char *buf, size_t bufsize) {
     char lunar[32] = "";
     char *lunar_output = shell_output(
         "python3 -c \"from borax.calendars.lunardate import LunarDate; "
-        "print(LunarDate.today().strftime('农历%M月%D'))\" 2>/dev/null");
+        "print(LunarDate.today().strftime('农历%M�?D'))\" 2>/dev/null");
     if (lunar_output) {
         snprintf(lunar, sizeof(lunar), "%s", lunar_output);
         free(lunar_output);

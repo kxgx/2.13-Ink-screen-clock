@@ -1,8 +1,6 @@
 # Makefile for C clock application (port of main.py)
 # Platform: Raspberry Pi (Linux, ARM)
-#
-# Prerequisites:
-#   sudo apt install libfreetype6-dev
+# Zero external dependencies (uses stb_truetype.h)
 #
 # Usage:
 #   make          - build clock
@@ -10,10 +8,7 @@
 #   make run      - build and run
 
 CC       = gcc
-CFLAGS   = -Wall -Wextra -O2
-
-FT_CFLAGS = $(shell pkg-config --cflags freetype2)
-FT_LIBS   = $(shell pkg-config --libs   freetype2)
+CFLAGS   = -Wall -Wextra -O2 -lm
 
 # ---- waveshare_epd library ----
 LIB_DIR   = ../waveshare_epd
@@ -36,10 +31,10 @@ $(LIB_FILE):
 	@echo "  Building waveshare_epd library..."
 	@$(MAKE) -C $(LIB_DIR)
 
-$(TARGET): clock.c $(LIB_FILE)
+$(TARGET): clock.c stb_truetype.h $(LIB_FILE)
 	@echo "  CC    clock.c"
-	@$(CC) $(CFLAGS) $(FT_CFLAGS) -I$(LIB_INC) clock.c \
-		-L$(LIB_DIR)/lib -lwaveshare_epd $(FT_LIBS) -lpthread -o $@
+	@$(CC) $(CFLAGS) -I$(LIB_INC) clock.c \
+		-L$(LIB_DIR)/lib -lwaveshare_epd -lpthread -o $@
 	@echo "  Build complete: $@"
 	@echo "  Run: sudo ./$@"
 
