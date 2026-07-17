@@ -253,6 +253,10 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
     /* Set character size in points (72dpi) */
     FT_Set_Char_Size(face, 0, font_size * 64, 72, 72);
 
+    /* Pillow: y = text top. FreeType: y = baseline. Compensate. */
+    int ascender = face->size->metrics.ascender / 64;
+    int baseline_y = y + ascender;
+
     int pen_x = x;
     const char *p = text;
 
@@ -297,7 +301,7 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
 
         if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
             int gx = pen_x + face->glyph->bitmap_left;
-            int gy = y - face->glyph->bitmap_top;
+            int gy = baseline_y - face->glyph->bitmap_top;
 
             for (int row = 0; row < (int)bitmap->rows; row++) {
                 for (int col = 0; col < (int)bitmap->width; col++) {
