@@ -76,12 +76,12 @@ static stbtt_fontinfo font_dseg;
 static unsigned char *font_ttc_buf = NULL;
 static unsigned char *font_dseg_buf = NULL;
 
-/* Font sizes in pt, matching Python */
-#define FONT_SIZE_DATE   15   /* font02 */
-#define FONT_SIZE_TIME   38   /* font03 - DSEG7Modern-Bold */
-#define FONT_SIZE_SMALL  10   /* font04 */
-#define FONT_SIZE_IP     12   /* font05 */
-#define FONT_SIZE_WEATHER 13  /* font06 */
+/* Font sizes in pt */
+#define FONT_SIZE_DATE   14   /* font02 */
+#define FONT_SIZE_TIME   36   /* font03 - DSEG7Modern-Bold */
+#define FONT_SIZE_SMALL   9   /* font04 */
+#define FONT_SIZE_IP     11   /* font05 */
+#define FONT_SIZE_WEATHER 12  /* font06 */
 
 /* =========================================================================
  * Framebuffer drawing primitives
