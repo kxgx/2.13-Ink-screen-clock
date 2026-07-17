@@ -64,10 +64,12 @@ example: dirs $(LIB_DIR)/$(LIB_NAME) example/main.c
 	@echo "  Build complete: $(BUILD_DIR)/epd_example"
 
 # Clock application (C port of main.py with full/partial refresh)
+# Requires: sudo apt install libfreetype6-dev
 clock: dirs $(LIB_DIR)/$(LIB_NAME) example/clock.c
 	@echo "  CC    example/clock.c"
-	@$(CC) $(CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
+	@$(CC) $(CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd -lfreetype $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
 	@echo "  Build complete: $(BUILD_DIR)/epd_clock"
+	@echo "  Run: sudo ./build/epd_clock"
 
 # Clean
 clean:
@@ -81,5 +83,6 @@ help:
 	@echo "Targets:"
 	@echo "  make          Build static library (lib/$(LIB_NAME))"
 	@echo "  make example  Build example program"
+	@echo "  make clock    Build clock application (C port of main.py)"
 	@echo "  make clean    Remove build artifacts"
 	@echo "  make help     Show this help"

@@ -1,636 +1,811 @@
 /**
  * @file    clock.c
- * @brief   e-Paper Clock - C port of main.py using libwaveshare_epd
+ * @brief   C port of main.py - Ink screen clock with weather display
  *
- * Displays time, date, weather, battery, IP on 2.13" V4 e-Paper display.
- * Supports full refresh and partial refresh for minute-level updates.
+ * Uses the waveshare_epd C library for 2.13" V4 e-Paper display (122x250).
+ * Font rendering via FreeType2 library.
+ *
+ * Build:
+ *   cd c_bindings && make clock
+ *
+ * Run (on Raspberry Pi):
+ *   sudo ./build/epd_clock
  */
 
+/* NOTE: This code targets Raspberry Pi (Linux).
+ * Required packages on RPi:
+ *   sudo apt install libfreetype6-dev
+ * These headers are Linux-specific and won't lint on Windows. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include "waveshare_epd.h"
 
 /* =========================================================================
- * Display and layout constants (250x122, rotated 180°)
+ * Display and framebuffer constants
+ *
+ * The Python code draws on a 250x122 canvas (Image.new('1', (250, 122))),
+ * then rotates 180°, and the Python driver's getbuffer() rotates 90° CCW.
+ *
+ * Coordinate mapping: Python (px, py) in 250x122
+ *   → display buffer (dx = 121-py, dy = px) in 122x250
+ *
+ * We draw directly into fb[250][122] (1bpp packed), then convert to
+ * the display buffer format (122x250, 16 bytes/row).
  * ========================================================================= */
-#define W           250
-#define H           122
-#define BUF_SIZE    ((W/8) * H)  /* 4000 bytes */
+#define FB_WIDTH   250
+#define FB_HEIGHT  122
+#define FB_ROW     ((FB_WIDTH + 7) / 8)  /* 32 bytes per row */
+#define FB_SIZE    (FB_ROW * FB_HEIGHT)   /* 3904 bytes */
+
+#define DISP_WIDTH  122
+#define DISP_HEIGHT 250
+#define DISP_ROW    ((DISP_WIDTH + 7) / 8)  /* 16 bytes per row */
+#define DISP_SIZE   (DISP_ROW * DISP_HEIGHT) /* 4000 bytes */
+
+/* Font file paths (matching Python picdir) */
+#define FONT_PATH_TTC  "/root/2.13-Ink-screen-clock/pic/Font.ttc"
+#define FONT_PATH_DSEG "/root/2.13-Ink-screen-clock/pic/DSEG7Modern-Bold.ttf"
+
+/* Weather JSON path */
+#define WEATHER_JSON_PATH "/root/2.13-Ink-screen-clock/bin/weather.json"
 
 /* =========================================================================
- * Embedded bitmap fonts
+ * Global framebuffer
+ * ========================================================================= */
+static uint8_t fb[FB_SIZE];              /* 250x122 drawing canvas */
+static uint8_t display_buf[DISP_SIZE];    /* 122x250 final buffer for EPD */
+
+/* =========================================================================
+ * FreeType globals
+ * ========================================================================= */
+static FT_Library  ft_library;
+static FT_Face     ft_face_ttc;          /* Font.ttc (Chinese + ASCII) */
+static FT_Face     ft_face_dseg;         /* DSEG7Modern-Bold.ttf (digital) */
+
+/* Font sizes in pt, matching Python */
+#define FONT_SIZE_DATE   15   /* font02 */
+#define FONT_SIZE_TIME   38   /* font03 - DSEG7Modern-Bold */
+#define FONT_SIZE_SMALL  10   /* font04 */
+#define FONT_SIZE_IP     12   /* font05 */
+#define FONT_SIZE_WEATHER 13  /* font06 */
+
+/* =========================================================================
+ * Framebuffer drawing primitives
  * ========================================================================= */
 
-/* ---- 5x8 pixel ASCII font (printable chars 0x20-0x7E) ---- */
-static const uint8_t font5x8[][5] = {
-    {0x00,0x00,0x00,0x00,0x00}, /*   */
-    {0x00,0x00,0x5F,0x00,0x00}, /* ! */
-    {0x00,0x07,0x00,0x07,0x00}, /* " */
-    {0x14,0x7F,0x14,0x7F,0x14}, /* # */
-    {0x24,0x2A,0x7F,0x2A,0x12}, /* $ */
-    {0x23,0x13,0x08,0x64,0x62}, /* % */
-    {0x36,0x49,0x55,0x22,0x50}, /* & */
-    {0x00,0x05,0x03,0x00,0x00}, /* ' */
-    {0x00,0x1C,0x22,0x41,0x00}, /* ( */
-    {0x00,0x41,0x22,0x1C,0x00}, /* ) */
-    {0x08,0x2A,0x1C,0x2A,0x08}, /* * */
-    {0x08,0x08,0x3E,0x08,0x08}, /* + */
-    {0x00,0x50,0x30,0x00,0x00}, /* , */
-    {0x08,0x08,0x08,0x08,0x08}, /* - */
-    {0x00,0x60,0x60,0x00,0x00}, /* . */
-    {0x20,0x10,0x08,0x04,0x02}, /* / */
-    {0x3E,0x51,0x49,0x45,0x3E}, /* 0 */
-    {0x00,0x42,0x7F,0x40,0x00}, /* 1 */
-    {0x42,0x61,0x51,0x49,0x46}, /* 2 */
-    {0x21,0x41,0x45,0x4B,0x31}, /* 3 */
-    {0x18,0x14,0x12,0x7F,0x10}, /* 4 */
-    {0x27,0x45,0x45,0x45,0x39}, /* 5 */
-    {0x3C,0x4A,0x49,0x49,0x30}, /* 6 */
-    {0x01,0x71,0x09,0x05,0x03}, /* 7 */
-    {0x36,0x49,0x49,0x49,0x36}, /* 8 */
-    {0x06,0x49,0x49,0x29,0x1E}, /* 9 */
-    {0x00,0x36,0x36,0x00,0x00}, /* : */
-    {0x00,0x56,0x36,0x00,0x00}, /* ; */
-    {0x00,0x08,0x14,0x22,0x41}, /* < */
-    {0x14,0x14,0x14,0x14,0x14}, /* = */
-    {0x41,0x22,0x14,0x08,0x00}, /* > */
-    {0x02,0x01,0x51,0x09,0x06}, /* ? */
-    {0x32,0x49,0x79,0x41,0x3E}, /* @ */
-    {0x7E,0x11,0x11,0x11,0x7E}, /* A */
-    {0x7F,0x49,0x49,0x49,0x36}, /* B */
-    {0x3E,0x41,0x41,0x41,0x22}, /* C */
-    {0x7F,0x41,0x41,0x22,0x1C}, /* D */
-    {0x7F,0x49,0x49,0x49,0x41}, /* E */
-    {0x7F,0x09,0x09,0x01,0x01}, /* F */
-    {0x3E,0x41,0x41,0x51,0x32}, /* G */
-    {0x7F,0x08,0x08,0x08,0x7F}, /* H */
-    {0x00,0x41,0x7F,0x41,0x00}, /* I */
-    {0x20,0x40,0x41,0x3F,0x01}, /* J */
-    {0x7F,0x08,0x14,0x22,0x41}, /* K */
-    {0x7F,0x40,0x40,0x40,0x40}, /* L */
-    {0x7F,0x02,0x04,0x02,0x7F}, /* M */
-    {0x7F,0x04,0x08,0x10,0x7F}, /* N */
-    {0x3E,0x41,0x41,0x41,0x3E}, /* O */
-    {0x7F,0x09,0x09,0x09,0x06}, /* P */
-    {0x3E,0x41,0x51,0x21,0x5E}, /* Q */
-    {0x7F,0x09,0x19,0x29,0x46}, /* R */
-    {0x46,0x49,0x49,0x49,0x31}, /* S */
-    {0x01,0x01,0x7F,0x01,0x01}, /* T */
-    {0x3F,0x40,0x40,0x40,0x3F}, /* U */
-    {0x1F,0x20,0x40,0x20,0x1F}, /* V */
-    {0x7F,0x20,0x18,0x20,0x7F}, /* W */
-    {0x63,0x14,0x08,0x14,0x63}, /* X */
-    {0x03,0x04,0x78,0x04,0x03}, /* Y */
-    {0x61,0x51,0x49,0x45,0x43}, /* Z */
-    {0x00,0x00,0x7F,0x41,0x41}, /* [ */
-    {0x02,0x04,0x08,0x10,0x20}, /* \ */
-    {0x41,0x41,0x7F,0x00,0x00}, /* ] */
-    {0x04,0x02,0x01,0x02,0x04}, /* ^ */
-    {0x40,0x40,0x40,0x40,0x40}, /* _ */
-    {0x00,0x01,0x02,0x04,0x00}, /* ` */
-    {0x20,0x54,0x54,0x54,0x78}, /* a */
-    {0x7F,0x48,0x44,0x44,0x38}, /* b */
-    {0x38,0x44,0x44,0x44,0x20}, /* c */
-    {0x38,0x44,0x44,0x48,0x7F}, /* d */
-    {0x38,0x54,0x54,0x54,0x18}, /* e */
-    {0x08,0x7E,0x09,0x01,0x02}, /* f */
-    {0x08,0x14,0x54,0x54,0x3C}, /* g */
-    {0x7F,0x08,0x04,0x04,0x78}, /* h */
-    {0x00,0x44,0x7D,0x40,0x00}, /* i */
-    {0x20,0x40,0x44,0x3D,0x00}, /* j */
-    {0x00,0x7F,0x10,0x28,0x44}, /* k */
-    {0x00,0x41,0x7F,0x40,0x00}, /* l */
-    {0x7C,0x04,0x18,0x04,0x78}, /* m */
-    {0x7C,0x08,0x04,0x04,0x78}, /* n */
-    {0x38,0x44,0x44,0x44,0x38}, /* o */
-    {0x7C,0x14,0x14,0x14,0x08}, /* p */
-    {0x08,0x14,0x14,0x18,0x7C}, /* q */
-    {0x7C,0x08,0x04,0x04,0x08}, /* r */
-    {0x48,0x54,0x54,0x54,0x20}, /* s */
-    {0x04,0x3F,0x44,0x40,0x20}, /* t */
-    {0x3C,0x40,0x40,0x20,0x7C}, /* u */
-    {0x1C,0x20,0x40,0x20,0x1C}, /* v */
-    {0x3C,0x40,0x30,0x40,0x3C}, /* w */
-    {0x44,0x28,0x10,0x28,0x44}, /* x */
-    {0x0C,0x50,0x50,0x50,0x3C}, /* y */
-    {0x44,0x64,0x54,0x4C,0x44}, /* z */
-};
+/* Clear entire framebuffer to color (0xFF=white, 0x00=black) */
+static void fb_clear(uint8_t color) {
+    memset(fb, color, FB_SIZE);
+}
 
-/* ---- Large 7-segment digit font (for time display, 3x5 block size = ~18x30px) ---- */
-/* Each digit is defined as 7 segments. Each segment is a 3-wide block. */
-typedef struct { int x, y, w, h; } segment_t;
+/* Set a single pixel in the framebuffer.
+ * color: 0 = black, 1 = white */
+static void fb_set_pixel(int x, int y, int color) {
+    if (x < 0 || x >= FB_WIDTH || y < 0 || y >= FB_HEIGHT) return;
+    int byte_idx = y * FB_ROW + (x / 8);
+    int bit_idx  = 7 - (x % 8);
+    if (color) {
+        fb[byte_idx] |= (1 << bit_idx);
+    } else {
+        fb[byte_idx] &= ~(1 << bit_idx);
+    }
+}
 
-static void draw_seg(uint8_t *buf, int bx, int by, int on) {
-    /* Draw a horizontal or vertical segment at (bx,by) */
-    /* Segments are 3 pixels wide, 1 pixel thick */
-    int lw = W / 8;
-    for (int p = 0; p < 3; p++) {
-        int x = bx + p;
-        if (x >= 0 && x < W && by >= 0 && by < H) {
-            if (on) buf[(x / 8) + by * lw] |= (0x80 >> (x % 8));
+/* Fill a rectangle */
+static void fb_fill_rect(int x, int y, int w, int h, int color) {
+    for (int dy = 0; dy < h; dy++) {
+        for (int dx = 0; dx < w; dx++) {
+            fb_set_pixel(x + dx, y + dy, color);
         }
     }
 }
 
-static void draw_seg_v(uint8_t *buf, int bx, int by, int on) {
-    int lw = W / 8;
-    for (int p = 0; p < 3; p++) {
-        int y = by + p;
-        if (bx >= 0 && bx < W && y >= 0 && y < H) {
-            if (on) buf[(bx / 8) + y * lw] |= (0x80 >> (bx % 8));
+/* Bresenham line drawing */
+static void fb_draw_line(int x0, int y0, int x1, int y1, int color) {
+    int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy, e2;
+
+    while (1) {
+        fb_set_pixel(x0, y0, color);
+        if (x0 == x1 && y0 == y1) break;
+        e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x0 += sx; }
+        if (e2 <= dx) { err += dx; y0 += sy; }
+    }
+}
+
+/* Draw ellipse outline using midpoint algorithm */
+static void fb_draw_ellipse(int cx, int cy, int rx, int ry, int outline, int fill) {
+    if (fill >= 0) {
+        /* Filled ellipse: draw horizontal lines between left and right edges */
+        int rx2 = rx * rx, ry2 = ry * ry;
+        /* Midpoint algorithm for filling */
+        int x = 0, y = ry;
+        int dx = 0, dy = 2 * rx2 * y;
+        int d1 = ry2 - rx2 * ry + rx2 / 4;
+
+        /* Region 1 */
+        while (dx < dy) {
+            fb_draw_line(cx - x, cy - y, cx + x, cy - y, fill);
+            fb_draw_line(cx - x, cy + y, cx + x, cy + y, fill);
+            x++;
+            dx += 2 * ry2;
+            if (d1 < 0) {
+                d1 += dx + ry2;
+            } else {
+                y--;
+                dy -= 2 * rx2;
+                d1 += dx - dy + ry2;
+            }
+        }
+
+        /* Region 2 */
+        int d2 = (int)(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - (long)rx2 * ry2);
+        while (y >= 0) {
+            fb_draw_line(cx - x, cy - y, cx + x, cy - y, fill);
+            fb_draw_line(cx - x, cy + y, cx + x, cy + y, fill);
+            y--;
+            dy -= 2 * rx2;
+            if (d2 > 0) {
+                d2 += rx2 - dy;
+            } else {
+                x++;
+                dx += 2 * ry2;
+                d2 += dx - dy + rx2;
+            }
+        }
+    }
+    if (outline >= 0) {
+        /* Outline ellipse using midpoint */
+        int rx2 = rx * rx, ry2 = ry * ry;
+        int x = 0, y = ry;
+        int dx = 0, dy = 2 * rx2 * y;
+        int d1 = ry2 - rx2 * ry + rx2 / 4;
+
+        while (dx < dy) {
+            fb_set_pixel(cx + x, cy + y, outline);
+            fb_set_pixel(cx - x, cy + y, outline);
+            fb_set_pixel(cx + x, cy - y, outline);
+            fb_set_pixel(cx - x, cy - y, outline);
+            x++;
+            dx += 2 * ry2;
+            if (d1 < 0) {
+                d1 += dx + ry2;
+            } else {
+                y--;
+                dy -= 2 * rx2;
+                d1 += dx - dy + ry2;
+            }
+        }
+        int d2 = (int)(ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - (long)rx2 * ry2);
+        while (y >= 0) {
+            fb_set_pixel(cx + x, cy + y, outline);
+            fb_set_pixel(cx - x, cy + y, outline);
+            fb_set_pixel(cx + x, cy - y, outline);
+            fb_set_pixel(cx - x, cy - y, outline);
+            y--;
+            dy -= 2 * rx2;
+            if (d2 > 0) {
+                d2 += rx2 - dy;
+            } else {
+                x++;
+                dx += 2 * ry2;
+                d2 += dx - dy + rx2;
+            }
         }
     }
 }
 
-static void draw_7seg_char(uint8_t *buf, int x, int y, char ch) {
-    /* Segment patterns for digits 0-9, ':' */
-    /* Segments: A(T), B(TR), C(BR), D(B), E(BL), F(TL), G(MID) */
-    static const uint8_t segs[12] = {
-        0x3F, /* 0: ABCDEF */
-        0x06, /* 1: BC */
-        0x5B, /* 2: ABDEG */
-        0x4F, /* 3: ABCDG */
-        0x66, /* 4: BCFG */
-        0x6D, /* 5: ACDFG */
-        0x7D, /* 6: ACDEFG */
-        0x07, /* 7: ABC */
-        0x7F, /* 8: ABCDEFG */
-        0x6F, /* 9: ABCDFG */
-        0x00, /* : (colon, handled separately) */
-        0x00,
+/* =========================================================================
+ * FreeType font rendering
+ * ========================================================================= */
+
+/* Initialize FreeType and load all fonts */
+static int ft_init(void) {
+    if (FT_Init_FreeType(&ft_library)) {
+        fprintf(stderr, "ERROR: FT_Init_FreeType failed\n");
+        return -1;
+    }
+
+    /* Load Chinese font (Font.ttc is a TrueType Collection, use face 0) */
+    if (FT_New_Face(ft_library, FONT_PATH_TTC, 0, &ft_face_ttc)) {
+        fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_TTC);
+        return -1;
+    }
+
+    /* Load digital font */
+    if (FT_New_Face(ft_library, FONT_PATH_DSEG, 0, &ft_face_dseg)) {
+        fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_DSEG);
+        return -1;
+    }
+
+    return 0;
+}
+
+/* Clean up FreeType resources */
+static void ft_cleanup(void) {
+    if (ft_face_dseg) FT_Done_Face(ft_face_dseg);
+    if (ft_face_ttc)  FT_Done_Face(ft_face_ttc);
+    if (ft_library)   FT_Done_FreeType(ft_library);
+}
+
+/* Render text using FreeType into the framebuffer.
+ * font_size: point size
+ * use_dseg: 1 for digital font, 0 for Chinese font
+ * color: 0 = black text, 1 = white text
+ */
+static void ft_render_text(int x, int y, const char *text, int font_size,
+                           int use_dseg, int color) {
+    FT_Face face = use_dseg ? ft_face_dseg : ft_face_ttc;
+
+    /* Set character size in points (72dpi) */
+    FT_Set_Char_Size(face, 0, font_size * 64, 72, 72);
+
+    int pen_x = x;
+    const char *p = text;
+
+    while (*p) {
+        /* Handle multi-byte UTF-8 characters */
+        unsigned int charcode;
+        int advance = 0;
+
+        if ((*p & 0x80) == 0) {
+            /* ASCII: 1 byte */
+            charcode = (unsigned char)*p;
+            advance = 1;
+        } else if ((*p & 0xE0) == 0xC0) {
+            /* 2-byte UTF-8 */
+            charcode = ((unsigned char)p[0] & 0x1F) << 6;
+            charcode |= ((unsigned char)p[1] & 0x3F);
+            advance = 2;
+        } else if ((*p & 0xF0) == 0xE0) {
+            /* 3-byte UTF-8 (Chinese characters) */
+            charcode = ((unsigned char)p[0] & 0x0F) << 12;
+            charcode |= ((unsigned char)p[1] & 0x3F) << 6;
+            charcode |= ((unsigned char)p[2] & 0x3F);
+            advance = 3;
+        } else if ((*p & 0xF8) == 0xF0) {
+            /* 4-byte UTF-8 */
+            charcode = ((unsigned char)p[0] & 0x07) << 18;
+            charcode |= ((unsigned char)p[1] & 0x3F) << 12;
+            charcode |= ((unsigned char)p[2] & 0x3F) << 6;
+            charcode |= ((unsigned char)p[3] & 0x3F);
+            advance = 4;
+        } else {
+            /* Invalid, skip */
+            p++;
+            continue;
+        }
+
+        /* Load and render glyph with monochrome target */
+        if (FT_Load_Char(face, charcode, FT_LOAD_RENDER | FT_LOAD_TARGET_MONO))
+            goto next_char;
+
+        FT_Bitmap *bitmap = &face->glyph->bitmap;
+
+        if (bitmap->pixel_mode == FT_PIXEL_MODE_MONO) {
+            int gx = pen_x + face->glyph->bitmap_left;
+            int gy = y - face->glyph->bitmap_top;
+
+            for (int row = 0; row < (int)bitmap->rows; row++) {
+                for (int col = 0; col < (int)bitmap->width; col++) {
+                    int byte_idx = row * bitmap->pitch + (col / 8);
+                    int bit_idx  = 7 - (col % 8);
+                    int pixel = (bitmap->buffer[byte_idx] >> bit_idx) & 1;
+
+                    if (color == 0) {
+                        /* Black text: draw black pixels */
+                        if (pixel) fb_set_pixel(gx + col, gy + row, 0);
+                    } else {
+                        /* White text: draw white pixels */
+                        if (pixel) fb_set_pixel(gx + col, gy + row, 1);
+                    }
+                }
+            }
+        }
+
+        pen_x += face->glyph->advance.x >> 6;
+
+next_char:
+        p += advance;
+    }
+}
+
+/* =========================================================================
+ * Convert framebuffer (250x122) to display buffer (122x250)
+ *
+ * Mapping: Python (px, py) → display (dx=121-py, dy=px)
+ * ========================================================================= */
+static void fb_to_display(void) {
+    memset(display_buf, 0xFF, DISP_SIZE);  /* Start all white */
+
+    for (int py = 0; py < FB_HEIGHT; py++) {
+        for (int px = 0; px < FB_WIDTH; px++) {
+            int dx = FB_HEIGHT - 1 - py;   /* 121 - py */
+            int dy = px;
+
+            /* Get source pixel (0=black in Pillow '1' mode) */
+            int src_byte = py * FB_ROW + (px / 8);
+            int src_bit  = 7 - (px % 8);
+            int pixel = (fb[src_byte] >> src_bit) & 1;
+
+            if (pixel == 0) {
+                /* Black pixel → clear bit in display buffer */
+                int dst_byte = dy * DISP_ROW + (dx / 8);
+                int dst_bit  = 7 - (dx % 8);
+                display_buf[dst_byte] &= ~(1 << dst_bit);
+            }
+        }
+    }
+}
+
+/* =========================================================================
+ * System functions (matching Python counterparts)
+ * ========================================================================= */
+
+/* Flag to track hwclock sync (matching has_set_system_time) */
+static int has_set_system_time = 0;
+
+/* Execute a shell command and return the first line of output.
+ * Caller must free the returned string. */
+static char *shell_output(const char *cmd) {
+    FILE *fp = popen(cmd, "r");
+    if (!fp) return NULL;
+
+    static char buf[256];
+    char *result = NULL;
+    if (fgets(buf, sizeof(buf), fp)) {
+        /* Strip trailing newline */
+        size_t len = strlen(buf);
+        while (len > 0 && (buf[len-1] == '\n' || buf[len-1] == '\r'))
+            buf[--len] = '\0';
+        result = strdup(buf);
+    }
+    pclose(fp);
+    return result;
+}
+
+/* Set system time from hardware clock (matching set_system_time_from_hwclock) */
+static int set_system_time_from_hwclock(void) {
+    int ret = system("sudo hwclock --hctosys 2>/dev/null");
+    usleep(100000);  /* 0.1s delay for time update */
+    return (ret == 0);
+}
+
+/* Get current time string HH:MM (matching get_time) */
+static void get_time_str(char *buf, size_t bufsize) {
+    if (!has_set_system_time) {
+        set_system_time_from_hwclock();
+        has_set_system_time = 1;
+    }
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    strftime(buf, bufsize, "%H:%M", tm_info);
+}
+
+/* Get current date string (matching get_date but lunar via Python) */
+static void get_date_str(char *buf, size_t bufsize) {
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+
+    /* Gregorian date */
+    char gregorian[64];
+    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日", tm_info);
+
+    /* Weekday in Chinese */
+    static const char *weekdays[] = {
+        "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"
     };
+    const char *weekday = weekdays[tm_info->tm_wday];
 
-    int idx = (ch >= '0' && ch <= '9') ? (ch - '0') : 10;
-    uint8_t s = segs[idx];
-    int w2 = 2;  /* segment thickness */
+    /* Lunar date via Python */
+    char lunar[32] = "";
+    char *lunar_output = shell_output(
+        "python3 -c \"from borax.calendars.lunardate import LunarDate; "
+        "print(LunarDate.today().strftime('农历%M月%D'))\" 2>/dev/null");
+    if (lunar_output) {
+        snprintf(lunar, sizeof(lunar), "%s", lunar_output);
+        free(lunar_output);
+    }
 
-    if (ch == ':') {
-        /* Draw colon dots */
-        int lw = W / 8;
-        for (int dy = 3; dy < 5; dy++) {
-            int yy = y + 10 + dy;
-            if (yy >= 0 && yy < H) buf[(x / 8) + yy * lw] |= (0x80 >> (x % 8));
-        }
-        for (int dy = 3; dy < 5; dy++) {
-            int yy = y + 16 + dy;
-            if (yy >= 0 && yy < H) buf[(x / 8) + yy * lw] |= (0x80 >> (x % 8));
-        }
+    snprintf(buf, bufsize, "%s%s%s", gregorian, weekday, lunar);
+}
+
+/* Get IPv4 address (matching Get_ipv4_address) */
+static void get_ip_str(char *buf, size_t bufsize) {
+    char *ip = shell_output(
+        "hostname -I 2>/dev/null | grep -oE '[0-9]{1,3}(\\.[0-9]{1,3}){3}' "
+        "| grep -v '^172\\.' | head -1");
+    if (ip && strlen(ip) > 0) {
+        snprintf(buf, bufsize, "%s", ip);
+        free(ip);
+    } else {
+        snprintf(buf, bufsize, "获取失败");
+        free(ip);
+    }
+}
+
+/* Get battery power (matching power_battery with caching) */
+static char last_power[16] = "";
+static time_t last_power_time = 0;
+
+static void get_power_str(char *buf, size_t bufsize) {
+    time_t now = time(NULL);
+
+    /* Cache for 3 minutes */
+    if ((now - last_power_time < 180) && last_power[0] != '\0') {
+        snprintf(buf, bufsize, "%s", last_power);
         return;
     }
 
-    /* Segment drawing (each segment is w2 pixels thick) */
-    int lw = W / 8;
-    /* A: top horizontal */
-    for (int tx = 0; tx < 3; tx++) {
-        int xx = x + tx;
-        for (int ty = 0; ty < w2; ty++) {
-            int yy = y + ty;
-            if (s & 0x01 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
+    char *power = shell_output(
+        "echo \"get battery\" | nc -q 0 127.0.0.1 8423 2>/dev/null | "
+        "awk -F':' '{print int($2)}'");
+    if (power) {
+        snprintf(last_power, sizeof(last_power), "%s%%", power);
+        free(power);
+    } else if (last_power[0] == '\0') {
+        snprintf(last_power, sizeof(last_power), "0%%");
     }
-    /* B: top-right vertical */
-    for (int tx = 0; tx < w2; tx++) {
-        int xx = x + 3;
-        for (int ty = 0; ty < 3; ty++) {
-            int yy = y + ty;
-            if (s & 0x02 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
-    /* C: bottom-right vertical */
-    for (int tx = 0; tx < w2; tx++) {
-        int xx = x + 3;
-        for (int ty = 0; ty < 3; ty++) {
-            int yy = y + 4 + ty;
-            if (s & 0x04 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
-    /* D: bottom horizontal */
-    for (int tx = 0; tx < 3; tx++) {
-        int xx = x + tx;
-        for (int ty = 0; ty < w2; ty++) {
-            int yy = y + 7 + ty;
-            if (s & 0x08 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
-    /* E: bottom-left vertical */
-    for (int tx = 0; tx < w2; tx++) {
-        int xx = x;
-        for (int ty = 0; ty < 3; ty++) {
-            int yy = y + 4 + ty;
-            if (s & 0x10 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
-    /* F: top-left vertical */
-    for (int tx = 0; tx < w2; tx++) {
-        int xx = x;
-        for (int ty = 0; ty < 3; ty++) {
-            int yy = y + ty;
-            if (s & 0x20 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
-    /* G: middle horizontal */
-    for (int tx = 0; tx < 3; tx++) {
-        int xx = x + tx;
-        for (int ty = 0; ty < w2; ty++) {
-            int yy = y + 4 + ty;
-            if (s & 0x40 && xx >= 0 && xx < W && yy >= 0 && yy < H)
-                buf[(xx/8) + yy*lw] |= (0x80 >> (xx%8));
-        }
-    }
+    last_power_time = now;
+    snprintf(buf, bufsize, "%s", last_power);
 }
 
 /* =========================================================================
- * Drawing primitives on 1bpp buffer
+ * Weather JSON parsing (simple string parser, no external JSON library)
  * ========================================================================= */
 
-/* Set pixel (x, y) to value (0=black, 1=white). Buffer is already 0xFF=white */
-static void set_pixel(uint8_t *buf, int x, int y, int val) {
-    if (x < 0 || x >= W || y < 0 || y >= H) return;
-    int lw = W / 8;
-    if (val)
-        buf[(x / 8) + y * lw] |= (0x80 >> (x % 8));
-    else
-        buf[(x / 8) + y * lw] &= ~(0x80 >> (x % 8));
-}
+/* Extract a string value from a simple JSON key-value pair.
+ * Handles format: "key":"value" or "key": "value" */
+static int json_get_str(const char *json, const char *key, char *out, size_t outsize) {
+    char search[64];
+    snprintf(search, sizeof(search), "\"%s\"", key);
 
-/* Draw horizontal line */
-static void draw_hline(uint8_t *buf, int x1, int x2, int y, int val) {
-    if (x1 > x2) { int t = x1; x1 = x2; x2 = t; }
-    for (int x = x1; x <= x2; x++) set_pixel(buf, x, y, val);
-}
+    const char *pos = strstr(json, search);
+    if (!pos) return -1;
 
-/* Draw vertical line */
-static void draw_vline(uint8_t *buf, int x, int y1, int y2, int val) {
-    if (y1 > y2) { int t = y1; y1 = y2; y2 = t; }
-    for (int y = y1; y <= y2; y++) set_pixel(buf, x, y, val);
-}
+    pos += strlen(search);
 
-/* Fill rectangle */
-static void fill_rect(uint8_t *buf, int x1, int y1, int x2, int y2, int val) {
-    if (x1 > x2) { int t = x1; x1 = x2; x2 = t; }
-    if (y1 > y2) { int t = y1; y1 = y2; y2 = t; }
-    for (int y = y1; y <= y2; y++)
-        for (int x = x1; x <= x2; x++)
-            set_pixel(buf, x, y, val);
-}
+    /* Skip whitespace and colon */
+    while (*pos && (*pos == ' ' || *pos == ':')) pos++;
 
-/* Draw 5x8 character (from embedded font) */
-static void draw_char(uint8_t *buf, int x, int y, char ch) {
-    if (ch < 0x20 || ch > 0x7E) return;
-    const uint8_t *glyph = font5x8[ch - 0x20];
-    for (int col = 0; col < 5; col++) {
-        uint8_t line = glyph[col];
-        for (int row = 0; row < 8; row++) {
-            if (line & (1 << row))
-                set_pixel(buf, x + col, y + row, 0); /* black */
-        }
+    /* Skip opening quote */
+    if (*pos == '"') pos++;
+    else return -1;
+
+    /* Copy until closing quote */
+    size_t i = 0;
+    while (*pos && *pos != '"' && *pos != '\n' && i < outsize - 1) {
+        out[i++] = *pos++;
     }
+    out[i] = '\0';
+    return 0;
 }
 
-/* Draw 5x8 text string */
-static void draw_text(uint8_t *buf, int x, int y, const char *text) {
-    int cx = x;
-    while (*text) {
-        if (*text == '\n') { cx = x; y += 10; text++; continue; }
-        draw_char(buf, cx, y, *text);
-        cx += 6; /* 5 + 1 spacing */
-        text++;
-    }
-}
+/* Read weather.json and get all fields */
+typedef struct {
+    char cityname[32];
+    char temp[16];
+    char weather[32];
+    char wd[16];
+    char time_str[16];
+    char date_str[16];
+    char sd[16];
+} WeatherData;
 
-/* Draw 7-segment time string (HH:MM) */
-static void draw_time_7seg(uint8_t *buf, int x, int y, const char *time_str) {
-    int cx = x;
-    while (*time_str) {
-        draw_7seg_char(buf, cx, y, *time_str);
-        cx += (*time_str == ':') ? 3 : 6;
-        time_str++;
-    }
-}
+static int read_weather(WeatherData *w) {
+    memset(w, 0, sizeof(*w));
 
-/* =========================================================================
- * System helpers
- * ========================================================================= */
-
-/* Sync system time from hardware RTC */
-static void sync_hwclock(void) {
-    system("sudo hwclock --hctosys 2>/dev/null");
-}
-
-/* Get current time string "HH:MM" */
-static void get_time_str(char *buf, size_t len) {
-    time_t t = time(NULL);
-    struct tm *tm = localtime(&t);
-    strftime(buf, len, "%H:%M", tm);
-}
-
-/* Get date string "YYYY年MM月DD日 星期X" */
-static void get_date_str(char *buf, size_t len) {
-    time_t t = time(NULL);
-    struct tm *tm = localtime(&t);
-    static const char *wdays[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
-    snprintf(buf, len, "%04d-%02d-%02d %s",
-             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
-             wdays[tm->tm_wday]);
-}
-
-/* Get IPv4 address (excluding 172.x.x.x docker) */
-static void get_ip_str(char *buf, size_t len) {
-    FILE *fp = popen("hostname -I 2>/dev/null", "r");
-    if (!fp) { snprintf(buf, len, "N/A"); return; }
-    char ips[256] = {0};
-    if (fgets(ips, sizeof(ips), fp)) {
-        /* Get first non-172. IP */
-        char *tok = strtok(ips, " \t\n");
-        while (tok) {
-            if (strncmp(tok, "172.", 4) != 0) {
-                snprintf(buf, len, "IP:%s", tok);
-                pclose(fp);
-                return;
-            }
-            tok = strtok(NULL, " \t\n");
-        }
-    }
-    pclose(fp);
-    snprintf(buf, len, "IP:N/A");
-}
-
-/* Get battery percentage via netcat */
-static void get_battery_str(char *buf, size_t len) {
-    FILE *fp = popen("echo \"get battery\" | nc -q 0 127.0.0.1 8423 2>/dev/null", "r");
-    if (!fp) { snprintf(buf, len, "--%%"); return; }
-    char line[128] = {0};
-    if (fgets(line, sizeof(line), fp)) {
-        /* Parse "battery: XX" format */
-        char *colon = strchr(line, ':');
-        if (colon) {
-            int pct = atoi(colon + 1);
-            snprintf(buf, len, "%d%%", pct);
-        } else {
-            snprintf(buf, len, "--%%");
-        }
-    } else {
-        snprintf(buf, len, "--%%");
-    }
-    pclose(fp);
-}
-
-/* Parse weather.json and get values */
-static int parse_weather(char *temp_out, char *humid_out, char *weather_out,
-                          char *city_out, char *update_out, size_t len) {
-    FILE *fp = fopen("/root/2.13-Ink-screen-clock/bin/weather.json", "r");
+    FILE *fp = fopen(WEATHER_JSON_PATH, "r");
     if (!fp) return -1;
 
-    char json[4096] = {0};
-    size_t n = fread(json, 1, sizeof(json) - 1, fp);
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    if (fsize <= 0 || fsize > 4096) { fclose(fp); return -1; }
+    fseek(fp, 0, SEEK_SET);
+
+    char *buf = (char *)malloc(fsize + 1);
+    if (!buf) { fclose(fp); return -1; }
+
+    size_t nread = fread(buf, 1, fsize, fp);
+    buf[nread] = '\0';
     fclose(fp);
-    if (n == 0) return -1;
-    json[n] = '\0';
 
-    /* Simple JSON value extractor */
-    #define EXTRACT(key, out) do { \
-        char *p = strstr(json, "\"" key "\""); \
-        if (p) { \
-            p = strchr(p, ':'); \
-            if (p) { \
-                p++; while (*p == ' ' || *p == '"') p++; \
-                char *end = p; \
-                while (*end && *end != '"' && *end != ',' && *end != '\n' && *end != '}') end++; \
-                size_t l = (size_t)(end - p); \
-                if (l >= len) l = len - 1; \
-                memcpy(out, p, l); out[l] = '\0'; \
-            } \
-        } \
-    } while(0)
+    if (nread == 0) { free(buf); return -1; }
 
-    EXTRACT("temp", temp_out);
-    EXTRACT("SD", humid_out);
-    EXTRACT("weather", weather_out);
-    EXTRACT("cityname", city_out);
-    EXTRACT("time", update_out);
+    json_get_str(buf, "cityname", w->cityname, sizeof(w->cityname));
+    json_get_str(buf, "temp",      w->temp,     sizeof(w->temp));
+    json_get_str(buf, "weather",   w->weather,  sizeof(w->weather));
+    json_get_str(buf, "WD",        w->wd,       sizeof(w->wd));
+    json_get_str(buf, "time",      w->time_str, sizeof(w->time_str));
+    json_get_str(buf, "date",      w->date_str, sizeof(w->date_str));
+    json_get_str(buf, "SD",        w->sd,       sizeof(w->sd));
 
-    /* Format temperature and humidity */
-    if (temp_out[0]) {
-        char t[64]; snprintf(t, sizeof(t), "%sC", temp_out);
-        strncpy(temp_out, t, len);
-    }
-    if (humid_out[0]) {
-        char h[64]; snprintf(h, sizeof(h), "%s%%", humid_out);
-        strncpy(humid_out, h, len);
-    }
+    free(buf);
     return 0;
 }
 
 /* =========================================================================
- * Layout drawing
+ * Display content drawing (matching Python display functions)
  * ========================================================================= */
 
-/* Draw bottom bar (black background, white text) */
-static void draw_bottom_bar(uint8_t *buf, const char *ip, const char *battery,
-                             const char *weather_time) {
-    /* Black bar from y=105 to y=121 */
-    fill_rect(buf, 0, 105, W - 1, 121, 0);
+/* Cached values for partial refresh comparison */
+static char cached_date[128]    = "";
+static char cached_time[8]      = "";
+static char cached_ip[32]       = "";
+static char cached_power[16]    = "";
+static char cached_weather_w[32]  = "";
+static char cached_weather_t[16]  = "";
+static char cached_weather_h[16]  = "";
+static char cached_weather_c[32]  = "";
+static char cached_weather_u[16]  = "";
 
-    /* IP address on left */
-    draw_text(buf, 10, 107, ip);
+/* Draw bottom edge bar (matching Bottom_edge) */
+static void draw_bottom_edge(void) {
+    /* Black bar across bottom */
+    fb_fill_rect(0, 105, FB_WIDTH, 17, 0);
 
-    /* Weather update time center-right */
-    draw_text(buf, 150, 107, weather_time);
+    /* Battery icon outline */
+    fb_draw_line(126, 109, 154, 109, 1);  /* top */
+    fb_draw_line(126, 110, 126, 119, 1);  /* left */
+    fb_draw_line(127, 119, 154, 119, 1);  /* bottom */
+    fb_draw_line(154, 110, 154, 118, 1);  /* right */
+    /* Battery bump */
+    fb_draw_line(155, 112, 157, 112, 1);
+    fb_draw_line(155, 116, 157, 116, 1);
+    fb_draw_line(157, 113, 157, 115, 1);
 
-    /* Battery on right - draw simple battery icon + percentage */
-    /* Battery outline: x=126..157, y=108..117 */
-    draw_hline(buf, 126, 154, 108, 1);
-    draw_vline(buf, 126, 108, 117, 1);
-    draw_vline(buf, 154, 108, 117, 1);
-    draw_hline(buf, 126, 154, 117, 1);
-    /* Battery tip */
-    draw_hline(buf, 155, 157, 110, 1);
-    draw_hline(buf, 155, 157, 115, 1);
-    draw_vline(buf, 157, 111, 114, 1);
-    /* Battery level fill (simplified: text inside battery) */
-    draw_text(buf, 129, 109, battery);
+    /* Battery percentage text */
+    char power[16];
+    get_power_str(power, sizeof(power));
+    snprintf(cached_power, sizeof(cached_power), "%s", power);
+    ft_render_text(129, 108, power, FONT_SIZE_SMALL, 0, 1);
+
+    /* Clock icon (ellipse + hands) */
+    fb_draw_ellipse(199, 113, 7, 6, 1, 1);   /* filled white circle, white outline */
+    fb_draw_line(199, 109, 199, 114, 0);       /* hour hand (black) */
+    fb_draw_line(200, 114, 204, 114, 0);        /* minute hand (black) */
+
+    /* IP address */
+    char ip[32];
+    get_ip_str(ip, sizeof(ip));
+    snprintf(cached_ip, sizeof(cached_ip), "%s", ip);
+    char ip_text[64];
+    snprintf(ip_text, sizeof(ip_text), "IP:%s", ip);
+    ft_render_text(10, 107, ip_text, FONT_SIZE_IP, 0, 1);
 }
 
-/* Draw weather info block (right side of screen) */
-static void draw_weather_block(uint8_t *buf, const char *weather,
-                                const char *temp, const char *humid, const char *city) {
-    draw_text(buf, 150, 25, "W:");
-    draw_text(buf, 191, 25, weather);
+/* Draw weather section (matching Weather) */
+static void draw_weather(void) {
+    WeatherData w;
+    if (read_weather(&w) != 0) return;
 
-    draw_text(buf, 150, 45, "T:");
-    draw_text(buf, 191, 45, temp);
+    /* Cache values */
+    snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
+    snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", w.temp);
+    snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
+    snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
+    snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
 
-    draw_text(buf, 150, 65, "H:");
-    draw_text(buf, 191, 65, humid);
+    /* Prefix labels */
+    ft_render_text(150, 25, "天气:", FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(150, 45, "温度:", FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(150, 65, "湿度:", FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(150, 85, "城市:", FONT_SIZE_WEATHER, 0, 0);
 
-    draw_text(buf, 150, 85, "C:");
-    draw_text(buf, 191, 85, city);
+    /* Weather data */
+    char temp_str[32];
+    snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
+    ft_render_text(191, 25, w.weather,  FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(191, 45, temp_str,    FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(191, 65, w.sd,        FONT_SIZE_WEATHER, 0, 0);
+    ft_render_text(191, 85, w.cityname,  FONT_SIZE_WEATHER, 0, 0);
+
+    /* Weather update time in bottom bar */
+    ft_render_text(211, 107, w.time_str, FONT_SIZE_IP, 0, 1);
+}
+
+/* Full refresh (matching Basic_refresh) */
+static void basic_refresh(EPD *epd) {
+    fb_clear(0xFF);  /* White background */
+
+    /* Date line */
+    get_date_str(cached_date, sizeof(cached_date));
+    ft_render_text(2, 2, cached_date, FONT_SIZE_DATE, 0, 0);
+
+    /* Time display */
+    get_time_str(cached_time, sizeof(cached_time));
+    ft_render_text(5, 40, cached_time, FONT_SIZE_TIME, 1, 0);
+
+    /* Bottom edge */
+    draw_bottom_edge();
+
+    /* Weather */
+    draw_weather();
+
+    /* Convert and display */
+    fb_to_display();
+    EPD_2in13_V4_Display(epd, display_buf);
+}
+
+/* Partial refresh loop (matching Partial_refresh) */
+static void partial_refresh(EPD *epd) {
+    /* Set base image for partial refresh */
+    fb_to_display();
+    EPD_2in13_V4_DisplayPartBaseImage(epd, display_buf);
+
+    /* Re-init for partial refresh */
+    EPD_2in13_V4_Init(epd);
+
+    while (1) {
+        int need_refresh = 0;
+
+        /* ---- Time check ---- */
+        char current_time[8];
+        get_time_str(current_time, sizeof(current_time));
+        if (strcmp(current_time, cached_time) != 0) {
+            /* Erase old time area */
+            fb_fill_rect(5, 40, 128, 42, 1);  /* width 133-5=128, height 82-40=42 */
+            ft_render_text(5, 40, current_time, FONT_SIZE_TIME, 1, 0);
+            snprintf(cached_time, sizeof(cached_time), "%s", current_time);
+            need_refresh = 1;
+        }
+
+        /* ---- Date check ---- */
+        char current_date[128];
+        get_date_str(current_date, sizeof(current_date));
+        if (strcmp(current_date, cached_date) != 0) {
+            fb_fill_rect(2, 2, 248, 16, 1);
+            ft_render_text(2, 2, current_date, FONT_SIZE_DATE, 0, 0);
+            snprintf(cached_date, sizeof(cached_date), "%s", current_date);
+            need_refresh = 1;
+        }
+
+        /* ---- IP check ---- */
+        char current_ip[32];
+        get_ip_str(current_ip, sizeof(current_ip));
+        if (strcmp(current_ip, cached_ip) != 0) {
+            fb_fill_rect(1, 107, 122, 13, 0);  /* black background */
+            char ip_text[64];
+            snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
+            ft_render_text(10, 107, ip_text, FONT_SIZE_IP, 0, 1);
+            snprintf(cached_ip, sizeof(cached_ip), "%s", current_ip);
+            need_refresh = 1;
+        }
+
+        /* ---- Weather update ---- */
+        WeatherData w;
+        if (read_weather(&w) == 0) {
+            /* Weather description */
+            if (strcmp(w.weather, cached_weather_w) != 0) {
+                fb_fill_rect(191, 25, 58, 13, 1);
+                ft_render_text(191, 25, w.weather, FONT_SIZE_WEATHER, 0, 0);
+                snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
+                need_refresh = 1;
+            }
+
+            /* Temperature */
+            char temp_str[32];
+            snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
+            if (strcmp(temp_str, cached_weather_t) != 0) {
+                fb_fill_rect(191, 45, 58, 12, 1);
+                ft_render_text(191, 45, temp_str, FONT_SIZE_WEATHER, 0, 0);
+                snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
+                need_refresh = 1;
+            }
+
+            /* Humidity */
+            if (strcmp(w.sd, cached_weather_h) != 0) {
+                fb_fill_rect(191, 65, 58, 12, 1);
+                ft_render_text(191, 65, w.sd, FONT_SIZE_WEATHER, 0, 0);
+                snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
+                need_refresh = 1;
+            }
+
+            /* City */
+            if (strcmp(w.cityname, cached_weather_c) != 0) {
+                fb_fill_rect(191, 85, 58, 13, 1);
+                ft_render_text(191, 85, w.cityname, FONT_SIZE_WEATHER, 0, 0);
+                snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
+                need_refresh = 1;
+            }
+
+            /* Update time */
+            if (strcmp(w.time_str, cached_weather_u) != 0) {
+                fb_fill_rect(211, 107, 37, 11, 0);
+                ft_render_text(211, 107, w.time_str, FONT_SIZE_IP, 0, 1);
+                snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
+                need_refresh = 1;
+            }
+        }
+
+        /* ---- Battery check ---- */
+        char current_power[16];
+        get_power_str(current_power, sizeof(current_power));
+        if (strcmp(current_power, cached_power) != 0) {
+            fb_fill_rect(128, 110, 25, 7, 0);
+            ft_render_text(129, 108, current_power, FONT_SIZE_SMALL, 0, 1);
+            snprintf(cached_power, sizeof(cached_power), "%s", current_power);
+            need_refresh = 1;
+        }
+
+        /* Perform partial refresh if anything changed */
+        if (need_refresh) {
+            fb_to_display();
+            /* Strong partial refresh (5 times, matching Local_strong_brush) */
+            for (int i = 0; i < 5; i++) {
+                EPD_2in13_V4_DisplayPartial(epd, display_buf);
+            }
+        }
+
+        /* Short sleep to avoid busy-waiting (Python checks continuously) */
+        usleep(200000);  /* 200ms */
+    }
 }
 
 /* =========================================================================
- * Main program
+ * Main entry point
  * ========================================================================= */
-
 int main(void) {
     EPD epd;
+    int retry_interval = 180;  /* 3 minutes between retries */
 
-    printf("e-Paper Clock (C version)\n");
-    printf("========================\n");
-
-    /* ---- Initialize display ---- */
-    if (EPD_2in13_V4_Init(&epd) != EPD_OK) {
-        fprintf(stderr, "ERROR: Failed to init display\n");
+    /* Initialize FreeType fonts */
+    if (ft_init() != 0) {
+        fprintf(stderr, "ERROR: Font initialization failed.\n");
+        fprintf(stderr, "Make sure fonts exist at:\n");
+        fprintf(stderr, "  %s\n", FONT_PATH_TTC);
+        fprintf(stderr, "  %s\n", FONT_PATH_DSEG);
         return 1;
     }
 
-    /* ---- Sync hardware clock ---- */
-    sync_hwclock();
+    printf("Ink Screen Clock - C Version\n");
+    printf("=============================\n");
 
-    /* ---- Buffer for display ---- */
-    uint8_t *buf = (uint8_t *)malloc(BUF_SIZE);
-    if (!buf) { EPD_2in13_V4_Sleep(&epd); return 1; }
-
-    /* ---- Basic (full) refresh ---- */
-    memset(buf, 0xFF, BUF_SIZE);
-
-    /* Date line */
-    char date_str[64];
-    get_date_str(date_str, sizeof(date_str));
-    draw_text(buf, 2, 2, date_str);
-
-    /* Time (7-segment) */
-    char time_str[16];
-    get_time_str(time_str, sizeof(time_str));
-    draw_time_7seg(buf, 5, 30, time_str);
-
-    /* Weather */
-    char temp[64] = "--C", humid[64] = "--%%", weather[64] = "--", city[64] = "--", wtime[64] = "--";
-    parse_weather(temp, humid, weather, city, wtime, sizeof(temp));
-    draw_weather_block(buf, weather, temp, humid, city);
-
-    /* Bottom bar */
-    char ip[64], battery[64];
-    get_ip_str(ip, sizeof(ip));
-    get_battery_str(battery, sizeof(battery));
-    draw_bottom_bar(buf, ip, battery, wtime);
-
-    /* Display */
-    EPD_2in13_V4_Display(&epd, buf);
-    printf("Full refresh done.\n");
-
-    /* ---- Partial refresh loop (minute-level updates) ---- */
-    EPD_2in13_V4_DisplayPartBaseImage(&epd, buf);
-
-    char last_time[16] = "";
-    char last_date[64] = "";
-    char last_ip[64] = "";
-    char last_battery[64] = "";
-    char last_weather[64] = "", last_temp[64] = "", last_humid[64] = "";
-    char last_city[64] = "", last_wtime[64] = "";
-
-    int loop_count = 0;
     while (1) {
-        /* Check time change */
-        char new_time[16];
-        get_time_str(new_time, sizeof(new_time));
-        if (strcmp(new_time, last_time) != 0) {
-            /* Erase old time */
-            fill_rect(buf, 5, 30, 130, 70, 1);
-            draw_time_7seg(buf, 5, 30, new_time);
-            strncpy(last_time, new_time, sizeof(last_time));
+        int success = 0;
 
-            /* Strong partial refresh (5 times) */
-            for (int i = 0; i < 5; i++)
-                EPD_2in13_V4_DisplayPartial(&epd, buf);
-            printf("Time updated: %s\n", new_time);
+        /* ---- Initialize display ---- */
+        printf("Initializing 2.13\" V4 e-Paper display...\n");
+
+        if (EPD_2in13_V4_Init(&epd) != EPD_OK) {
+            fprintf(stderr, "ERROR: Failed to initialize display. Retrying in %ds...\n",
+                    retry_interval);
+            sleep(retry_interval);
+            continue;
         }
 
-        /* Check date change */
-        char new_date[64];
-        get_date_str(new_date, sizeof(new_date));
-        if (strcmp(new_date, last_date) != 0) {
-            fill_rect(buf, 2, 2, 250, 14, 1);
-            draw_text(buf, 2, 2, new_date);
-            strncpy(last_date, new_date, sizeof(last_date));
-            for (int i = 0; i < 5; i++)
-                EPD_2in13_V4_DisplayPartial(&epd, buf);
-            printf("Date updated: %s\n", new_date);
-        }
+        printf("  Width: %d px, Height: %d px\n", epd.width, epd.height);
 
-        /* Check IP change (every ~30 iterations = ~30 seconds) */
-        if (loop_count % 30 == 0) {
-            char new_ip[64];
-            get_ip_str(new_ip, sizeof(new_ip));
-            if (strcmp(new_ip, last_ip) != 0) {
-                fill_rect(buf, 1, 107, 123, 120, 0);
-                draw_text(buf, 10, 107, new_ip);
-                strncpy(last_ip, new_ip, sizeof(last_ip));
-                for (int i = 0; i < 5; i++)
-                    EPD_2in13_V4_DisplayPartial(&epd, buf);
-            }
+        /* ---- Full refresh ---- */
+        printf("Performing full refresh...\n");
+        basic_refresh(&epd);
 
-            /* Check battery change */
-            char new_bat[64];
-            get_battery_str(new_bat, sizeof(new_bat));
-            if (strcmp(new_bat, last_battery) != 0) {
-                fill_rect(buf, 128, 108, 153, 117, 0);
-                draw_text(buf, 129, 109, new_bat);
-                strncpy(last_battery, new_bat, sizeof(last_battery));
-                for (int i = 0; i < 5; i++)
-                    EPD_2in13_V4_DisplayPartial(&epd, buf);
-            }
+        /* ---- Partial refresh loop ---- */
+        printf("Entering partial refresh loop...\n");
+        partial_refresh(&epd);
 
-            /* Check weather update */
-            char nt[64] = "--C", nh[64] = "--%%", nw[64] = "--", nc[64] = "--", nwt[64] = "--";
-            if (parse_weather(nt, nh, nw, nc, nwt, sizeof(nt)) == 0) {
-                if (strcmp(nw, last_weather) != 0) {
-                    fill_rect(buf, 191, 25, 249, 38, 1);
-                    draw_text(buf, 191, 25, nw);
-                    strncpy(last_weather, nw, sizeof(last_weather));
-                    for (int i = 0; i < 5; i++) EPD_2in13_V4_DisplayPartial(&epd, buf);
-                }
-                if (strcmp(nt, last_temp) != 0) {
-                    fill_rect(buf, 191, 45, 249, 57, 1);
-                    draw_text(buf, 191, 45, nt);
-                    strncpy(last_temp, nt, sizeof(last_temp));
-                    for (int i = 0; i < 5; i++) EPD_2in13_V4_DisplayPartial(&epd, buf);
-                }
-                if (strcmp(nh, last_humid) != 0) {
-                    fill_rect(buf, 191, 65, 249, 77, 1);
-                    draw_text(buf, 191, 65, nh);
-                    strncpy(last_humid, nh, sizeof(last_humid));
-                    for (int i = 0; i < 5; i++) EPD_2in13_V4_DisplayPartial(&epd, buf);
-                }
-                if (strcmp(nc, last_city) != 0) {
-                    fill_rect(buf, 191, 85, 249, 98, 1);
-                    draw_text(buf, 191, 85, nc);
-                    strncpy(last_city, nc, sizeof(last_city));
-                    for (int i = 0; i < 5; i++) EPD_2in13_V4_DisplayPartial(&epd, buf);
-                }
-                if (strcmp(nwt, last_wtime) != 0) {
-                    fill_rect(buf, 150, 107, 249, 118, 0);
-                    draw_text(buf, 150, 107, nwt);
-                    strncpy(last_wtime, nwt, sizeof(last_wtime));
-                    for (int i = 0; i < 5; i++) EPD_2in13_V4_DisplayPartial(&epd, buf);
-                }
-            }
-        }
+        /* Partial_refresh runs forever; if it exits, clean up */
+        success = 1;
 
-        loop_count++;
-        epd.delay_ms(1000); /* Check every second */
+        /* Cleanup */
+        EPD_2in13_V4_Init(&epd);
+        EPD_2in13_V4_Clear(&epd, EPD_WHITE);
+        EPD_2in13_V4_Sleep(&epd);
+
+        if (success) break;
+
+        printf("Retrying in %ds...\n", retry_interval);
+        sleep(retry_interval);
     }
 
-    /* Never reaches here, but for completeness: */
-    free(buf);
-    EPD_2in13_V4_Sleep(&epd);
+    ft_cleanup();
+    printf("Done.\n");
     return 0;
 }
