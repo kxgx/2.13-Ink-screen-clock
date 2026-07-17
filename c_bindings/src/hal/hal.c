@@ -227,6 +227,7 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
     /* Setup GPIO pins */
     int pins[] = {epd->rst_pin, epd->dc_pin, epd->busy_pin, epd->pwr_pin};
     const char *dirs[] = {"out", "out", "in", "out"};
+    const char *names[] = {"RST", "DC", "BUSY", "PWR"};
 
     for (int i = 0; i < 4; i++) {
         int pin = pins[i];
@@ -234,6 +235,7 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
 
         gpio_setup_pin(pin, dirs[i]);
         ctx->gpio_exported[pin] = 1;
+        fprintf(stderr, "GPIO %s (pin %d) -> %s\n", names[i], pin, dirs[i]);
 
         /* Set initial values */
         if (dirs[i][0] == 'o') {
@@ -250,6 +252,7 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
     char spi_dev[32];
     snprintf(spi_dev, sizeof(spi_dev), "/dev/spidev%d.%d",
              EPD_SPI_BUS, EPD_SPI_DEVICE);
+    fprintf(stderr, "Opening SPI: %s\n", spi_dev);
     ctx->spi_fd = spi_open(spi_dev, EPD_SPI_SPEED, SPI_MODE_0, 8);
     if (ctx->spi_fd < 0) {
         fprintf(stderr, "hal: SPI open failed on %s\n", spi_dev);
@@ -330,6 +333,7 @@ int epd_teardown_default_hal(EPD *epd) {
 
 void epd_send_command(EPD *epd, uint8_t cmd) {
     if (!epd) return;
+    fprintf(stderr, "CMD 0x%02X\n", cmd);
     epd->digital_write(epd->dc_pin, 0);
     epd->spi_writebyte(cmd);
 }
