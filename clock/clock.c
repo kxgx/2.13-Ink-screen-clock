@@ -309,9 +309,12 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
      * behavior (scale = font_size / unitsPerEm). */
     float scale = stbtt_ScaleForMappingEmToPixels(font, font_size);
 
-    /* Pillow: y = text top. stb_truetype: y = baseline. Compensate. */
+    /* Pillow: y = text top. stb_truetype: y = baseline. Compensate.
+     * FreeType uses OS/2 sTypoAscender; prefer that over hhea ascender. */
     int ascent, descent, lineGap;
-    stbtt_GetFontVMetrics(font, &ascent, &descent, &lineGap);
+    if (!stbtt_GetFontVMetricsOS2(font, &ascent, &descent, &lineGap)) {
+        stbtt_GetFontVMetrics(font, &ascent, &descent, &lineGap);
+    }
     int baseline_y = y + (int)(ascent * scale);
 
     int pen_x = x;
