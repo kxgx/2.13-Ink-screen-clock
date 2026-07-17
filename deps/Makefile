@@ -29,7 +29,7 @@ $(BUILD_DIR)/lib/libfreetype.a: $(FREETYPE_DIR)/configure
 	@mkdir -p $(BUILD_DIR)
 	@cd $(FREETYPE_DIR) && ./configure --prefix=$(ABS_BUILD) \
 		--disable-shared --enable-static \
-		--without-bzip2 --without-png \
+		--without-bzip2 --without-png --without-zlib \
 		--without-harfbuzz --without-brotli \
 		> /dev/null 2>&1
 	@$(MAKE) -C $(FREETYPE_DIR) -j$$(nproc) > /dev/null 2>&1
