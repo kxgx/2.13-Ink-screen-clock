@@ -362,8 +362,11 @@ void epd_reset(EPD *epd) {
 
 void epd_wait_busy(EPD *epd) {
     if (!epd) return;
+    int val = epd->digital_read(epd->busy_pin);
+    fprintf(stderr, "BUSY read: %d\n", val);
     while (epd->digital_read(epd->busy_pin) == 1) {
         epd->delay_ms(100);
+        fprintf(stderr, "BUSY still high, waiting...\n");
     }
 }
 
