@@ -241,7 +241,8 @@ static int ft_init(void) {
         return -1;
     }
 
-    if (!stbtt_InitFont(&font_ttc, font_ttc_buf, 0)) {
+    int ttc_offset = stbtt_GetFontOffsetForIndex(font_ttc_buf, 0);
+    if (ttc_offset < 0 || !stbtt_InitFont(&font_ttc, font_ttc_buf, ttc_offset)) {
         fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_TTC);
         free(font_ttc_buf);
         return -1;
