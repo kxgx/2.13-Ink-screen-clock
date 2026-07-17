@@ -777,14 +777,12 @@ static void sig_handler(int sig) {
     _exit(0);
 }
 
-/* Weather update thread: run weather.py periodically (matching weather.py) */
+/* Weather update thread: launch weather.py once, it self-schedules every 30min */
 static void *weather_update_thread(void *arg) {
     (void)arg;
-    while (g_running) {
-        printf("Updating weather data...\n");
-        system("python3 ../bin/weather.py 2>/dev/null &");
-        for (int i = 0; i < 1800 && g_running; i++) sleep(1);
-    }
+    printf("Starting weather updater...\n");
+    system("python3 ../bin/weather.py 2>/dev/null &");
+    /* weather.py runs forever with its own Timer; nothing more to do */
     return NULL;
 }
 
