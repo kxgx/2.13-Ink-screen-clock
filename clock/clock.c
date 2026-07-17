@@ -356,7 +356,7 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
         unsigned char *bitmap = (unsigned char *)malloc(w * h);
         if (!bitmap) goto next_char;
 
-        stbtt_MakeGlyphBitmap(font, bitmap, w, h, w, scale, scale, glyph, 0, 0);
+        stbtt_MakeGlyphBitmap(font, bitmap, w, h, w, scale, scale, glyph);
 
         int gx = pen_x + (int)(left_side_bearing * scale);
         int gy = baseline_y - y1;  /* y1 is top of glyph in stb coords (positive up) */
@@ -463,11 +463,11 @@ static void get_date_str(char *buf, size_t bufsize) {
 
     /* Gregorian date */
     char gregorian[64];
-    strftime(gregorian, sizeof(gregorian), "%Y�?m�?d�?, tm_info);
+    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日", tm_info);
 
     /* Weekday in Chinese */
     static const char *weekdays[] = {
-        "星期一", "星期�?, "星期�?, "星期�?, "星期�?, "星期�?, "星期�?
+        "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
@@ -475,7 +475,7 @@ static void get_date_str(char *buf, size_t bufsize) {
     char lunar[32] = "";
     char *lunar_output = shell_output(
         "python3 -c \"from borax.calendars.lunardate import LunarDate; "
-        "print(LunarDate.today().strftime('农历%M�?D'))\" 2>/dev/null");
+        "print(LunarDate.today().strftime('农历%M月%D日'))\" 2>/dev/null");
     if (lunar_output) {
         snprintf(lunar, sizeof(lunar), "%s", lunar_output);
         free(lunar_output);
