@@ -50,7 +50,7 @@ static volatile uint32_t *g_gpio = NULL;  /* mmap'd GPIO registers */
 #define GPLEV0   13
 
 static int gpio_init(void) {
-    if (g_gpio) return 0;  /* already mapped */
+    if (g_gpio) return 0;
     int fd = open("/dev/gpiomem", O_RDWR | O_SYNC);
     if (fd < 0) {
         fprintf(stderr, "hal: cannot open /dev/gpiomem: %s\n", strerror(errno));
@@ -63,7 +63,6 @@ static int gpio_init(void) {
         g_gpio = NULL;
         return -1;
     }
-    fprintf(stderr, "GPIO: /dev/gpiomem mapped OK\n");
     return 0;
 }
 
@@ -213,7 +212,6 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
 
     /* Setup GPIO pins */
     int pins[] = {epd->rst_pin, epd->dc_pin, epd->busy_pin, epd->pwr_pin};
-    const char *names[] = {"RST", "DC", "BUSY", "PWR"};
 
     for (int i = 0; i < 4; i++) {
         int pin = pins[i];
@@ -224,7 +222,6 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
         } else {
             gpio_set_output(pin);
         }
-        fprintf(stderr, "GPIO %s (pin %d) -> %s\n", names[i], pin, (i == 2) ? "in" : "out");
     }
 
     /* Power on */
@@ -238,7 +235,6 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
     char spi_dev[32];
     snprintf(spi_dev, sizeof(spi_dev), "/dev/spidev%d.%d",
              EPD_SPI_BUS, EPD_SPI_DEVICE);
-    fprintf(stderr, "Opening SPI: %s\n", spi_dev);
     ctx->spi_fd = spi_open(spi_dev, EPD_SPI_SPEED, SPI_MODE_0, 8);
     if (ctx->spi_fd < 0) {
         fprintf(stderr, "hal: SPI open failed on %s\n", spi_dev);
@@ -312,7 +308,6 @@ int epd_teardown_default_hal(EPD *epd) {
 
 void epd_send_command(EPD *epd, uint8_t cmd) {
     if (!epd) return;
-    fprintf(stderr, "CMD 0x%02X\n", cmd);
     epd->digital_write(epd->dc_pin, 0);
     epd->spi_writebyte(cmd);
 }
@@ -341,11 +336,8 @@ void epd_reset(EPD *epd) {
 
 void epd_wait_busy(EPD *epd) {
     if (!epd) return;
-    int val = epd->digital_read(epd->busy_pin);
-    fprintf(stderr, "BUSY read: %d\n", val);
     while (epd->digital_read(epd->busy_pin) == 1) {
         epd->delay_ms(100);
-        fprintf(stderr, "BUSY still high, waiting...\n");
     }
 }
 
