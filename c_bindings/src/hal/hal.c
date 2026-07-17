@@ -331,25 +331,19 @@ int epd_teardown_default_hal(EPD *epd) {
 void epd_send_command(EPD *epd, uint8_t cmd) {
     if (!epd) return;
     epd->digital_write(epd->dc_pin, 0);
-    epd->digital_write(epd->cs_pin, 0);
     epd->spi_writebyte(cmd);
-    epd->digital_write(epd->cs_pin, 1);
 }
 
 void epd_send_data(EPD *epd, uint8_t data) {
     if (!epd) return;
     epd->digital_write(epd->dc_pin, 1);
-    epd->digital_write(epd->cs_pin, 0);
     epd->spi_writebyte(data);
-    epd->digital_write(epd->cs_pin, 1);
 }
 
 void epd_send_data_buf(EPD *epd, const uint8_t *data, size_t len) {
     if (!epd || !data || len == 0) return;
     epd->digital_write(epd->dc_pin, 1);
-    epd->digital_write(epd->cs_pin, 0);
     epd->spi_writebuf(data, len);
-    epd->digital_write(epd->cs_pin, 1);
 }
 
 void epd_reset(EPD *epd) {
