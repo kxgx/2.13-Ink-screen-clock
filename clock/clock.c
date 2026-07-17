@@ -648,7 +648,7 @@ static void draw_bottom_edge(void) {
     char power[16];
     get_power_str(power, sizeof(power));
     snprintf(cached_power, sizeof(cached_power), "%s", power);
-    ft_render_text(129, 107, power, FONT_SIZE_SMALL, 0, 1);
+    ft_render_text(129, 109, power, FONT_SIZE_SMALL, 0, 1);
 
     /* Clock icon (ellipse + hands) */
     fb_draw_ellipse(199, 113, 7, 6, 1, 1);   /* filled white circle, white outline */
@@ -813,7 +813,7 @@ static void partial_refresh(EPD *epd) {
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
             fb_fill_rect(128, 109, 26, 8, 0);
-            ft_render_text(129, 107, current_power, FONT_SIZE_SMALL, 0, 1);
+            ft_render_text(129, 109, current_power, FONT_SIZE_SMALL, 0, 1);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
         }
