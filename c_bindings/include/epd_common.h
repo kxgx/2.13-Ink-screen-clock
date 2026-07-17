@@ -9,7 +9,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "../src/hal/hal.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,6 +126,9 @@ typedef struct _EPD {
     /* Private data - driver-specific state */
     void *driver_data;
 } EPD;
+
+/* Include HAL after EPD is defined (hal.h references EPD type) */
+#include "../src/hal/hal.h"
 
 /*===========================================================================
  * HAL setup functions (implemented in hal.c)
