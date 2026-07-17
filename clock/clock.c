@@ -373,7 +373,9 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
         stbtt_MakeGlyphBitmap(font, bitmap, w, h, w, scale, scale, glyph);
 
         int gx = pen_x + (int)(left_side_bearing * scale);
-        int gy = baseline_y - y1;  /* y1 is top of glyph in stb coords (positive up) */
+        /* y0 = top of glyph bitmap relative to baseline (negative = above).
+         * stbtt_GetGlyphBitmap returns yoff = iy0, place at baseline + y0. */
+        int gy = baseline_y + y0;
 
         for (int row = 0; row < h; row++) {
             for (int col = 0; col < w; col++) {
