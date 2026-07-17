@@ -1,11 +1,11 @@
 [Unit]
-Description=Raspi e-Paper Service
+Description=Raspi e-Paper Service (C Version)
 After=network.target
 
 [Service]
 Type=forking
 ExecStart=/root/2.13-Ink-screen-clock/bin/start.sh
-ExecStop=/bin/bash -c "pkill -f /root/2.13-Ink-screen-clock/bin/main.py; pkill -f /root/2.13-Ink-screen-clock/bin/weather.py"
+ExecStop=/bin/bash -c "pkill -f epd_clock; pkill -f weather.py"
 WorkingDirectory=/root/2.13-Ink-screen-clock/bin
 Restart=always
 User=root

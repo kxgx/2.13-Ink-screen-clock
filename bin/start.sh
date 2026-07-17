@@ -1,14 +1,17 @@
 #!/bin/bash
-f_name=main.py
-f1_name=weather.py
+# C版墨水屏时钟启动脚本
+
 dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-logdir="${dir%/*}/log"
-# 确保日志目录存在
-mkdir -p "${logdir}"
-pid=`ps -ef |grep $dir/$f_name | grep -v grep |awk '{print $2}'`
-for id in $pid
-do
-    kill -9 $id
-done
-nohup /usr/bin/python3 -u $dir/$f_name > $logdir/info.log 2>&1 &
-nohup /usr/bin/python3 -u $dir/$f1_name > $logdir/info-weather.log 2>&1 &
+proj_dir="${dir%/*}"
+epd_bin="$proj_dir/clock/build/epd_clock"
+weather_py="$dir/weather.py"
+
+# 杀掉旧进程
+pkill -f "epd_clock" 2>/dev/null
+pkill -f "weather.py" 2>/dev/null
+
+# 启动 C 时钟程序
+sudo "$epd_bin" &
+
+# 启动天气更新
+/usr/bin/python3 -u "$weather_py" &
