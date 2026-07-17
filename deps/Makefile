@@ -6,6 +6,7 @@ FREETYPE_TAR  = freetype-$(FREETYPE_VER).tar.gz
 FREETYPE_URL  = https://download.savannah.gnu.org/releases/freetype/$(FREETYPE_TAR)
 FREETYPE_DIR  = freetype-$(FREETYPE_VER)
 BUILD_DIR     = build/freetype
+ABS_BUILD     = $(shell pwd)/$(BUILD_DIR)
 
 .PHONY: all clean distclean
 
@@ -17,24 +18,22 @@ $(FREETYPE_TAR):
 	@wget -q $(FREETYPE_URL) || curl -sLO $(FREETYPE_URL)
 
 # Extract
-$(FREETYPE_DIR)/CMakeLists.txt: $(FREETYPE_TAR)
+$(FREETYPE_DIR)/configure: $(FREETYPE_TAR)
 	@echo "  EXTRACT $(FREETYPE_TAR)..."
 	@tar xzf $(FREETYPE_TAR)
-	@touch $(FREETYPE_DIR)/CMakeLists.txt
+	@touch $(FREETYPE_DIR)/configure
 
-# Build with CMake (static lib, no deps)
-$(BUILD_DIR)/lib/libfreetype.a: $(FREETYPE_DIR)/CMakeLists.txt
+# Build with autotools (static lib, no external deps)
+$(BUILD_DIR)/lib/libfreetype.a: $(FREETYPE_DIR)/configure
 	@echo "  BUILD  freetype..."
 	@mkdir -p $(BUILD_DIR)
-	@cd $(FREETYPE_DIR) && cmake -B ../$(BUILD_DIR) \
-		-D CMAKE_BUILD_TYPE=Release \
-		-D BUILD_SHARED_LIBS=OFF \
-		-D FT_DISABLE_BZIP2=ON \
-		-D FT_DISABLE_PNG=ON \
-		-D FT_DISABLE_HARFBUZZ=ON \
-		-D FT_DISABLE_BROTLI=ON \
+	@cd $(FREETYPE_DIR) && ./configure --prefix=$(ABS_BUILD) \
+		--disable-shared --enable-static \
+		--without-bzip2 --without-png \
+		--without-harfbuzz --without-brotli \
 		> /dev/null 2>&1
-	@cmake --build $(BUILD_DIR) --target freetype -j$$(nproc) > /dev/null 2>&1
+	@$(MAKE) -C $(FREETYPE_DIR) -j$$(nproc) > /dev/null 2>&1
+	@$(MAKE) -C $(FREETYPE_DIR) install > /dev/null 2>&1
 	@echo "  DONE   $(BUILD_DIR)/lib/libfreetype.a"
 
 clean:
