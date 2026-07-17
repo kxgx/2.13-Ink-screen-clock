@@ -8,7 +8,7 @@
 #   make run      - build and run
 
 CC       = gcc
-CFLAGS   = -Wall -Wextra -O2 -lm
+CFLAGS   = -Wall -Wextra -O2
 
 # ---- waveshare_epd library ----
 LIB_DIR   = ../waveshare_epd
@@ -34,7 +34,7 @@ $(LIB_FILE):
 $(TARGET): clock.c stb_truetype.h $(LIB_FILE)
 	@echo "  CC    clock.c"
 	@$(CC) $(CFLAGS) -I$(LIB_INC) clock.c \
-		-L$(LIB_DIR)/lib -lwaveshare_epd -lpthread -o $@
+		-L$(LIB_DIR)/lib -lwaveshare_epd -lpthread -lm -o $@
 	@echo "  Build complete: $@"
 	@echo "  Run: sudo ./$@"
 
