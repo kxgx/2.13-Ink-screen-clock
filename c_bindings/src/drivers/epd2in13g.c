@@ -29,14 +29,14 @@ int EPD_2in13g_Init(EPD *epd) {
 }
 
 void EPD_2in13g_Clear(EPD *epd, uint8_t color) {
-    if(!epd)return; int w=128/4, h=epd->height;
+    if(!epd){return;}int w=128/4, h=epd->height;
     epd_send_command(epd,0x10);
     for(int j=0;j<h;j++) for(int i=0;i<w;i++) epd_send_data(epd,color);
     epd_send_command(epd,0x12); epd_send_data(epd,0x00); _busy(epd);
 }
 
 void EPD_2in13g_Display(EPD *epd, const uint8_t *image) {
-    if(!epd||!image)return; int w=128/4, h=epd->height, srcW=epd->width/4;
+    if(!epd||!image){return;}int w=128/4, h=epd->height, srcW=epd->width/4;
     epd_send_command(epd,0x10);
     for(int j=0;j<h;j++){ for(int i=0;i<w;i++){ if(i<31)epd_send_data(epd,image[i+j*srcW]); else epd_send_data(epd,0x00); }}
     epd_send_command(epd,0x12); epd_send_data(epd,0x00); _busy(epd);

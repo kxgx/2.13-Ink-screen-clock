@@ -19,14 +19,14 @@ int EPD_2in13bc_Init(EPD *epd) {
 }
 
 void EPD_2in13bc_Clear(EPD *epd) {
-    if(!epd)return; int sz=epd->width*epd->height/8;
+    if(!epd){return;}int sz=epd->width*epd->height/8;
     epd_send_command(epd,0x10); for(int i=0;i<sz;i++)epd_send_data(epd,0xFF);
     epd_send_command(epd,0x13); for(int i=0;i<sz;i++)epd_send_data(epd,0xFF);
     epd_send_command(epd,0x12); _busy(epd);
 }
 
 void EPD_2in13bc_Display(EPD *epd, const uint8_t *black, const uint8_t *red) {
-    if(!epd||!black||!red)return; int sz=epd->width*epd->height/8;
+    if(!epd||!black||!red){return;}int sz=epd->width*epd->height/8;
     epd_send_command(epd,0x10); for(int i=0;i<sz;i++)epd_send_data(epd,black[i]);
     epd_send_command(epd,0x13); for(int i=0;i<sz;i++)epd_send_data(epd,red[i]);
     epd_send_command(epd,0x12); _busy(epd);

@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "../src/hal/hal.h"
 
 #ifdef __cplusplus
 extern "C" {
