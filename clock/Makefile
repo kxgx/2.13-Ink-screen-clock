@@ -16,7 +16,7 @@ LOCAL_FT_A  = $(LOCAL_FT)/lib/libfreetype.a
 LOCAL_FT_INC = $(LOCAL_FT)/include/freetype2
 
 FT_CFLAGS = -I$(LOCAL_FT_INC)
-FT_LIBS   = -L$(LOCAL_FT)/lib -lfreetype
+FT_LIBS   = -L$(LOCAL_FT)/lib -lfreetype -lz
 FT_DEPS   = $(LOCAL_FT_A)
 
 # ---- waveshare_epd library ----
