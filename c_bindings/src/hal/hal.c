@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <linux/spi/spidev.h>
 
 /*===========================================================================
@@ -24,7 +25,6 @@
 struct _HALContext {
     hal_backend_t backend;
     int           spi_fd;          /**< File descriptor for /dev/spidev */
-    int           gpio_exported[32]; /**< Track which GPIOs we exported */
     EPD          *epd;             /**< Associated EPD device */
 };
 
@@ -37,68 +37,68 @@ static void spidev_delay_ms(unsigned int ms);
 static void spidev_spi_writebyte(uint8_t data);
 static void spidev_spi_writebuf(const uint8_t *data, size_t len);
 
-/* Module-level state for the "simple" callback approach */
+/* Module-level state */
 static HALContext *g_active_ctx = NULL;
+static volatile uint32_t *g_gpio = NULL;  /* mmap'd GPIO registers */
 
 /*===========================================================================
- * GPIO sysfs helpers
+ * GPIO via /dev/gpiomem (works on all Pi OS versions)
  *===========================================================================*/
+#define GPFSEL0   0
+#define GPSET0    7
+#define GPCLR0   10
+#define GPLEV0   13
 
-static int gpio_export(int pin) {
-    FILE *fp = fopen("/sys/class/gpio/export", "w");
-    if (!fp) return -1;
-    fprintf(fp, "%d", pin);
-    fclose(fp);
-    return 0;
-}
-
-static int gpio_unexport(int pin) {
-    FILE *fp = fopen("/sys/class/gpio/unexport", "w");
-    if (!fp) return -1;
-    fprintf(fp, "%d", pin);
-    fclose(fp);
-    return 0;
-}
-
-static int gpio_set_direction(int pin, const char *dir) {
-    char path[64];
-    snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/direction", pin);
-    FILE *fp = fopen(path, "w");
-    if (!fp) return -1;
-    fprintf(fp, "%s", dir);
-    fclose(fp);
-    return 0;
-}
-
-static int gpio_write_value(int pin, int value) {
-    char path[64];
-    snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/value", pin);
-    FILE *fp = fopen(path, "w");
-    if (!fp) return -1;
-    fprintf(fp, "%d", value ? 1 : 0);
-    fclose(fp);
-    return 0;
-}
-
-static int gpio_read_value(int pin) {
-    char path[64];
-    snprintf(path, sizeof(path), "/sys/class/gpio/gpio%d/value", pin);
-    FILE *fp = fopen(path, "r");
-    if (!fp) return -1;
-    int val;
-    if (fscanf(fp, "%d", &val) != 1) {
-        fclose(fp);
+static int gpio_init(void) {
+    if (g_gpio) return 0;  /* already mapped */
+    int fd = open("/dev/gpiomem", O_RDWR | O_SYNC);
+    if (fd < 0) {
+        fprintf(stderr, "hal: cannot open /dev/gpiomem: %s\n", strerror(errno));
         return -1;
     }
-    fclose(fp);
-    return val;
+    g_gpio = (volatile uint32_t *)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    close(fd);
+    if (g_gpio == MAP_FAILED) {
+        fprintf(stderr, "hal: mmap /dev/gpiomem failed: %s\n", strerror(errno));
+        g_gpio = NULL;
+        return -1;
+    }
+    fprintf(stderr, "GPIO: /dev/gpiomem mapped OK\n");
+    return 0;
 }
 
-static void gpio_setup_pin(int pin, const char *dir) {
-    gpio_export(pin);
-    /* Wait for udev to create the gpio directory */
-    usleep(100000); /* 100ms */
-    gpio_set_direction(pin, dir);
+static void gpio_set_input(int pin) {
+    if (!g_gpio || pin < 0 || pin > 27) return;
+    int reg = pin / 10;
+    int shift = (pin % 10) * 3;
+    g_gpio[GPFSEL0 + reg] &= ~(7 << shift);  /* 000 = input */
+}
+
+static void gpio_set_output(int pin) {
+    if (!g_gpio || pin < 0 || pin > 27) return;
+    int reg = pin / 10;
+    int shift = (pin % 10) * 3;
+    g_gpio[GPFSEL0 + reg] = (g_gpio[GPFSEL0 + reg] & ~(7 << shift)) | (1 << shift);  /* 001 = output */
+}
+
+static void gpio_write(int pin, int value) {
+    if (!g_gpio || pin < 0 || pin > 27) return;
+    if (value)
+        g_gpio[GPSET0] = 1 << pin;
+    else
+        g_gpio[GPCLR0] = 1 << pin;
+}
+
+static int gpio_read(int pin) {
+    if (!g_gpio || pin < 0 || pin > 27) return -1;
+    return (g_gpio[GPLEV0] >> pin) & 1;
+}
+
+static void gpio_cleanup(void) {
+    if (g_gpio) {
+        munmap((void *)g_gpio, 4096);
+        g_gpio = NULL;
+    }
 }
 
 /*===========================================================================
@@ -150,16 +150,11 @@ static int spi_transfer(int fd, const uint8_t *tx, uint8_t *rx, size_t len) {
  *===========================================================================*/
 
 static void spidev_digital_write(int pin, int value) {
-    if (g_active_ctx) {
-        gpio_write_value(pin, value);
-    }
+    gpio_write(pin, value);
 }
 
 static int spidev_digital_read(int pin) {
-    if (g_active_ctx) {
-        return gpio_read_value(pin);
-    }
-    return -1;
+    return gpio_read(pin);
 }
 
 static void spidev_delay_ms(unsigned int ms) {
@@ -204,18 +199,8 @@ void hal_destroy(HALContext *ctx) {
         ctx->spi_fd = -1;
     }
 
-    /* Un-export all GPIO pins we exported */
-    for (int i = 0; i < 32; i++) {
-        if (ctx->gpio_exported[i]) {
-            gpio_unexport(i);
-        }
-    }
-
     free(ctx);
-
-    if (g_active_ctx == ctx) {
-        g_active_ctx = NULL;
-    }
+    if (g_active_ctx == ctx) g_active_ctx = NULL;
 }
 
 int hal_module_init(HALContext *ctx, EPD *epd) {
@@ -224,29 +209,31 @@ int hal_module_init(HALContext *ctx, EPD *epd) {
     g_active_ctx = ctx;
     ctx->epd = epd;
 
+    /* Initialize GPIO via /dev/gpiomem */
+    if (gpio_init() != 0) return EPD_ERROR;
+
     /* Setup GPIO pins */
     int pins[] = {epd->rst_pin, epd->dc_pin, epd->busy_pin, epd->pwr_pin};
-    const char *dirs[] = {"out", "out", "in", "out"};
     const char *names[] = {"RST", "DC", "BUSY", "PWR"};
 
     for (int i = 0; i < 4; i++) {
         int pin = pins[i];
-        if (pin < 0 || pin > 31) continue;
+        if (pin < 0 || pin > 27) continue;
 
-        gpio_setup_pin(pin, dirs[i]);
-        ctx->gpio_exported[pin] = 1;
-        fprintf(stderr, "GPIO %s (pin %d) -> %s\n", names[i], pin, dirs[i]);
-
-        /* Set initial values */
-        if (dirs[i][0] == 'o') {
-            gpio_write_value(pin, (pin == epd->pwr_pin) ? 1 : 0);
+        if (i == 2) { /* BUSY */
+            gpio_set_input(pin);
+        } else {
+            gpio_set_output(pin);
         }
+        fprintf(stderr, "GPIO %s (pin %d) -> %s\n", names[i], pin, (i == 2) ? "in" : "out");
     }
 
     /* Power on */
-    if (epd->pwr_pin >= 0) {
-        gpio_write_value(epd->pwr_pin, 1);
-    }
+    gpio_write(epd->pwr_pin, 1);
+
+    /* Set initial output values */
+    gpio_write(epd->rst_pin, 1);
+    gpio_write(epd->dc_pin, 0);
 
     /* Open SPI device */
     char spi_dev[32];
@@ -279,17 +266,10 @@ int hal_module_exit(HALContext *ctx) {
 
     /* Turn off power */
     if (ctx->epd && ctx->epd->pwr_pin >= 0) {
-        gpio_write_value(ctx->epd->pwr_pin, 0);
+        gpio_write(ctx->epd->pwr_pin, 0);
     }
 
-    /* Un-export GPIOs */
-    for (int i = 0; i < 32; i++) {
-        if (ctx->gpio_exported[i]) {
-            gpio_unexport(i);
-            ctx->gpio_exported[i] = 0;
-        }
-    }
-
+    gpio_cleanup();
     g_active_ctx = NULL;
     return EPD_OK;
 }
