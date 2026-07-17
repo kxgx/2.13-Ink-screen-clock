@@ -9,26 +9,15 @@
 CC       = gcc
 CFLAGS   = -Wall -Wextra -O2
 
-# ---- FreeType: use system if available, else build from deps/ ----
-SYS_FT_CFLAGS := $(shell pkg-config --cflags freetype2 2>/dev/null)
-SYS_FT_LIBS   := $(shell pkg-config --libs   freetype2 2>/dev/null)
-
+# ---- FreeType: always build locally from deps/ ----
 DEPS_DIR    = ../deps
 LOCAL_FT    = $(DEPS_DIR)/build/freetype
 LOCAL_FT_A  = $(LOCAL_FT)/lib/libfreetype.a
 LOCAL_FT_INC = $(LOCAL_FT)/include/freetype2
 
-ifneq ($(SYS_FT_CFLAGS),)
-  # System FreeType found
-  FT_CFLAGS = $(SYS_FT_CFLAGS)
-  FT_LIBS   = $(SYS_FT_LIBS)
-  FT_DEPS   =
-else
-  # Build FreeType locally
-  FT_CFLAGS = -I$(LOCAL_FT_INC)
-  FT_LIBS   = -L$(LOCAL_FT)/lib -lfreetype
-  FT_DEPS   = $(LOCAL_FT_A)
-endif
+FT_CFLAGS = -I$(LOCAL_FT_INC)
+FT_LIBS   = -L$(LOCAL_FT)/lib -lfreetype
+FT_DEPS   = $(LOCAL_FT_A)
 
 # ---- waveshare_epd library ----
 LIB_DIR   = ../waveshare_epd
