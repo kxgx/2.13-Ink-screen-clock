@@ -21,6 +21,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <signal.h>
+#include <pthread.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "waveshare_epd.h"
@@ -59,6 +61,10 @@
  * ========================================================================= */
 static uint8_t fb[FB_SIZE];              /* 250x122 drawing canvas */
 static uint8_t display_buf[DISP_SIZE];    /* 122x250 final buffer for EPD */
+
+/* Global EPD for signal handler cleanup */
+static EPD *g_epd = NULL;
+static volatile int g_running = 1;
 
 /* =========================================================================
  * FreeType globals
@@ -650,8 +656,8 @@ static void partial_refresh(EPD *epd) {
         char current_time[8];
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
-            /* Erase old time area */
-            fb_fill_rect(5, 40, 128, 42, 1);  /* width 133-5=128, height 82-40=42 */
+            /* Erase old time area - Python: (5,40,133,82) inclusive */
+            fb_fill_rect(5, 40, 129, 43, 1);
             ft_render_text(5, 40, current_time, FONT_SIZE_TIME, 1, 0);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
             need_refresh = 1;
@@ -661,7 +667,7 @@ static void partial_refresh(EPD *epd) {
         char current_date[128];
         get_date_str(current_date, sizeof(current_date));
         if (strcmp(current_date, cached_date) != 0) {
-            fb_fill_rect(2, 2, 248, 16, 1);
+            fb_fill_rect(2, 2, 249, 15, 1);
             ft_render_text(2, 2, current_date, FONT_SIZE_DATE, 0, 0);
             snprintf(cached_date, sizeof(cached_date), "%s", current_date);
             need_refresh = 1;
@@ -671,7 +677,7 @@ static void partial_refresh(EPD *epd) {
         char current_ip[32];
         get_ip_str(current_ip, sizeof(current_ip));
         if (strcmp(current_ip, cached_ip) != 0) {
-            fb_fill_rect(1, 107, 122, 13, 0);  /* black background */
+            fb_fill_rect(1, 107, 123, 14, 0);  /* black background */
             char ip_text[64];
             snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
             ft_render_text(10, 107, ip_text, FONT_SIZE_IP, 0, 1);
@@ -684,7 +690,7 @@ static void partial_refresh(EPD *epd) {
         if (read_weather(&w) == 0) {
             /* Weather description */
             if (strcmp(w.weather, cached_weather_w) != 0) {
-                fb_fill_rect(191, 25, 58, 13, 1);
+                fb_fill_rect(191, 25, 59, 14, 1);
                 ft_render_text(191, 25, w.weather, FONT_SIZE_WEATHER, 0, 0);
                 snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
                 need_refresh = 1;
@@ -694,7 +700,7 @@ static void partial_refresh(EPD *epd) {
             char temp_str[32];
             snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
             if (strcmp(temp_str, cached_weather_t) != 0) {
-                fb_fill_rect(191, 45, 58, 12, 1);
+                fb_fill_rect(191, 45, 59, 13, 1);
                 ft_render_text(191, 45, temp_str, FONT_SIZE_WEATHER, 0, 0);
                 snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
                 need_refresh = 1;
@@ -702,7 +708,7 @@ static void partial_refresh(EPD *epd) {
 
             /* Humidity */
             if (strcmp(w.sd, cached_weather_h) != 0) {
-                fb_fill_rect(191, 65, 58, 12, 1);
+                fb_fill_rect(191, 65, 59, 13, 1);
                 ft_render_text(191, 65, w.sd, FONT_SIZE_WEATHER, 0, 0);
                 snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
                 need_refresh = 1;
@@ -710,7 +716,7 @@ static void partial_refresh(EPD *epd) {
 
             /* City */
             if (strcmp(w.cityname, cached_weather_c) != 0) {
-                fb_fill_rect(191, 85, 58, 13, 1);
+                fb_fill_rect(191, 85, 59, 14, 1);
                 ft_render_text(191, 85, w.cityname, FONT_SIZE_WEATHER, 0, 0);
                 snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
                 need_refresh = 1;
@@ -718,7 +724,7 @@ static void partial_refresh(EPD *epd) {
 
             /* Update time */
             if (strcmp(w.time_str, cached_weather_u) != 0) {
-                fb_fill_rect(211, 107, 37, 11, 0);
+                fb_fill_rect(211, 107, 38, 12, 0);
                 ft_render_text(211, 107, w.time_str, FONT_SIZE_IP, 0, 1);
                 snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
                 need_refresh = 1;
@@ -729,7 +735,7 @@ static void partial_refresh(EPD *epd) {
         char current_power[16];
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
-            fb_fill_rect(128, 110, 25, 7, 0);
+            fb_fill_rect(128, 110, 26, 8, 0);
             ft_render_text(129, 108, current_power, FONT_SIZE_SMALL, 0, 1);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
@@ -750,62 +756,85 @@ static void partial_refresh(EPD *epd) {
 }
 
 /* =========================================================================
+ * Signal handler and weather update
+ * ========================================================================= */
+
+/* Clean screen and exit on signal (matching clean.py) */
+static void sig_handler(int sig) {
+    (void)sig;
+    g_running = 0;
+    if (g_epd) {
+        fprintf(stderr, "\nCaught signal %d, cleaning display...\n", sig);
+        EPD_2in13_V4_Init(g_epd);
+        EPD_2in13_V4_Clear(g_epd, EPD_WHITE);
+        EPD_2in13_V4_Sleep(g_epd);
+    }
+    ft_cleanup();
+    _exit(0);
+}
+
+/* Weather update thread: run weather.py periodically (matching weather.py) */
+static void *weather_update_thread(void *arg) {
+    (void)arg;
+    while (g_running) {
+        printf("Updating weather data...\n");
+        system("python3 /root/2.13-Ink-screen-clock/bin/weather.py 2>/dev/null &");
+        for (int i = 0; i < 1800 && g_running; i++) sleep(1);
+    }
+    return NULL;
+}
+
+/* =========================================================================
  * Main entry point
  * ========================================================================= */
 int main(void) {
     EPD epd;
-    int retry_interval = 180;  /* 3 minutes between retries */
+    int retry_interval = 180;
 
-    /* Initialize FreeType fonts */
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+
     if (ft_init() != 0) {
         fprintf(stderr, "ERROR: Font initialization failed.\n");
-        fprintf(stderr, "Make sure fonts exist at:\n");
-        fprintf(stderr, "  %s\n", FONT_PATH_TTC);
-        fprintf(stderr, "  %s\n", FONT_PATH_DSEG);
         return 1;
     }
 
     printf("Ink Screen Clock - C Version\n");
     printf("=============================\n");
 
-    while (1) {
-        int success = 0;
+    /* Start weather update thread */
+    pthread_t weather_tid;
+    pthread_create(&weather_tid, NULL, weather_update_thread, NULL);
+    pthread_detach(weather_tid);
 
-        /* ---- Initialize display ---- */
-        printf("Initializing 2.13\" V4 e-Paper display...\n");
+    while (1) {
+        printf("Initializing 2.13in V4 e-Paper display...\n");
 
         if (EPD_2in13_V4_Init(&epd) != EPD_OK) {
-            fprintf(stderr, "ERROR: Failed to initialize display. Retrying in %ds...\n",
+            fprintf(stderr, "ERROR: Failed to initialize. Retrying in %ds...\n",
                     retry_interval);
             sleep(retry_interval);
             continue;
         }
 
+        g_epd = &epd;
         printf("  Width: %d px, Height: %d px\n", epd.width, epd.height);
 
-        /* ---- Full refresh ---- */
         printf("Performing full refresh...\n");
         basic_refresh(&epd);
 
-        /* ---- Partial refresh loop ---- */
         printf("Entering partial refresh loop...\n");
         partial_refresh(&epd);
 
-        /* Partial_refresh runs forever; if it exits, clean up */
-        success = 1;
-
-        /* Cleanup */
+        g_epd = NULL;
         EPD_2in13_V4_Init(&epd);
         EPD_2in13_V4_Clear(&epd, EPD_WHITE);
         EPD_2in13_V4_Sleep(&epd);
 
-        if (success) break;
-
-        printf("Retrying in %ds...\n", retry_interval);
+        printf("Partial refresh exited, retrying...\n");
         sleep(retry_interval);
     }
 
     ft_cleanup();
-    printf("Done.\n");
     return 0;
 }
