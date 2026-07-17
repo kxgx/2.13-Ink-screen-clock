@@ -541,10 +541,10 @@ static char cached_time[8]      = "";
 static char cached_ip[32]       = "";
 static char cached_power[16]    = "";
 static char cached_weather_w[32]  = "";
-static char cached_weather_t[16]  = "";
-static char cached_weather_h[16]  = "";
+static char cached_weather_t[32]  = "";
+static char cached_weather_h[32]  = "";
 static char cached_weather_c[32]  = "";
-static char cached_weather_u[16]  = "";
+static char cached_weather_u[32]  = "";
 
 /* Draw bottom edge bar (matching Bottom_edge) */
 static void draw_bottom_edge(void) {
