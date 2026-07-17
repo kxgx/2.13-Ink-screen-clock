@@ -634,21 +634,21 @@ static void draw_bottom_edge(void) {
     /* Black bar across bottom */
     fb_fill_rect(0, 105, FB_WIDTH, 17, 0);
 
-    /* Battery icon outline */
-    fb_draw_line(126, 109, 154, 109, 1);  /* top */
-    fb_draw_line(126, 110, 126, 119, 1);  /* left */
-    fb_draw_line(127, 119, 154, 119, 1);  /* bottom */
-    fb_draw_line(154, 110, 154, 118, 1);  /* right */
+    /* Battery icon outline - centered in bar (y=105~121, center=113) */
+    fb_draw_line(126, 108, 154, 108, 1);  /* top */
+    fb_draw_line(126, 109, 126, 118, 1);  /* left */
+    fb_draw_line(127, 118, 154, 118, 1);  /* bottom */
+    fb_draw_line(154, 109, 154, 117, 1);  /* right */
     /* Battery bump */
-    fb_draw_line(155, 112, 157, 112, 1);
-    fb_draw_line(155, 116, 157, 116, 1);
-    fb_draw_line(157, 113, 157, 115, 1);
+    fb_draw_line(155, 111, 157, 111, 1);
+    fb_draw_line(155, 115, 157, 115, 1);
+    fb_draw_line(157, 112, 157, 114, 1);
 
     /* Battery percentage text */
     char power[16];
     get_power_str(power, sizeof(power));
     snprintf(cached_power, sizeof(cached_power), "%s", power);
-    ft_render_text(129, 108, power, FONT_SIZE_SMALL, 0, 1);
+    ft_render_text(129, 107, power, FONT_SIZE_SMALL, 0, 1);
 
     /* Clock icon (ellipse + hands) */
     fb_draw_ellipse(199, 113, 7, 6, 1, 1);   /* filled white circle, white outline */
@@ -812,8 +812,8 @@ static void partial_refresh(EPD *epd) {
         char current_power[16];
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
-            fb_fill_rect(128, 110, 26, 8, 0);
-            ft_render_text(129, 108, current_power, FONT_SIZE_SMALL, 0, 1);
+            fb_fill_rect(128, 109, 26, 8, 0);
+            ft_render_text(129, 107, current_power, FONT_SIZE_SMALL, 0, 1);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
         }
