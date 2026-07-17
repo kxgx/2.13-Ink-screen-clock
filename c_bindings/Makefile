@@ -10,6 +10,8 @@
 CC      = gcc
 AR      = ar
 CFLAGS  = -Wall -Wextra -O2 -Iinclude
+FT_CFLAGS = $(shell pkg-config --cflags freetype2 2>/dev/null)
+FT_LIBS   = $(shell pkg-config --libs   freetype2 2>/dev/null)
 LDFLAGS =
 
 # Source directories
@@ -67,7 +69,7 @@ example: dirs $(LIB_DIR)/$(LIB_NAME) example/main.c
 # Requires: sudo apt install libfreetype6-dev
 clock: dirs $(LIB_DIR)/$(LIB_NAME) example/clock.c
 	@echo "  CC    example/clock.c"
-	@$(CC) $(CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd -lfreetype $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
+	@$(CC) $(CFLAGS) $(FT_CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd $(FT_LIBS) $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
 	@echo "  Build complete: $(BUILD_DIR)/epd_clock"
 	@echo "  Run: sudo ./build/epd_clock"
 
