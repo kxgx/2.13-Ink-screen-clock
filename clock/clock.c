@@ -382,11 +382,11 @@ static void ft_render_text(int x, int y, const char *text, int font_size,
                 int pixel = bitmap[row * w + col];
 
                 if (color == 0) {
-                    /* Black text: draw black pixels */
-                    if (pixel) fb_set_pixel(gx + col, gy + row, 0);
+                    /* Black text: threshold at 128 like Pillow */
+                    if (pixel > 127) fb_set_pixel(gx + col, gy + row, 0);
                 } else {
-                    /* White text: draw white pixels */
-                    if (pixel) fb_set_pixel(gx + col, gy + row, 1);
+                    /* White text: threshold at 128 like Pillow */
+                    if (pixel > 127) fb_set_pixel(gx + col, gy + row, 1);
                 }
             }
         }
