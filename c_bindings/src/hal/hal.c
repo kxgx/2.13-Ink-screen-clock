@@ -186,7 +186,6 @@ HALContext *hal_create(hal_backend_t backend) {
 
     ctx->backend = backend;
     ctx->spi_fd  = -1;
-    memset(ctx->gpio_exported, 0, sizeof(ctx->gpio_exported));
 
     return ctx;
 }
