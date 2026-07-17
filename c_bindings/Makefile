@@ -3,15 +3,13 @@
 # Platform: Raspberry Pi (Linux, ARM)
 #
 # Usage:
-#   make              - build static library
-#   make example      - build example program
-#   make clean        - remove build artifacts
+#   make          - build static library
+#   make demo     - build demo program
+#   make clean    - remove build artifacts
 
 CC      = gcc
 AR      = ar
 CFLAGS  = -Wall -Wextra -O2 -Iinclude
-FT_CFLAGS = $(shell pkg-config --cflags freetype2 2>/dev/null)
-FT_LIBS   = $(shell pkg-config --libs   freetype2 2>/dev/null)
 LDFLAGS =
 
 # Source directories
@@ -36,7 +34,7 @@ ALL_OBJS     = $(HAL_OBJS) $(DRIVER_OBJS)
 # Build directories needed
 BUILD_DIRS = $(sort $(dir $(ALL_OBJS)))
 
-.PHONY: all clean example dirs
+.PHONY: all clean demo dirs
 
 all: dirs $(LIB_DIR)/$(LIB_NAME)
 
@@ -59,19 +57,11 @@ $(BUILD_DIR)/drivers/%.o: $(DRIVERS_DIR)/%.c
 	@echo "  CC    $<"
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-# Example program
-example: dirs $(LIB_DIR)/$(LIB_NAME) example/main.c
-	@echo "  CC    example/main.c"
-	@$(CC) $(CFLAGS) -Iinclude example/main.c -L$(LIB_DIR) -lwaveshare_epd $(LDFLAGS) -o $(BUILD_DIR)/epd_example
-	@echo "  Build complete: $(BUILD_DIR)/epd_example"
-
-# Clock application (C port of main.py with full/partial refresh)
-# Requires: sudo apt install libfreetype6-dev
-clock: dirs $(LIB_DIR)/$(LIB_NAME) example/clock.c
-	@echo "  CC    example/clock.c"
-	@$(CC) $(CFLAGS) $(FT_CFLAGS) -Iinclude example/clock.c -L$(LIB_DIR) -lwaveshare_epd $(FT_LIBS) -lpthread $(LDFLAGS) -o $(BUILD_DIR)/epd_clock
-	@echo "  Build complete: $(BUILD_DIR)/epd_clock"
-	@echo "  Run: sudo ./build/epd_clock"
+# Demo program (library usage example)
+demo: dirs $(LIB_DIR)/$(LIB_NAME) app/demo.c
+	@echo "  CC    app/demo.c"
+	@$(CC) $(CFLAGS) -Iinclude app/demo.c -L$(LIB_DIR) -lwaveshare_epd $(LDFLAGS) -o $(BUILD_DIR)/epd_demo
+	@echo "  Build complete: $(BUILD_DIR)/epd_demo"
 
 # Clean
 clean:
@@ -83,8 +73,7 @@ help:
 	@echo "Waveshare e-Paper C Library"
 	@echo ""
 	@echo "Targets:"
-	@echo "  make          Build static library (lib/$(LIB_NAME))"
-	@echo "  make example  Build example program"
-	@echo "  make clock    Build clock application (C port of main.py)"
-	@echo "  make clean    Remove build artifacts"
-	@echo "  make help     Show this help"
+	@echo "  make        Build static library (lib/$(LIB_NAME))"
+	@echo "  make demo   Build demo program"
+	@echo "  make clean  Remove build artifacts"
+	@echo "  make help   Show this help"
