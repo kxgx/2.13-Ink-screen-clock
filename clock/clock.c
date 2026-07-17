@@ -242,8 +242,16 @@ static int ft_init(void) {
     }
 
     int ttc_offset = stbtt_GetFontOffsetForIndex(font_ttc_buf, 0);
-    if (ttc_offset < 0 || !stbtt_InitFont(&font_ttc, font_ttc_buf, ttc_offset)) {
-        fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_TTC);
+    if (ttc_offset < 0) {
+        fprintf(stderr, "ERROR: %s is not a valid TTC font (GetFontOffsetForIndex returned %d)\n",
+                FONT_PATH_TTC, ttc_offset);
+        free(font_ttc_buf);
+        return -1;
+    }
+    printf("  TTC offset for index 0: %d (0x%X)\n", ttc_offset, ttc_offset);
+    if (!stbtt_InitFont(&font_ttc, font_ttc_buf, ttc_offset)) {
+        fprintf(stderr, "ERROR: stbtt_InitFont failed for %s (missing cmap/head/hhea/hmtx table?)\n",
+                FONT_PATH_TTC);
         free(font_ttc_buf);
         return -1;
     }
