@@ -77,7 +77,7 @@ static unsigned char *font_dseg_buf = NULL;
 
 /* Font sizes in pt */
 #define FONT_SIZE_DATE   14   /* font02 */
-#define FONT_SIZE_TIME   36   /* font03 - DSEG7Modern-Bold */
+#define FONT_SIZE_TIME   38   /* font03 - DSEG7Modern-Bold */
 #define FONT_SIZE_SMALL  10   /* font04 */
 #define FONT_SIZE_IP     13   /* font05 */
 #define FONT_SIZE_WEATHER 14  /* font06 */
@@ -477,11 +477,11 @@ static void get_date_str(char *buf, size_t bufsize) {
 
     /* Gregorian date */
     char gregorian[64];
-    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日", tm_info);
+    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日 ", tm_info);
 
     /* Weekday in Chinese */
     static const char *weekdays[] = {
-        "星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"
+        "星期一 ", "星期二 ", "星期三 ", "星期四 ", "星期五 ", "星期六 ", "星期日 "
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
@@ -489,7 +489,7 @@ static void get_date_str(char *buf, size_t bufsize) {
     char lunar[32] = "";
     char *lunar_output = shell_output(
         "python3 -c \"from borax.calendars.lunardate import LunarDate; "
-        "print(LunarDate.today().strftime('农历%M月%D日'))\" 2>/dev/null");
+        "print(LunarDate.today().strftime('农历%M月%D '))\" 2>/dev/null");
     if (lunar_output) {
         snprintf(lunar, sizeof(lunar), "%s", lunar_output);
         free(lunar_output);
@@ -732,7 +732,7 @@ static void partial_refresh(EPD *epd) {
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
             /* Erase old time area - Python: (5,40,133,82) inclusive */
-            fb_fill_rect(5, 40, 129, 43, 1);
+            fb_fill_rect(5, 40, 129, 46, 1);
             ft_render_text(5, 40, current_time, FONT_SIZE_TIME, 1, 0, 127);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
             need_refresh = 1;
