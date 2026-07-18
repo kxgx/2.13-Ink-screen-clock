@@ -19,34 +19,10 @@ logging.basicConfig(
 def check_network_connection():
     """检查网络连接状态"""
     try:
-        # 尝试连接一个可靠的公共DNS服务器
         socket.create_connection(("223.5.5.5", 53), timeout=5)
         return True
     except OSError:
         return False
-
-def get_ip():
-    """改进的IP获取函数"""
-    if not check_network_connection():
-        logging.warning("网络连接不可用")
-        return None
-        
-    services = [
-        {"url": "https://api.ipify.org?format=json", "field": "ip"},
-        {"url": "https://ipinfo.io/json", "field": "ip"},
-        {"url": "https://ifconfig.me/all.json", "field": "ip_addr"}
-    ]
-    
-    for service in services:
-        try:
-            resp = requests.get(service["url"], timeout=10)
-            data = resp.json()
-            return data.get(service["field"])
-        except Exception:
-            continue
-            
-    logging.error("所有IP服务尝试失败")
-    return None
 
 def get_ip():
     """从ip.cn获取当前IP地址"""
@@ -152,7 +128,9 @@ def getWeath(default_city='101060101'):
             
             # 验证数据有效性
             if validate_weather_data(weather_data):
-                with open('/root/2.13-Ink-screen-clock/bin/weather.json', 'w') as f:
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                json_path = os.path.join(script_dir, 'weather.json')
+                with open(json_path, 'w') as f:
                     json.dump(weather_data, f)
                 logging.info("天气数据更新成功")
                 return
@@ -162,6 +140,26 @@ def getWeath(default_city='101060101'):
             continue
     
     logging.error("所有天气API尝试失败")
+
+def parse_html_weather(html):
+    """简单解析天气HTML页面，提取天气数据"""
+    try:
+        from html.parser import HTMLParser
+        import re
+        
+        # 尝试用正则提取JSON数据
+        match = re.search(r'var\s+dataSK\s*=\s*(\{.+?\});', html, re.DOTALL)
+        if match:
+            return json.loads(match.group(1))
+    except Exception:
+        pass
+    return {}
+
+def validate_weather_data(data):
+    """验证天气数据是否有效"""
+    if not data or not isinstance(data, dict):
+        return False
+    return 'temp' in data and 'cityname' in data
 
 def get_area_id(city_name):
     """从city.js中检索AREAID，无限重试直到成功"""
