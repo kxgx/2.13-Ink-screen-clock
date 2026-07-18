@@ -22,7 +22,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -850,14 +849,7 @@ static void sig_handler(int sig) {
     _exit(0);
 }
 
-/* Weather update thread: launch weather.py once, it self-schedules every 30min */
-static void *weather_update_thread(void *arg) {
-    (void)arg;
-    printf("Starting weather updater...\n");
-    system("python3 ../bin/weather.py 2>/dev/null &");
-    /* weather.py runs forever with its own Timer; nothing more to do */
-    return NULL;
-}
+/* Weather update is handled by start.sh (runs weather.py as separate process) */
 
 /* =========================================================================
  * Main entry point
@@ -877,10 +869,7 @@ int main(void) {
     printf("Ink Screen Clock - C Version\n");
     printf("=============================\n");
 
-    /* Start weather update thread */
-    pthread_t weather_tid;
-    pthread_create(&weather_tid, NULL, weather_update_thread, NULL);
-    pthread_detach(weather_tid);
+    /* Weather update is handled by start.sh */
 
     while (1) {
         printf("Initializing 2.13in V4 e-Paper display...\n");
