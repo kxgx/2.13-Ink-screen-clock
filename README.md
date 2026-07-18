@@ -1,127 +1,123 @@
-# 墨水屏展示当前时间及天气数据
+# 墨水屏展示当前时间及天气数据 (C 语言版)
 
-本项目复刻自[Seek-Huang](https://github.com/Seek-Huang)的[代码仓库](https://github.com/Seek-Huang/2.13-Ink-screen-clock)
-并在此基础上进行改进
+本项目复刻自[Seek-Huang](https://github.com/Seek-Huang)的[代码仓库](https://github.com/Seek-Huang/2.13-Ink-screen-clock)，已将 Python 版移植为纯 C 语言实现。
 
-## 本仓库已添加[一键安装部署脚本](https://github.com/kxgx/2.13-Ink-screen-clock#%E4%BD%BF%E7%94%A8%E8%84%9A%E6%9C%AC%E7%9B%B4%E6%8E%A5%E5%AE%89%E8%A3%85%E6%8E%A8%E8%8D%90)
-注意:请先配置完需要的硬件以及系统配置操作再运行脚本
+## C 版本特性
 
-## API说明:
+- **零 Python 依赖** — 核心程序为原生 ARM 二进制，无需 PIL/Pillow 等 Python 包
+- **内置字体渲染** — 使用 stb_truetype 单头文件库，零外部字体依赖
+- **启动更快** — 编译后直接运行，无 Python 解释器开销
+- **自动清屏** — 程序退出时通过信号处理自动清除屏幕
+- **天气更新** — 保留 weather.py 获取天气数据（仅需 requests 包）
 
-~~#### 一言API~~
-~~此网站可以获取指定长度指定类型的一个句子,可以限定返回长度及返回类型~~
-    
-   ~~https://international.v1.hitokoto.cn/?c=a&encode=text&max_length=20~~
+## API 说明
 
-#### 天气API
-获取的天气是通过网页的接口,获取的内容保存在当前目录下的json文件接口的地址是在这里抓取的 
-    
+#### 天气 API
+获取的天气是通过网页的接口，获取的内容保存在当前目录下的 json 文件。接口地址：
+
     http://www.weather.com.cn/
-    
-在控制台f12就可以抓取到
-手动伪造一个来源即可正常的获取到该数据内容
+
+在控制台 F12 就可以抓取到，手动伪造一个来源即可正常获取数据。
 
 ### 外壳及电池模块
-使用的是PiSugar3的外壳,获取电源及树莓派(Raspberry)RTC时间都是靠这一部分模块完成的,附上github地址
-    
+使用 PiSugar3 外壳，获取电源及树莓派 RTC 时间都靠此模块：
+
      https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#rtc-on-board
      https://www.pisugar.com/
-ps:如果没有使用此模块则需要更改代码内容,以避免运行出错。
 
-ps:代码里需要nc命令需要安装netcat，安装内容已集成到“[需要安装的软件和依赖](https://github.com/kxgx/2.13-Ink-screen-clock#%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E8%BD%AF%E4%BB%B6%E5%92%8C%E4%BE%9D%E8%B5%96)"
-     
-### 墨水屏2.13inch e-Paper HAT+硬件连接
-连接树莓派的时候，可以直接将板子插到树莓派的 40PIN 排针上去，注意对好引脚。
+> 如果没有使用此模块则需要更改代码内容，以避免运行出错。
 
-### 开启SPI接口：
-打开树莓派终端，输入以下指令进入配置界面：
+### 墨水屏 2.13inch e-Paper HAT+ 硬件连接
+直接插到树莓派 40PIN 排针上，对好引脚。
+
+### 开启 SPI 接口
+```bash
 sudo raspi-config
-选择Interfacing Options -> SPI -> Yes 开启SPI接口
-![image](https://www.waveshare.net/w/upload/1/1e/RPI_open_spi.png)
+# 选择 Interfacing Options -> SPI -> Yes
+```
 
-#### 按需开启
-PiSugar 3 板载一个 RTC，可以通过 hwclock 轻松使用
-将以下内容写入/boot/firmware/config.txt文件：
-```Bash
+#### 按需开启 RTC
+将以下内容写入 `/boot/firmware/config.txt`：
+```bash
 dtoverlay=i2c-rtc,ds3231
 ```
-![image](https://raw.github.com/kxgx/2.13-Ink-screen-clock/main/pic/1.png)
 
-### 重启树莓派：
-sudo reboot
-检查 /boot/firmware/config.txt，可以看到 'dtparam=spi=on' 已被写入
+重启后检查 SPI：
+```bash
+ls /dev/spi*
+# 应输出 /dev/spidev0.0 和 /dev/spidev0.1
+```
 
-![image](https://www.waveshare.net/w/upload/4/46/RPI_open_spi_1.jpg)
+## 快速安装（推荐）
 
-为了确保 SPI 没有被占用，建议其他的驱动覆盖暂时先关闭。可以使用 ls /dev/spi* 来检查 SPI 占用情况，终端输出 /dev/spidev0.0 和 /dev/spidev0.1 表示 SPI 情况正常
+使用一键安装脚本，支持 `--c` 标志安装 C 版本：
 
-![image](https://www.waveshare.net/w/upload/a/a0/RPI_open_spi_2.jpg)
+```bash
+# 默认源 + C 版本
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/c-bindings/bin/install.sh | sudo bash -s -- --c
+```
 
-#### wifi连接管理
-可以使用[PiSugar/sugar-wifi-conf:让树莓派提供蓝牙BLE服务，使用小程序可以随时更改树莓派的wifi连接
-](https://github.com/PiSugar/PiSugar/wiki/PiSugar-WiFi-config#sugar-wifi-conf)
-## 使用脚本直接安装（推荐）
-### 参数定义
-```Bash
---zh                      设置系统语言为zh_CN,UTF-8
---cn                      替换apt镜像源为中国镜像源
---gitcn                   克隆中国仓库
---pip-offline             pip依赖离线安装
---pisugar-wifi-conf       安装pisugar-wifi-conf
---pisugar-power-manager   安装pisugar-power-manager
---version <tag>           版本号(使用方法 --version + 仓库标签，格式例如 v1.x.x ,可以是主仓库main)
---debug                   输出详细信息
+```bash
+# 中国源 + C 版本（推荐国内用户）
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/c-bindings/bin/install.sh | sudo bash -s -- --c --zh --cn --gitcn
 ```
-### 
-```Bash
-#中国源默认设置(不加参数)
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
+
+### 参数说明
+
 ```
-```Bash
-#中国源参数设置(不使用--debug参数,替换cn镜像源,pip在线安装,不安装pisugar)
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --version <tag>
+--c                      安装 C 语言版本
+--zh                     设置系统语言为 zh_CN.UTF-8
+--cn                     替换 apt 镜像源为中国镜像源
+--gitcn                  克隆中国仓库 (gitee)
+--pisugar-wifi-conf      安装 pisugar-wifi-conf
+--pisugar-power-manager  安装 pisugar-power-manager
+--version <tag>          指定分支/标签
+--debug                  输出详细信息
 ```
-```Bash
-#中国源参数设置(不使用--debug参数,替换cn镜像源,pip依赖离线安装,不安装pisugar)
-curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pip-offline --version <tag>
-```
-```Bash
-#默认源默认设置(不加参数)
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash
-```
-```Bash
-#默认源默认设置(不使用--debug参数,替换cn镜像源,pip在线安装,不安装pisugar)
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --version <tag>
-```
-```Bash
-#默认源默认设置(不使用--debug参数,替换cn镜像源,pip依赖离线安装,不安装pisugar)
-curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pip-offline --version <tag>
-```
-## 需要安装的软件和依赖:
-参考
-微雪电子 https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
-PiSugar 3官方文档 https://github.com/PiSugar/PiSugar/wiki/PiSugar-3-Series#software-installation
-```Bash
+
+## 手动编译
+
+```bash
+# 安装依赖
 sudo apt-get update
-sudo apt-get install -y git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential
-sudo pip3 install spidev borax pillow requests
-wget https://cdn.pisugar.com/release/pisugar-power-manager.sh
-bash pisugar-power-manager.sh -c release
+sudo apt-get install -y git pigpio i2c-tools netcat-openbsd gawk python3 build-essential
+sudo pip3 install requests
+
+# 克隆仓库
+git clone -b c-bindings https://github.com/kxgx/2.13-Ink-screen-clock.git
+cd 2.13-Ink-screen-clock/clock
+
+# 编译
+make clean && make
+
+# 运行
+sudo ./build/epd_clock
 ```
-#### 安装命令和执行启动文件组合命令：
-```Bash
-sudo apt-get update && sudo apt-get install -y git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential && sudo pip3 install spidev borax pillow requests && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://github.com/kxgx/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
+
+## 目录结构
+
 ```
-##### 使用国内仓库：
-```Bash
-sudo apt-get update && sudo apt-get install -y git pigpio i2c-tools netcat* gawk python3-dev python3-pip python3-pil python3-numpy python3-gpiozero python3-pigpio build-essential && sudo pip3 install spidev borax pillow requests && sudo pip3 install spidev borax pillow requests --break-system-packages && wget https://cdn.pisugar.com/release/pisugar-power-manager.sh && bash pisugar-power-manager.sh -c release && cd ~/ && git clone https://gitee.com/xingguangk/2.13-Ink-screen-clock.git && cd ~/2.13-Ink-screen-clock/bin/ && sudo chmod +x start.sh && sudo ./start.sh
+2.13-Ink-screen-clock/
+├── clock/              # C 时钟程序
+│   ├── clock.c         # 主程序源码
+│   ├── stb_truetype.h  # 字体渲染库
+│   ├── Makefile        # 编译配置
+│   └── build/          # 编译输出
+├── waveshare_epd/      # C 版 EPD 驱动库
+│   ├── include/        # 头文件
+│   ├── src/            # 源码 (hal + drivers)
+│   └── Makefile
+├── bin/
+│   ├── install.sh      # 一键安装脚本
+│   ├── start.sh        # 启动脚本
+│   ├── weather.py      # 天气数据获取
+│   ├── weather.json    # 天气数据缓存
+│   └── raspi_e-Paper.service  # systemd 服务
+└── pic/                # 字体和图片资源
 ```
-###### 注意
-```Bash
-# 如果使用的是非lite系统请在pip3安装部分添加
---break-system-packages
-```
-在weanther.py文件第64行可以修改默认城市数据
-# 效果展示
-总体采用局刷方案,程序运行后一直处于程序的获取新数据的过程中,当发现数据变化后即开始自动局刷。
-![image](https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/pic/1736749257603.jpg)
+
+## 效果展示
+
+采用局刷方案，程序持续监测数据变化，变化时自动局刷。
+
+![效果](https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/pic/1736749257603.jpg)
