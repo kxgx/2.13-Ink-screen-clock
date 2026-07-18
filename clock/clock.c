@@ -23,6 +23,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "lunar.h"
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
@@ -485,14 +487,11 @@ static void get_date_str(char *buf, size_t bufsize) {
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
-    /* Lunar date via Python */
+    /* Lunar date via pure C (zero dependency) */
     char lunar[32] = "";
-    char *lunar_output = shell_output(
-        "python3 -c \"from borax.calendars.lunardate import LunarDate; "
-        "print(LunarDate.today().strftime('农历%M月%D '))\" 2>/dev/null");
-    if (lunar_output) {
-        snprintf(lunar, sizeof(lunar), "%s", lunar_output);
-        free(lunar_output);
+    LunarDate ld;
+    if (lunar_from_solar(tm_info->tm_year + 1900, tm_info->tm_mon + 1, tm_info->tm_mday, &ld) == 0) {
+        lunar_format(&ld, lunar, sizeof(lunar));
     }
 
     snprintf(buf, bufsize, "%s%s%s", gregorian, weekday, lunar);
