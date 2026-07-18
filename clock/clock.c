@@ -483,7 +483,7 @@ static void get_date_str(char *buf, size_t bufsize) {
 
     /* Weekday in Chinese */
     static const char *weekdays[] = {
-        "星期一 ", "星期二 ", "星期三 ", "星期四 ", "星期五 ", "星期六 ", "星期日 "
+        "星期日 ", "星期一 ", "星期二 ", "星期三 ", "星期四 ", "星期五 ", "星期六 "
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
