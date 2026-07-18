@@ -20,6 +20,8 @@ USE_PISUGAR_WIFI_CONF=false
 USE_PISUGAR_POWER_MANAGER=false
 # 检查是否使用离线安装pip依赖
 USE_OFFLINE_PIP=false
+# 检查是否安装C版本
+USE_C_VERSION=false
 
 # 解析命令行参数
 while [ "$#" -gt 0 ]; do
@@ -36,6 +38,9 @@ while [ "$#" -gt 0 ]; do
     --pip-offline)
     USE_OFFLINE_PIP=true
     ;;
+    --c)
+    USE_C_VERSION=true
+    ;;    
     --pisugar-wifi-conf)
     USE_PISUGAR_WIFI_CONF=true
     ;;
@@ -225,6 +230,32 @@ install_Ink-screen-clock() {
   fi
 }
 
+install_Ink-screen-clock_c() {
+  if [ ! -d "$HOME/2.13-Ink-screen-clock" ]; then
+      echo "正在克隆仓库(c-bindings分支)"
+    cd ~
+    if ! git clone -b c-bindings $INK_SCREEN_CLOCK_REPO_URL; then
+      echo "克隆仓库失败" >&2
+      exit 1
+    fi
+  else
+    echo "仓库已存在，切换到c-bindings分支并更新"
+    cd "$HOME/2.13-Ink-screen-clock"
+    git fetch origin
+    git checkout c-bindings
+    git pull origin c-bindings
+  fi
+
+  # 编译 C 项目
+  echo "编译 C 时钟程序..."
+  cd "$HOME/2.13-Ink-screen-clock/clock"
+  make clean && make || { echo "编译失败"; exit 1; }
+
+  # 设置权限
+  chmod +x "$HOME/2.13-Ink-screen-clock/bin/start.sh"
+  chmod +x "$HOME/2.13-Ink-screen-clock/clock/build/epd_clock"
+}
+
 # 检查pip包是否已安装
 check_pip_packages_installed() {
   local requirements_file="$HOME/2.13-Ink-screen-clock/bin/requirements.txt"
@@ -263,7 +294,6 @@ install_oline_pip_packages() {
     echo "所有pip包已安装，跳过安装"
     return 0
   fi
-  # ... 继续安装 ...
     echo "正在安装pip软件包"
   if ! sudo pip3 install -i "$PIPY_MIRROR" -r "$HOME/2.13-Ink-screen-clock/bin/requirements.txt"; then
     echo "pip软件包安装失败，如果是最新版系统或是非lite系统" >&2
@@ -321,6 +351,29 @@ setup_service() {
     exit 1
   fi
 }
+
+# C版本服务设置
+setup_service_c() {
+  local service_name="raspi_e-Paper.service"
+  local service_file="$HOME/2.13-Ink-screen-clock/bin/$service_name"
+
+  if [ ! -f "$service_file" ]; then
+    echo "服务文件不存在: $service_file" >&2
+    exit 1
+  fi
+
+  if systemctl is-enabled $service_name &>/dev/null; then
+    echo "服务已启用，重新加载配置"
+    sudo systemctl stop $service_name 2>/dev/null
+  fi
+
+  echo "正在设置开机自启服务"
+  sudo cp "$service_file" /etc/systemd/system/
+  sudo systemctl daemon-reload
+  sudo systemctl enable $service_name
+  sudo systemctl start $service_name
+}
+
 PISUGAR_POWER_MANAGER_URL=https://cdn.pisugar.com/release/pisugar-power-manager.sh
 # 安装pisugar-power-manager函数
 install_pisugar-power-manager() {
@@ -367,9 +420,15 @@ if [ -f /etc/debian_version ]; then
         echo "执行Debian 11 (Bullseye) 相关操作"
         update_sources_list "bullseye"
         install_packages
-        install_Ink-screen-clock
-        install_pip_packages
-        setup_service
+        if [ "$USE_C_VERSION" = true ]; then
+          echo ">>> C版本安装模式 <<<"
+          install_Ink-screen-clock_c
+          setup_service_c
+        else
+          install_Ink-screen-clock
+          install_pip_packages
+          setup_service
+        fi
         #install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
@@ -378,9 +437,15 @@ if [ -f /etc/debian_version ]; then
         echo "执行Debian 12 (Bookworm) 相关操作"
         update_sources_list "bookworm"
         install_packages
-        install_Ink-screen-clock
-        install_pip_packages
-        setup_service
+        if [ "$USE_C_VERSION" = true ]; then
+          echo ">>> C版本安装模式 <<<"
+          install_Ink-screen-clock_c
+          setup_service_c
+        else
+          install_Ink-screen-clock
+          install_pip_packages
+          setup_service
+        fi
         #install_webui
         install_pisugar-wifi-conf
         install_pisugar-power-manager
