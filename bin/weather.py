@@ -21,6 +21,38 @@ CITY_CN = {'Changchun': '长春', 'Beijing': '北京', 'Shanghai': '上海',
            'Hangzhou': '杭州', 'Nanjing': '南京', 'Wuhan': '武汉',
            'Chongqing': '重庆', 'Tianjin': '天津', 'Suzhou': '苏州'}
 
+# wttr.in 天气代码 → 中文
+WEATHER_CN = {
+    '113': '晴', '116': '晴间多云', '119': '多云', '122': '阴',
+    '143': '雾', '176': '小雨', '179': '小雪', '182': '雨夹雪',
+    '185': '冻雨', '200': '雷阵雨', '227': '暴风雪', '230': '暴风雪',
+    '248': '雾', '260': '冻雾', '263': '毛毛雨', '266': '小雨',
+    '281': '冻雨', '284': '冻雨', '293': '小雨', '296': '小雨',
+    '299': '中雨', '302': '中雨', '305': '大雨', '308': '大雨',
+    '311': '冻雨', '314': '冻雨', '317': '雨夹雪', '320': '雨夹雪',
+    '323': '小雪', '326': '小雪', '329': '中雪', '332': '中雪',
+    '335': '大雪', '338': '大雪', '350': '冰雹', '353': '阵雨',
+    '356': '中雨', '359': '大雨', '362': '雨夹雪', '365': '雨夹雪',
+    '368': '小雪', '371': '大雪', '374': '冰雹', '377': '冰雹',
+    '386': '雷阵雨', '389': '雷阵雨', '392': '雷阵雪', '395': '大雪',
+}
+# 英文兜底映射
+WEATHER_EN_CN = {
+    'Sunny': '晴', 'Clear': '晴', 'Partly cloudy': '多云', 'Cloudy': '阴',
+    'Overcast': '阴', 'Mist': '雾', 'Fog': '雾', 'Freezing fog': '冻雾',
+    'Patchy rain possible': '小雨', 'Light drizzle': '毛毛雨',
+    'Light rain': '小雨', 'Moderate rain': '中雨', 'Heavy rain': '大雨',
+    'Patchy snow possible': '小雪', 'Light snow': '小雪',
+    'Moderate snow': '中雪', 'Heavy snow': '大雪', 'Blizzard': '暴风雪',
+    'Thunderstorm': '雷阵雨', 'Hail': '冰雹', 'Sleet': '雨夹雪',
+    'Freezing drizzle': '冻雨', 'Light rain shower': '阵雨',
+    'Moderate or heavy rain shower': '中雨', 'Torrential rain shower': '大雨',
+    'Light sleet showers': '雨夹雪', 'Moderate or heavy sleet showers': '雨夹雪',
+    'Light snow showers': '小雪', 'Moderate or heavy snow showers': '大雪',
+    'Light showers of ice pellets': '冰雹', 'Moderate or heavy showers of ice pellets': '冰雹',
+}
+
+
 def fetch_weather():
     """使用 wttr.in API 获取天气"""
     try:
@@ -30,13 +62,17 @@ def fetch_weather():
         data = resp.json()
 
         current = data['current_condition'][0]
+        # 天气转中文：优先用 weatherCode，其次英文兜底
+        code = current['weatherCode']
+        weather_en = current['weatherDesc'][0]['value']
+        weather_cn = WEATHER_CN.get(code) or WEATHER_EN_CN.get(weather_en, weather_en)
         now = datetime.now()
         weekdays = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日']
 
         weather_data = {
             'cityname': CITY_CN.get(DEFAULT_CITY, DEFAULT_CITY),
             'temp': current['temp_C'],
-            'weather': current['weatherDesc'][0]['value'],
+            'weather': weather_cn,
             'WD': current['winddir16Point'],
             'WS': current['windspeedKmph'] + 'km/h',
             'SD': current['humidity'] + '%',
