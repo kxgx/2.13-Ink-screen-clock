@@ -52,25 +52,24 @@ def get_ip():
     return None
 
 def get_current_city():
-    """通过IP地址获取当前定位城市并去除'市'后缀"""
+    """通过IP获取城市，失败则返回None（由默认城市兜底）"""
     ip = get_ip()
     if not ip:
         return None
 
     url = f"http://ip-api.com/json/{ip}?fields=city&lang=zh-CN"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
-    while True:
-        try:
-            resp = requests.get(url, headers=headers, timeout=10, proxies=NO_PROXY)
-            data = resp.json()
-            if data.get('status') == 'success':
-                return data.get('city', '').replace('市', '')
-            logging.error("定位失败: %s", data.get('message', '未知错误'))
-        except Exception as e:
-            logging.error("定位异常: %s", str(e))
-        time.sleep(180)
+    try:
+        resp = requests.get(url, headers=headers, timeout=10, proxies=NO_PROXY)
+        data = resp.json()
+        if data.get('status') == 'success':
+            return data.get('city', '').replace('市', '')
+        logging.warning("ip-api定位失败, 使用默认城市: %s", data)
+    except Exception as e:
+        logging.warning("定位异常, 使用默认城市: %s", str(e))
+    return None
 
 def schedule_getWeath():
     """改进的定时任务调度"""
