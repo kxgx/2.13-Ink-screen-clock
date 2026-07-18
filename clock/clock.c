@@ -513,30 +513,43 @@ static void get_ip_str(char *buf, size_t bufsize) {
     }
 }
 
-/* Get battery power (matching power_battery with caching) */
-static char last_power[16] = "";
-static time_t last_power_time = 0;
+/* Battery power with smoothing animation */
+static int target_power_val = -1;    /* raw value from hardware */
+static int display_power_val = -1;   /* smoothly animated value */
+static time_t last_power_fetch = 0;
 
-static void get_power_str(char *buf, size_t bufsize) {
+/* Get battery value with smooth step animation.
+ * Each call moves display_power_val one step toward target_power_val. */
+static int get_power_val(void) {
     time_t now = time(NULL);
 
-    /* Cache for 3 minutes */
-    if ((now - last_power_time < 180) && last_power[0] != '\0') {
-        snprintf(buf, bufsize, "%s", last_power);
-        return;
+    /* Fetch from hardware every 3 minutes */
+    if (now - last_power_fetch >= 180) {
+        char *power = shell_output(
+            "echo \"get battery\" | nc -q 0 127.0.0.1 8423 2>/dev/null | "
+            "awk -F':' '{print int($2)}'");
+        if (power) {
+            target_power_val = atoi(power);
+            free(power);
+        } else if (target_power_val < 0) {
+            target_power_val = 0;
+        }
+        last_power_fetch = now;
     }
 
-    char *power = shell_output(
-        "echo \"get battery\" | nc -q 0 127.0.0.1 8423 2>/dev/null | "
-        "awk -F':' '{print int($2)}'");
-    if (power) {
-        snprintf(last_power, sizeof(last_power), "%s%%", power);
-        free(power);
-    } else if (last_power[0] == '\0') {
-        snprintf(last_power, sizeof(last_power), "0%%");
+    /* Initialize on first call */
+    if (display_power_val < 0) {
+        display_power_val = (target_power_val >= 0) ? target_power_val : 0;
     }
-    last_power_time = now;
-    snprintf(buf, bufsize, "%s", last_power);
+
+    /* Smooth animation: move one step toward target each call */
+    if (display_power_val < target_power_val) {
+        display_power_val++;
+    } else if (display_power_val > target_power_val) {
+        display_power_val--;
+    }
+
+    return display_power_val;
 }
 
 /* =========================================================================
@@ -621,7 +634,7 @@ static int read_weather(WeatherData *w) {
 static char cached_date[128]    = "";
 static char cached_time[8]      = "";
 static char cached_ip[32]       = "";
-static char cached_power[16]    = "";
+static int cached_power_val     = -1;
 static char cached_weather_w[32]  = "";
 static char cached_weather_t[32]  = "";
 static char cached_weather_h[32]  = "";
@@ -644,9 +657,10 @@ static void draw_bottom_edge(void) {
     fb_draw_line(157, 112, 157, 114, 1);
 
     /* Battery percentage text */
+    int pwr = get_power_val();
+    cached_power_val = pwr;
     char power[16];
-    get_power_str(power, sizeof(power));
-    snprintf(cached_power, sizeof(cached_power), "%s", power);
+    snprintf(power, sizeof(power), "%d%%", pwr);
     ft_render_text(133, 110, power, FONT_SIZE_SMALL, 0, 1);
 
     /* Clock icon (ellipse + hands) */
@@ -808,12 +822,13 @@ static void partial_refresh(EPD *epd) {
         }
 
         /* ---- Battery check ---- */
-        char current_power[16];
-        get_power_str(current_power, sizeof(current_power));
-        if (strcmp(current_power, cached_power) != 0) {
+        int current_power_val = get_power_val();
+        if (current_power_val != cached_power_val) {
             fb_fill_rect(127, 108, 27, 10, 0);
-            ft_render_text(133, 110, current_power, FONT_SIZE_SMALL, 0, 1);
-            snprintf(cached_power, sizeof(cached_power), "%s", current_power);
+            char power_str[16];
+            snprintf(power_str, sizeof(power_str), "%d%%", current_power_val);
+            ft_render_text(133, 110, power_str, FONT_SIZE_SMALL, 0, 1);
+            cached_power_val = current_power_val;
             need_refresh = 1;
         }
 
