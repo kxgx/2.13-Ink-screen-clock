@@ -246,10 +246,10 @@ install_Ink-screen-clock_c() {
     git pull origin c-bindings
   fi
 
-  # 安装 C 版本需要的 Python 依赖（天气 + 农历）
+  # 安装 C 版本需要的 Python 依赖（天气）
   echo "安装 C 版 Python 依赖..."
-  sudo pip3 install requests borax --break-system-packages 2>/dev/null \
-    || sudo pip3 install requests borax 2>/dev/null \
+  sudo pip3 install requests --break-system-packages 2>/dev/null \
+    || sudo pip3 install requests 2>/dev/null \
     || echo "警告: Python 依赖安装失败"
 
   # 编译 C 项目
