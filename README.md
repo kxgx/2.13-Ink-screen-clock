@@ -67,6 +67,7 @@ sudo reboot
 --cn                      替换apt镜像源为中国镜像源
 --gitcn                   克隆中国仓库
 --pip-offline             pip依赖离线安装
+--c                      安装C语言版本（零Python依赖，更高性能）
 --pisugar-wifi-conf       安装pisugar-wifi-conf
 --pisugar-power-manager   安装pisugar-power-manager
 --version <tag>           版本号(使用方法 --version + 仓库标签，格式例如 v1.x.x ,可以是主仓库main)
@@ -97,6 +98,27 @@ curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh 
 #默认源默认设置(不使用--debug参数,替换cn镜像源,pip依赖离线安装,不安装pisugar)
 curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --zh --cn --gitcn --pip-offline --version <tag>
 ```
+## C语言版本安装（零Python依赖）
+
+使用 `--c` 参数安装 C 语言版本，编译为原生二进制，无需 Python 运行时和 pip 依赖：
+
+```Bash
+# 中国源 + C版本
+curl -sSL https://gitee.com/xingguangk/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --c --zh --cn --gitcn
+```
+
+```Bash
+# 默认源 + C版本
+curl -sSL https://github.com/kxgx/2.13-Ink-screen-clock/raw/main/bin/install.sh | sudo bash -s -- --c
+```
+
+C 版本特性：
+- 无外部字体库依赖（内置 stb_truetype 渲染）
+- 编译为原生 ARM 二进制，启动更快
+- 内存占用更低
+- 程序退出自动清屏（信号处理）
+- 天气更新仍使用 weather.py（仅需 requests 包）
+
 ## 需要安装的软件和依赖:
 参考
 微雪电子 https://www.waveshare.net/wiki/2.13inch_e-Paper_HAT+#Raspberry_Pi
