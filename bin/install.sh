@@ -420,6 +420,8 @@ if [ -f /etc/debian_version ]; then
         echo "执行Debian 11 (Bullseye) 相关操作"
         update_sources_list "bullseye"
         install_packages
+        install_pisugar-wifi-conf
+        install_pisugar-power-manager
         if [ "$USE_C_VERSION" = true ]; then
           echo ">>> C版本安装模式 <<<"
           install_Ink-screen-clock_c
@@ -430,13 +432,13 @@ if [ -f /etc/debian_version ]; then
           setup_service
         fi
         #install_webui
-        install_pisugar-wifi-conf
-        install_pisugar-power-manager
         ;;
       12)
         echo "执行Debian 12 (Bookworm) 相关操作"
         update_sources_list "bookworm"
         install_packages
+        install_pisugar-wifi-conf
+        install_pisugar-power-manager
         if [ "$USE_C_VERSION" = true ]; then
           echo ">>> C版本安装模式 <<<"
           install_Ink-screen-clock_c
@@ -447,8 +449,6 @@ if [ -f /etc/debian_version ]; then
           setup_service
         fi
         #install_webui
-        install_pisugar-wifi-conf
-        install_pisugar-power-manager
         ;;
       *)
         echo "未知的Debian版本: $MAJOR_VERSION" >&2
