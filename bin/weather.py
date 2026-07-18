@@ -10,6 +10,9 @@ import socket
 from functools import wraps
 from threading import Timer
 
+# 绕过本地代理（系统可能设置了无效的 HTTP_PROXY=127.0.0.1:80）
+NO_PROXY = {'http': None, 'https': None}
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(message)s',
@@ -25,20 +28,27 @@ def check_network_connection():
         return False
 
 def get_ip():
-    """从ip.cn获取当前IP地址"""
-    url = "https://ip.cn/api/index?ip=&type=0"
+    """获取当前公网IP，绕过本地代理"""
+    urls = [
+        "https://api.ipify.org?format=json",
+        "https://ifconfig.me/all.json",
+        "https://ip.cn/api/index?ip=&type=0",
+    ]
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
-    try:
-        resp = requests.get(url, headers=headers, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        if data.get('code') == 'Success':
-            return data.get('ip', '')
-        logging.error("获取IP失败: %s", data.get('msg', '未知错误'))
-    except Exception as e:
-        logging.error("获取IP异常: %s", str(e))
+    NO_PROXY = {'http': None, 'https': None}
+    for url in urls:
+        try:
+            resp = requests.get(url, headers=headers, timeout=10, proxies=NO_PROXY)
+            resp.raise_for_status()
+            data = resp.json()
+            ip = data.get('ip') or data.get('ip_addr')
+            if ip:
+                return ip
+        except Exception:
+            continue
+    logging.error("获取IP失败")
     return None
 
 def get_current_city():
@@ -53,7 +63,7 @@ def get_current_city():
     }
     while True:
         try:
-            resp = requests.get(url, headers=headers, timeout=10)
+            resp = requests.get(url, headers=headers, timeout=10, proxies=NO_PROXY)
             data = resp.json()
             if data.get('status') == 'success':
                 return data.get('city', '').replace('市', '')
@@ -116,7 +126,8 @@ def getWeath(default_city='101060101'):
             resp = requests.get(
                 api_url,
                 headers={'User-Agent': 'Mozilla/5.0'},
-                timeout=15
+                timeout=15,
+                proxies=NO_PROXY
             )
             resp.raise_for_status()
             
