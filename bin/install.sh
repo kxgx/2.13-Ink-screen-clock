@@ -108,12 +108,13 @@ install_packages() {
     || { echo "软件包安装失败"; exit 1; }
 }
 
-# 安装 weather.py 的 Python 依赖
-install_weather_deps() {
-  echo "安装 weather.py 依赖..."
-  sudo pip3 install requests -i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple \
-    || sudo pip3 install requests --break-system-packages \
-    || echo "警告: requests 安装失败，weather.py 可能无法工作"
+# 安装 weather.py 和农历的 Python 依赖
+install_python_deps() {
+  echo "安装 Python 依赖..."
+  local pip_opts="-i https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+  sudo pip3 install $pip_opts requests borax 2>/dev/null \
+    || sudo pip3 install requests borax --break-system-packages 2>/dev/null \
+    || echo "警告: Python 依赖安装失败，天气/农历可能无法工作"
 }
 
 # 克隆仓库并编译C程序
@@ -205,11 +206,11 @@ case "$MAJOR_VERSION" in
 esac
 
 install_packages
-install_weather_deps
-install_Ink-screen-clock
-setup_service
+install_python_deps
 install_pisugar_wifi_conf
 install_pisugar_power_manager
+install_Ink-screen-clock
+setup_service
 
 echo ""
 echo "============================================"
