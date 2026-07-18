@@ -702,7 +702,7 @@ static void basic_refresh(EPD *epd) {
 
     /* Time display */
     get_time_str(cached_time, sizeof(cached_time));
-    ft_render_text(3, 40, cached_time, FONT_SIZE_TIME, 1, 0, 127);
+    ft_render_text(-1, 40, cached_time, FONT_SIZE_TIME, 1, 0, 127);
 
     /* Bottom edge */
     draw_bottom_edge();
@@ -732,8 +732,8 @@ static void partial_refresh(EPD *epd) {
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
             /* Erase old time area - Python: (5,40,133,82) inclusive */
-            fb_fill_rect(3, 40, 131, 48, 1);
-            ft_render_text(3, 40, current_time, FONT_SIZE_TIME, 1, 0, 127);
+            fb_fill_rect(-1, 40, 133, 48, 1);
+            ft_render_text(-1, 40, current_time, FONT_SIZE_TIME, 1, 0, 127);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
             need_refresh = 1;
         }
