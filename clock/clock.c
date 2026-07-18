@@ -648,7 +648,7 @@ static void draw_bottom_edge(void) {
     char power[16];
     get_power_str(power, sizeof(power));
     snprintf(cached_power, sizeof(cached_power), "%s", power);
-    ft_render_text(131, 109, power, FONT_SIZE_SMALL, 0, 1);
+    ft_render_text(133, 110, power, FONT_SIZE_SMALL, 0, 1);
 
     /* Clock icon (ellipse + hands) */
     fb_draw_ellipse(199, 113, 7, 6, 1, 1);   /* filled white circle, white outline */
@@ -661,7 +661,7 @@ static void draw_bottom_edge(void) {
     snprintf(cached_ip, sizeof(cached_ip), "%s", ip);
     char ip_text[64];
     snprintf(ip_text, sizeof(ip_text), "IP:%s", ip);
-    ft_render_text(10, 108, ip_text, FONT_SIZE_IP, 0, 1);
+    ft_render_text(10, 109, ip_text, FONT_SIZE_IP, 0, 1);
 }
 
 /* Draw weather section (matching Weather) */
@@ -691,7 +691,7 @@ static void draw_weather(void) {
     ft_render_text(191, 85, w.cityname,  FONT_SIZE_WEATHER, 0, 0);
 
     /* Weather update time in bottom bar */
-    ft_render_text(211, 108, w.time_str, FONT_SIZE_IP, 0, 1);
+    ft_render_text(211, 109, w.time_str, FONT_SIZE_IP, 0, 1);
 }
 
 /* Full refresh (matching Basic_refresh) */
@@ -757,7 +757,7 @@ static void partial_refresh(EPD *epd) {
             fb_fill_rect(1, 107, 123, 14, 0);  /* black background */
             char ip_text[64];
             snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
-            ft_render_text(10, 108, ip_text, FONT_SIZE_IP, 0, 1);
+            ft_render_text(10, 109, ip_text, FONT_SIZE_IP, 0, 1);
             snprintf(cached_ip, sizeof(cached_ip), "%s", current_ip);
             need_refresh = 1;
         }
@@ -802,7 +802,7 @@ static void partial_refresh(EPD *epd) {
             /* Update time */
             if (strcmp(w.time_str, cached_weather_u) != 0) {
                 fb_fill_rect(211, 107, 38, 12, 0);
-                ft_render_text(211, 108, w.time_str, FONT_SIZE_IP, 0, 1);
+                ft_render_text(211, 109, w.time_str, FONT_SIZE_IP, 0, 1);
                 snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
                 need_refresh = 1;
             }
@@ -813,7 +813,7 @@ static void partial_refresh(EPD *epd) {
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
             fb_fill_rect(128, 109, 26, 8, 0);
-            ft_render_text(131, 109, current_power, FONT_SIZE_SMALL, 0, 1);
+            ft_render_text(133, 110, current_power, FONT_SIZE_SMALL, 0, 1);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
         }
