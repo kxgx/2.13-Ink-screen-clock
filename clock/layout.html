@@ -399,7 +399,7 @@ function toEpaper(ctx) {
   const w = 250, h = 122;
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
-  const T = 160;  /* higher threshold = less white noise */
+  const T = 128;  /* mid-point: preserves both black and white edges */
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
