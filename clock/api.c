@@ -291,7 +291,7 @@ void api_server_start(void) {
                 char *body = strstr(buf, "\r\n\r\n");
                 handle_preview(client_fd, body ? body + 4 : "{}");
             } else if (strncmp(buf, "GET /layout.html", 16) == 0) {
-                send_file(client_fd, "layout.html", "text/html; charset=utf-8");
+                send_file(client_fd, "../clock/layout.html", "text/html; charset=utf-8");
             } else if (strncmp(buf, "GET /pic/", 9) == 0) {
                 /* Extract path after /pic/, only allow DSEG font */
                 if (strstr(buf, "DSEG7Modern-Bold.ttf"))
