@@ -160,9 +160,35 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 const FONT_CN = '"Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif';
 let FONT_TIME = 'DSEG, monospace';
 let _loadedTimeFont = 'DSEG7Modern-Bold.ttf';
+let _loadedCnFont = '';   /* tracks which CN font @font-face is loaded */
+let FONT_CN_VAR = FONT_CN;  /* mutable, may point to 'DynCn' after loading TTF */
 
 // Try loading the DSEG TTF font (browsers support .ttf fine).
 document.fonts.load('40px DSEG').catch(()=>{});
+
+// Dynamically load a CN font (.ttf only; .ttc falls back to system fonts)
+function loadCnFont(fname) {
+  if (!fname || fname === _loadedCnFont) return;
+  _loadedCnFont = fname;
+  // Remove old dynamic CN font style
+  const old = document.getElementById('dyn-cn-font');
+  if (old) old.remove();
+  const isTtc = fname.toLowerCase().endsWith('.ttc');
+  if (isTtc) {
+    FONT_CN_VAR = FONT_CN;  /* fall back to system fonts */
+    return;
+  }
+  // Create @font-face for TTF CN font
+  const style = document.createElement('style');
+  style.id = 'dyn-cn-font';
+  style.textContent = `@font-face {
+    font-family: 'DynCn';
+    src: url('/pic/${encodeURIComponent(fname)}') format('truetype');
+  }`;
+  document.head.appendChild(style);
+  FONT_CN_VAR = `'DynCn', ${FONT_CN}`;
+  document.fonts.load(`14px ${FONT_CN_VAR}`).then(() => { drawNow(); }).catch(() => {});
+}
 
 // Dynamically load a TTF font from /pic/ for preview
 function loadTimeFont(fname) {
@@ -310,7 +336,9 @@ async function postCancel() {
   try {
     const data = await apiFetch('/layout/cancel', { method:'POST' });
     _original = extractPos(data); _current = { ..._original }; _remote = data;
-    updateUI(); setPending(false); drawPreview(); renderInfo();
+    updateUI(); setPending(false);
+    await document.fonts.ready;
+    drawPreview(); renderInfo();
   } catch(e) { showErr('取消失败: '+e.message); }
 }
 
@@ -429,7 +457,8 @@ function onFieldChange(inp) {
   if (inp.type !== 'select-one' && isNaN(v)) return;
   _current[k] = v;
   inp.classList.toggle('modified', v !== _original[k]);
-  if (k === 'font_time') loadTimeFont(v);
+  if (k === 'font_cn' && v) loadCnFont(v);
+  if (k === 'font_time' && v) loadTimeFont(v);
 }
 
 function updateUI() {
@@ -443,6 +472,7 @@ function updateUI() {
       inp.value = v;
     }
     inp.classList.toggle('modified', v !== _original[k]);
+    if (k === 'font_cn' && v) loadCnFont(v);
     if (k === 'font_time' && v) loadTimeFont(v);
   }
   _updating = false;
@@ -475,15 +505,15 @@ function getHandleSize(h) {
   ctx.textBaseline = 'alphabetic';
   ctx.font = `${_current.time_pt ?? 40}px ${FONT_TIME}`;
   if (fn === 'time') { const m = ctx.measureText('88:88'); return {w: Math.ceil(m.width) + 4, h: _current.time_pt ?? 40}; }
-  ctx.font = `${_current.date_pt ?? 14}px ${FONT_CN}`;
+  ctx.font = `${_current.date_pt ?? 14}px ${FONT_CN_VAR}`;
   if (fn === 'date') { const m = ctx.measureText(_remote?.date?.text || '0000年00月00日'); return {w: Math.ceil(m.width) + 4, h: _current.date_pt ?? 14}; }
-  ctx.font = `${_current.weather_pt ?? 14}px ${FONT_CN}`;
+  ctx.font = `${_current.weather_pt ?? 14}px ${FONT_CN_VAR}`;
   if (fn === 'wlabel') { const m = ctx.measureText('天气:'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
   if (fn === 'wdata') { const m = ctx.measureText(_remote?.weather?.desc?.text || '晴'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
-  ctx.font = `${_current.ip_pt ?? 13}px ${FONT_CN}`;
+  ctx.font = `${_current.ip_pt ?? 13}px ${FONT_CN_VAR}`;
   if (fn === 'wupd') { const m = ctx.measureText(_remote?.weather?.updated?.text || '07/18 12:00'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
   if (fn === 'ip') { const m = ctx.measureText(_remote?.ip?.text ? 'IP:'+_remote.ip.text : 'IP:192.168.2.103'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
-  ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN}`;
+  ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN_VAR}`;
   if (fn === 'bat') { const m = ctx.measureText(_remote?.battery?.text || '100%'); return {w: Math.ceil(m.width) + 2, h: _current.small_pt ?? 10}; }
   if (fn === 'batf') return {w: _current.bat_frame_w ?? 29, h: _current.bat_frame_h ?? 11};
   return {w: 20, h: 14};
@@ -684,7 +714,7 @@ function _draw(data) {
   text(data.time.text, data.time.x, data.time.y, _current.time_pt ?? 40, FONT_TIME);
 
   // Date
-  text(data.date.text, data.date.x, data.date.y, _current.date_pt ?? 14, FONT_CN);
+  text(data.date.text, data.date.x, data.date.y, _current.date_pt ?? 14, FONT_CN_VAR);
 
   // Weather
   const w = data.weather;
@@ -699,20 +729,20 @@ function _draw(data) {
       [labels[2], w.humidity.text],
       [labels[3], w.city.text],
     ].forEach(([lb, val], i) => {
-      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN);
-      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN);
+      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
+      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
     });
 
     const ip = _current.ip_pt ?? 13;
     ctx.fillStyle = '#ccc';  /* brighter on black bar */
-    text(w.updated.text, w.updated.x, w.updated.y, ip, FONT_CN);
+    text(w.updated.text, w.updated.x, w.updated.y, ip, FONT_CN_VAR);
   }
 
   // Battery in bar
   const b = data.battery;
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-  text(b.text, b.x, b.y, _current.small_pt ?? 10, FONT_CN);
+  text(b.text, b.x, b.y, _current.small_pt ?? 10, FONT_CN_VAR);
   // Snap stroke to pixel grid for crisp 1px lines
   ctx.strokeRect(b.frame.x + 0.5, b.frame.y + 0.5, b.frame.w, b.frame.h);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+3, 3, 3);
@@ -733,7 +763,7 @@ function _draw(data) {
   ctx.strokeStyle = '#fff';  // restore for IP text below
 
   // IP in bar
-  text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN);
+  text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN_VAR);
 
   // Atkinson dithering — preserves detail for 1-bit text edges
   // Classic Macintosh algorithm: distributes 6/8 error, drops 2/8
