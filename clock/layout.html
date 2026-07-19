@@ -373,7 +373,7 @@ function _draw(data) {
   // Weather
   const w = data.weather;
   if (w) {
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = '#000';  /* pure black for crisp threshold */
     const wp = _current.weather_pt ?? 14;
     const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
     const lx = _current.w_label_x ?? 150, dx = _current.w_data_x ?? 195;
@@ -388,7 +388,7 @@ function _draw(data) {
     });
 
     const ip = _current.ip_pt ?? 13;
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = '#ccc';  /* brighter on black bar */
     text(w.updated.text, w.updated.x, w.updated.y, ip, FONT_CN);
   }
 
