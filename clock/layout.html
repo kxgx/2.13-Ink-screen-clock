@@ -590,13 +590,6 @@ function setupDragLayer() {
     const ny = Math.max(0, Math.min(122 - s.h, Math.round(y) - _dragOffY));
     _current[h.k] = nx;
     _current[h.ky] = ny;
-    // Sync label cols: w_label_x / w_data_x
-    if (h.k === 'w_label_x') {
-      for (let i = 0; i < 4; i++) _current['w_label_y'+i] = ny + i * 20;
-    }
-    if (h.k === 'w_data_x') {
-      for (let i = 0; i < 4; i++) _current['w_data_y'+i] = ny + i * 20;
-    }
     drawHandles();
     drawNow();
     updateUI();
@@ -633,12 +626,13 @@ let _updating = false;
 function updatePositionDisplay() {
   const tbody = document.querySelector('#pos-table tbody');
   if (!tbody || !_current || !Object.keys(_current).length) return;
-  // Deduplicate: group handles sharing same X key
+  // Deduplicate: use k+ky so all label/data rows show
   const seen = {};
   const rows = [];
   DRAG_HANDLES.forEach(h => {
-    if (seen[h.k]) return;
-    seen[h.k] = true;
+    const id = h.k + '|' + h.ky;
+    if (seen[id]) return;
+    seen[id] = true;
     const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
     const xMod = _original[h.k] !== undefined && x !== _original[h.k];
     const yMod = _original[h.ky] !== undefined && y !== _original[h.ky];
