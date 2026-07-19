@@ -6,7 +6,7 @@
  * Routes:
  *   GET  /               JSON data
  *   GET  /layout.html    Layout control panel
- *   GET  /pic/*          Static files (fonts)
+ *   GET  /pic/...        Static files (fonts)
  *   POST /layout         Preview layout changes
  *   POST /layout/apply   Commit layout changes
  *   POST /layout/cancel  Discard pending changes
