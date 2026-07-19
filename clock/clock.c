@@ -720,7 +720,8 @@ static void partial_refresh(EPD *epd) {
         char current_date[128];
         get_date_str(current_date, sizeof(current_date));
         if (strcmp(current_date, cached_date) != 0) {
-            fb_fill_rect(g_layout.date_x, g_layout.date_y, 249, 15, 1);
+            int dh = FONT_SIZE_DATE + 2;
+            fb_fill_rect(g_layout.date_x, g_layout.date_y - 1, 249, dh, 1);
             ft_render_text(g_layout.date_x, g_layout.date_y, current_date, FONT_SIZE_DATE, 0, 0, 127);
             snprintf(cached_date, sizeof(cached_date), "%s", current_date);
             need_refresh = 1;
@@ -730,7 +731,8 @@ static void partial_refresh(EPD *epd) {
         char current_ip[32];
         get_ip_str(current_ip, sizeof(current_ip));
         if (strcmp(current_ip, cached_ip) != 0) {
-            fb_fill_rect(g_layout.ip_x - 9, g_layout.ip_y - 2, 123, 16, 0);
+            int iw = FONT_SIZE_IP * 9, ih = FONT_SIZE_IP + 4;
+            fb_fill_rect(g_layout.ip_x - 1, g_layout.ip_y - 2, iw, ih, 0);
             char ip_text[64];
             snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
             ft_render_text(g_layout.ip_x, g_layout.ip_y, ip_text, FONT_SIZE_IP, 0, 1, 127);
@@ -741,9 +743,11 @@ static void partial_refresh(EPD *epd) {
         /* ---- Weather update ---- */
         WeatherData w;
         if (read_weather(&w) == 0) {
+            int ww = FONT_SIZE_WEATHER * 4;  /* width ~ 4 chars' worth */
+            int wh = FONT_SIZE_WEATHER + 4;
             /* Weather description */
             if (strcmp(w.weather, cached_weather_w) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[0] - 2, 59, 18, 1);
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[0] - 2, ww, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
                 need_refresh = 1;
@@ -753,7 +757,7 @@ static void partial_refresh(EPD *epd) {
             char temp_str[32];
             snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
             if (strcmp(temp_str, cached_weather_t) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[1] - 2, 59, 17, 1);
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[1] - 2, ww, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
                 need_refresh = 1;
@@ -761,7 +765,7 @@ static void partial_refresh(EPD *epd) {
 
             /* Humidity */
             if (strcmp(w.sd, cached_weather_h) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[2] - 2, 59, 17, 1);
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[2] - 2, ww, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
                 need_refresh = 1;
@@ -769,7 +773,7 @@ static void partial_refresh(EPD *epd) {
 
             /* City */
             if (strcmp(w.cityname, cached_weather_c) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[3] - 2, 59, 18, 1);
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[3] - 2, ww, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
                 need_refresh = 1;
@@ -777,7 +781,8 @@ static void partial_refresh(EPD *epd) {
 
             /* Update time */
             if (strcmp(w.time_str, cached_weather_u) != 0) {
-                fb_fill_rect(g_layout.w_upd_x - 1, g_layout.w_upd_y - 3, 40, 15, 0);
+                int uw = FONT_SIZE_IP * 4, uh = FONT_SIZE_IP + 3;
+                fb_fill_rect(g_layout.w_upd_x - 1, g_layout.w_upd_y - 2, uw, uh, 0);
                 ft_render_text(g_layout.w_upd_x, g_layout.w_upd_y, w.time_str, FONT_SIZE_IP, 0, 1, 127);
                 snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
                 need_refresh = 1;
