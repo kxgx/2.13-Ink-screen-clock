@@ -840,6 +840,9 @@ int main(void) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
+    /* Load layout first — ft_init needs font_cn/font_time from it */
+    layout_init(&g_layout);
+
     if (ft_init() != 0) {
         fprintf(stderr, "ERROR: Font initialization failed.\n");
         return 1;
@@ -847,9 +850,6 @@ int main(void) {
 
     printf("Ink Screen Clock - C Version\n");
     printf("=============================\n");
-
-    /* Load layout (layout.json or defaults) */
-    layout_init(&g_layout);
 
     /* Start HTTP API server thread */
     pthread_t api_tid;
