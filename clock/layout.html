@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>墨水屏时钟 · 布局控制</title>
+<style>
+:root {
+  --bg: #1a1a2e; --card: #16213e; --accent: #0f3460;
+  --hl: #e94560; --ok: #00b894; --warn: #fdcb6e;
+  --text: #dfe6e9; --muted: #636e72; --input-bg: #0a0f1a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font:14px/1.5 system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+header { background:var(--card); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid var(--accent); position:sticky; top:0; z-index:10; }
+header h1 { font-size:18px; }
+.status { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.badge { padding:4px 12px; border-radius:12px; font-size:12px; font-weight:600; }
+.badge.active { background:var(--ok); color:#000; }
+.badge.pending { background:var(--warn); color:#000; animation:pulse 1s infinite; }
+.badge.off { background:var(--muted); color:#fff; }
+.badge.err { background:var(--hl); color:#fff; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+.main { display:grid; grid-template-columns:280px 1fr; gap:16px; padding:16px; max-width:1100px; margin:0 auto; }
+.preview-panel { background:var(--card); border-radius:12px; padding:16px; position:sticky; top:68px; height:fit-content; }
+.preview-panel h2 { font-size:14px; color:var(--muted); margin-bottom:12px; }
+canvas { display:block; border-radius:6px; background:#fff; margin:0 auto; }
+.preview-info { margin-top:12px; font-size:12px; }
+.preview-info .row { display:flex; justify-content:space-between; padding:3px 0; }
+.preview-info .row span:first-child { color:var(--muted); }
+.preview-info .row span:last-child { max-width:180px; text-align:right; word-break:break-all; }
+.controls { display:flex; flex-direction:column; gap:16px; }
+.group { background:var(--card); border-radius:12px; overflow:hidden; }
+.group-head { padding:14px 16px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; user-select:none; border-bottom:1px solid transparent; transition:border-color .2s; }
+.group-head:hover { background:#1b2a40; }
+.group.open .group-head { border-bottom-color:var(--accent); }
+.group-head h3 { font-size:14px; }
+.group-head .icon { transition:transform .2s; font-size:12px; }
+.group.open .group-head .icon { transform:rotate(180deg); }
+.group-body { display:none; padding:16px; }
+.group.open .group-body { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.field { display:flex; flex-direction:column; gap:4px; }
+.field label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.field input { width:100%; padding:7px 10px; background:var(--input-bg); border:1px solid var(--accent); border-radius:6px; color:var(--text); font-size:13px; }
+.field input:focus { outline:none; border-color:var(--hl); }
+.field input.modified { border-color:var(--warn); }
+.actions { display:flex; gap:10px; padding:16px; background:var(--card); border-radius:12px; position:sticky; bottom:0; }
+.actions button { flex:1; padding:12px 0; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:filter .2s; }
+.actions button:hover { filter:brightness(1.15); }
+.actions button:active { filter:brightness(.9); }
+.btn-preview { background:var(--accent); color:var(--text); }
+.btn-apply  { background:var(--ok); color:#000; }
+.btn-cancel { background:var(--hl); color:#fff; }
+.btn-refresh { background:var(--muted); color:#fff; }
+.conn { padding:4px 8px; border-radius:4px; background:var(--input-bg); font-size:12px; display:flex; align-items:center; gap:6px; }
+.conn input { background:transparent; border:none; color:var(--text); width:140px; font-size:12px; }
+.conn input:focus { outline:none; }
+.dot { width:8px; height:8px; border-radius:50%; }
+.dot.on  { background:var(--ok); }
+.dot.off { background:var(--hl); }
+.err-msg { font-size:12px; color:var(--hl); margin-top:8px; display:none; }
+.err-msg.show { display:block; }
+
+@font-face {
+  font-family:'DSEG';
+  src:url('/pic/DSEG7Modern-Bold.ttf') format('truetype');
+}
+
+@media (max-width:768px) {
+  .main { grid-template-columns:1fr; }
+  .preview-panel { position:static; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>墨水屏时钟 · 布局控制</h1>
+  <div class="status">
+    <div class="conn">
+      <div class="dot" id="conn-dot"></div>
+      <input id="api-host" value="192.168.2.103:8080" placeholder="host:port">
+    </div>
+    <span class="badge" id="pending-badge">--</span>
+    <span class="badge" id="conn-badge">--</span>
+  </div>
+</header>
+
+<div class="main">
+  <div class="preview-panel">
+    <h2>屏幕预览 250×122</h2>
+    <canvas id="preview" width="250" height="122"></canvas>
+    <div class="err-msg" id="err-msg"></div>
+    <div class="preview-info" id="info"></div>
+  </div>
+  <div class="controls" id="controls"></div>
+</div>
+
+<div class="actions">
+  <button class="btn-refresh" onclick="fetchLayout()">刷新</button>
+  <button class="btn-preview" onclick="postPreview()">预览</button>
+  <button class="btn-apply"  onclick="postApply()">应用</button>
+  <button class="btn-cancel" onclick="postCancel()">取消</button>
+</div>
+
+<script>
+// ==================== Font fallback ====================
+// Browsers don't support .ttc (TrueType Collection) via @font-face.
+// Use system CJK fonts that match the TTC's style.
+const FONT_CN = '"Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif';
+const FONT_TIME = 'DSEG, monospace';
+
+// Try loading the DSEG TTF font (browsers support .ttf fine).
+document.fonts.load('40px DSEG').catch(()=>{});
+
+// ==================== API ====================
+let _host = () => document.getElementById('api-host').value || '192.168.2.103:8080';
+let _original = {};
+let _current  = {};
+let _remote   = {};
+
+function showErr(msg) {
+  const el = document.getElementById('err-msg');
+  if (msg) { el.textContent = msg; el.classList.add('show'); }
+  else { el.classList.remove('show'); }
+}
+
+async function apiFetch(path, opts) {
+  const url = `http://${_host()}${path}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(5000), ...opts });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchLayout() {
+  showErr('');
+  setConn('loading');
+  try {
+    _remote = await apiFetch('/', {});
+    _original = extractPos(_remote);
+    _current  = { ..._original };
+    updateUI();
+    drawPreview();
+    renderInfo();
+    setPending(!!_remote.pending);
+    setConn('on');
+  } catch(e) {
+    setConn('off');
+    showErr('连接失败: ' + e.message + '\n请确认树莓派 IP 和端口是否正确');
+    console.error(e);
+  }
+}
+
+async function postPreview() {
+  showErr('');
+  const diff = getDiff();
+  if (!Object.keys(diff).length) { showErr('没有修改'); return; }
+  try {
+    const data = await apiFetch('/layout', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(diff)
+    });
+    _current = { ..._current, ...extractPos(data) };
+    _remote = data;
+    updateUI();
+    setPending(true);
+    drawPreview();
+    renderInfo();
+  } catch(e) { showErr('预览失败: '+e.message); }
+}
+
+async function postApply() {
+  showErr('');
+  try {
+    const data = await apiFetch('/layout/apply', { method:'POST' });
+    _original = extractPos(data); _current = { ..._original }; _remote = data;
+    updateUI(); setPending(false); drawPreview(); renderInfo();
+  } catch(e) { showErr('应用失败: '+e.message); }
+}
+
+async function postCancel() {
+  showErr('');
+  try {
+    const data = await apiFetch('/layout/cancel', { method:'POST' });
+    _original = extractPos(data); _current = { ..._original }; _remote = data;
+    updateUI(); setPending(false); drawPreview(); renderInfo();
+  } catch(e) { showErr('取消失败: '+e.message); }
+}
+
+// ==================== Utils ====================
+function extractPos(json) {
+  const p = {};
+  p.time_x = json.time.x; p.time_y = json.time.y;
+  p.date_x = json.date.x; p.date_y = json.date.y;
+  p.w_label_x = _current.w_label_x ?? 150;
+  ['w_label_y0','w_label_y1','w_label_y2','w_label_y3'].forEach((k,i)=>{ p[k] = _current[k] ?? (25+i*20); });
+  p.w_data_x = json.weather.desc.x;
+  ['w_data_y0','w_data_y1','w_data_y2','w_data_y3'].forEach((k,i)=>{
+    p[k] = [json.weather.desc.y, json.weather.temp.y, json.weather.humidity.y, json.weather.city.y][i];
+  });
+  p.w_upd_x = json.weather.updated.x; p.w_upd_y = json.weather.updated.y;
+  p.bat_x = json.battery.x; p.bat_y = json.battery.y;
+  p.bat_frame_x = json.battery.frame.x; p.bat_frame_y = json.battery.frame.y;
+  p.bat_frame_w = json.battery.frame.w; p.bat_frame_h = json.battery.frame.h;
+  p.ip_x = json.ip.x; p.ip_y = json.ip.y;
+  p.bar_y = json.bar.y; p.bar_h = json.bar.h;
+  return p;
+}
+
+function getDiff() {
+  const d = {};
+  for (const [k,v] of Object.entries(_current)) { if (v !== _original[k]) d[k] = v; }
+  return d;
+}
+
+function setConn(s) {
+  const dot = document.getElementById('conn-dot');
+  const badge = document.getElementById('conn-badge');
+  dot.className = 'dot ' + (s==='on'?'on':s==='off'?'off':'');
+  if (s==='on') { badge.textContent='已连接'; badge.className='badge active'; }
+  else if (s==='off') { badge.textContent='断开'; badge.className='badge off'; }
+  else { badge.textContent='...'; badge.className='badge off'; }
+}
+
+function setPending(v) {
+  const b = document.getElementById('pending-badge');
+  b.textContent = v ? '待应用' : '已应用';
+  b.className = 'badge ' + (v?'pending':'active');
+}
+
+// ==================== UI ====================
+const GROUPS = [
+  { id:'time', name:'时间', fields:[{k:'time_x',l:'X'},{k:'time_y',l:'Y'}] },
+  { id:'date', name:'日期', fields:[{k:'date_x',l:'X'},{k:'date_y',l:'Y'}] },
+  { id:'weather', name:'天气', fields:[
+    {k:'w_label_x',l:'标签 X'},
+    {k:'w_label_y0',l:'标签天气 Y'},{k:'w_label_y1',l:'标签温度 Y'},
+    {k:'w_label_y2',l:'标签湿度 Y'},{k:'w_label_y3',l:'标签城市 Y'},
+    {k:'w_data_x',l:'数据 X'},
+    {k:'w_data_y0',l:'数据天气 Y'},{k:'w_data_y1',l:'数据温度 Y'},
+    {k:'w_data_y2',l:'数据湿度 Y'},{k:'w_data_y3',l:'数据城市 Y'},
+    {k:'w_upd_x',l:'更新时间 X'},{k:'w_upd_y',l:'更新时间 Y'},
+  ]},
+  { id:'battery', name:'电池', fields:[
+    {k:'bat_x',l:'% X'},{k:'bat_y',l:'% Y'},
+    {k:'bat_frame_x',l:'框 X'},{k:'bat_frame_y',l:'框 Y'},
+    {k:'bat_frame_w',l:'框 W'},{k:'bat_frame_h',l:'框 H'},
+  ]},
+  { id:'ip', name:'IP', fields:[{k:'ip_x',l:'X'},{k:'ip_y',l:'Y'}] },
+  { id:'bar', name:'底栏', fields:[{k:'bar_y',l:'Y'},{k:'bar_h',l:'H'}] },
+];
+
+function buildControls() {
+  document.getElementById('controls').innerHTML = GROUPS.map(g =>
+    `<div class="group open" id="group-${g.id}">
+      <div class="group-head" onclick="document.getElementById('group-${g.id}').classList.toggle('open')">
+        <h3>${g.name}</h3><span class="icon">&#9660;</span>
+      </div>
+      <div class="group-body">${g.fields.map(f =>
+        `<div class="field"><label>${f.l}</label>
+          <input id="f-${f.k}" type="number" data-key="${f.k}" oninput="onFieldChange(this);drawNow()" onfocus="this.select()">
+        </div>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function onFieldChange(inp) {
+  const k = inp.dataset.key, v = parseInt(inp.value);
+  if (isNaN(v)) return;
+  _current[k] = v;
+  inp.classList.toggle('modified', v !== _original[k]);
+}
+
+function updateUI() {
+  for (const [k,v] of Object.entries(_current)) {
+    const inp = document.getElementById('f-'+k);
+    if (!inp) continue;
+    inp.value = v;
+    inp.classList.toggle('modified', v !== _original[k]);
+  }
+}
+
+// ==================== Preview ====================
+function drawNow() {
+  if (!_remote || !Object.keys(_remote).length) return;
+  const prev = JSON.parse(JSON.stringify(_remote));
+  const c = _current;
+  prev.time.x = c.time_x; prev.time.y = c.time_y;
+  prev.date.x = c.date_x; prev.date.y = c.date_y;
+  prev.battery.x = c.bat_x; prev.battery.y = c.bat_y;
+  prev.battery.frame.x = c.bat_frame_x; prev.battery.frame.y = c.bat_frame_y;
+  prev.battery.frame.w = c.bat_frame_w; prev.battery.frame.h = c.bat_frame_h;
+  prev.ip.x = c.ip_x; prev.ip.y = c.ip_y;
+  prev.bar.y = c.bar_y; prev.bar.h = c.bar_h;
+  if (prev.weather) {
+    prev.weather.desc.x = c.w_data_x;     prev.weather.desc.y = c.w_data_y0;
+    prev.weather.temp.x = c.w_data_x;     prev.weather.temp.y = c.w_data_y1;
+    prev.weather.humidity.x = c.w_data_x; prev.weather.humidity.y = c.w_data_y2;
+    prev.weather.city.x = c.w_data_x;     prev.weather.city.y = c.w_data_y3;
+    prev.weather.updated.x = c.w_upd_x;   prev.weather.updated.y = c.w_upd_y;
+  }
+  drawPreview(prev);
+}
+
+function drawPreview(data) {
+  if (!data) data = _remote;
+  if (!data || !Object.keys(data).length) return;
+
+  const c = document.getElementById('preview');
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,250,122);
+  ctx.textBaseline = 'top';
+
+  // Bottom bar
+  const barY = data.bar?.y ?? 105, barH = data.bar?.h ?? 17;
+  ctx.fillStyle = '#111'; ctx.fillRect(0, barY, 250, barH);
+
+  // Time — 40pt DSEG digital font
+  ctx.fillStyle = '#000';
+  ctx.font = `40px ${FONT_TIME}`;
+  ctx.fillText(data.time.text, data.time.x, data.time.y);
+
+  // Date — 14pt Chinese
+  ctx.font = `14px ${FONT_CN}`;
+  ctx.fillText(data.date.text, data.date.x, data.date.y);
+
+  // Weather
+  const w = data.weather;
+  if (w) {
+    ctx.font = `14px ${FONT_CN}`; ctx.fillStyle = '#333';
+    const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
+    const lx = _current.w_label_x ?? 150, dx = _current.w_data_x ?? 195;
+    [
+      [labels[0], w.desc.text],
+      [labels[1], w.temp.text],
+      [labels[2], w.humidity.text],
+      [labels[3], w.city.text],
+    ].forEach(([lb, val], i) => {
+      ctx.fillText(lb, lx, _current['w_label_y'+i] ?? (25+i*20));
+      ctx.fillText(val, dx, _current['w_data_y'+i] ?? (25+i*20));
+    });
+
+    // Update time in bar
+    ctx.font = `13px ${FONT_CN}`; ctx.fillStyle = '#aaa';
+    ctx.fillText(w.updated.text, w.updated.x, w.updated.y);
+  }
+
+  // Battery
+  const b = data.battery;
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#000'; ctx.font = `10px ${FONT_CN}`;
+  ctx.fillText(b.text, b.x, b.y);
+  ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+3, 3, 3);
+  ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+7, 3, 3);
+
+  // IP in bar
+  ctx.fillStyle = '#fff'; ctx.font = `13px ${FONT_CN}`;
+  ctx.fillText('IP:'+data.ip.text, data.ip.x, data.ip.y);
+}
+
+function renderInfo() {
+  const data = _remote;
+  if (!data || !Object.keys(data).length) return;
+  document.getElementById('info').innerHTML = [
+    ['时间', data.time.text], ['日期', data.date.text],
+    ['天气', data.weather.desc.text], ['温度', data.weather.temp.text],
+    ['湿度', data.weather.humidity.text], ['城市', data.weather.city.text],
+    ['电量', data.battery.text], ['IP', data.ip.text],
+    ['更新', data.weather.updated.text],
+  ].map(([k,v]) => `<div class="row"><span>${k}</span><span>${v}</span></div>`).join('');
+}
+
+// ==================== Init ====================
+document.getElementById('api-host').addEventListener('change', fetchLayout);
+buildControls();
+fetchLayout();
+</script>
+</body>
+</html>

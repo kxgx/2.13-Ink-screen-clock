@@ -2,15 +2,21 @@
  * @file    api.c
  * @brief   Minimal HTTP API server (no external library)
  *
- * Listens on port 8080, returns JSON with all current screen data.
- * Only handles GET / — no routing, no POST, no headers beyond the bare
- * minimum required by HTTP/1.1.
+ * Listens on port 8080, serves JSON API and static files.
+ * Routes:
+ *   GET  /               JSON data
+ *   GET  /layout.html    Layout control panel
+ *   GET  /pic/*          Static files (fonts)
+ *   POST /layout         Preview layout changes
+ *   POST /layout/apply   Commit layout changes
+ *   POST /layout/cancel  Discard pending changes
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <pthread.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -126,6 +132,32 @@ static void send_response(int fd, int code, const char *mime, const char *body) 
         code, mime, body_len);
     write(fd, header, strlen(header));
     write(fd, body, body_len);
+}
+
+/* Serve a static file from disk (CWD = clock/) */
+static void send_file(int fd, const char *path, const char *mime) {
+    FILE *fp = fopen(path, "rb");
+    if (!fp) { send_response(fd, 404, "text/plain", "{\"error\":\"not found\"}"); return; }
+
+    struct stat st;
+    fstat(fileno(fp), &st);
+
+    char header[512];
+    snprintf(header, sizeof(header),
+        "HTTP/1.1 200 OK\r\n"
+        "Content-Type: %s\r\n"
+        "Content-Length: %ld\r\n"
+        "Connection: close\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "\r\n",
+        mime, (long)st.st_size);
+    write(fd, header, strlen(header));
+
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), fp)) > 0)
+        write(fd, buf, n);
+    fclose(fp);
 }
 
 /* ------------------------------------------------------------------ */
@@ -258,6 +290,14 @@ void api_server_start(void) {
             } else if (strncmp(buf, "POST /layout", 12) == 0) {
                 char *body = strstr(buf, "\r\n\r\n");
                 handle_preview(client_fd, body ? body + 4 : "{}");
+            } else if (strncmp(buf, "GET /layout.html", 16) == 0) {
+                send_file(client_fd, "layout.html", "text/html; charset=utf-8");
+            } else if (strncmp(buf, "GET /pic/", 9) == 0) {
+                /* Extract path after /pic/, only allow DSEG font */
+                if (strstr(buf, "DSEG7Modern-Bold.ttf"))
+                    send_file(client_fd, "../pic/DSEG7Modern-Bold.ttf", "font/ttf");
+                else
+                    send_response(client_fd, 404, "text/plain", "{\"error\":\"not found\"}");
             } else if (strncmp(buf, "GET / ", 6) == 0 || strncmp(buf, "GET /\r\n", 7) == 0) {
                 char json[2048];
                 build_json(json, sizeof(json), g_has_pending);
