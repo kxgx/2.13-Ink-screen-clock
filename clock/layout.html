@@ -356,7 +356,7 @@ function _draw(data) {
   // Battery
   const b = data.battery;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-  ctx.fillStyle = '#000'; ctx.font = `10px ${FONT_CN}`;
+  ctx.fillStyle = '#fff'; ctx.font = `10px ${FONT_CN}`;
   ctx.fillText(b.text, b.x, b.y);
   ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
   ctx.fillStyle = '#fff';
