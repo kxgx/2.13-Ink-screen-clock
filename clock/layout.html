@@ -325,11 +325,8 @@ function _draw(data) {
   if (!data || !Object.keys(data).length) return;
 
   const W = 250, H = 122;
-  // Render at 2x into offscreen canvas for sub-pixel accuracy
-  const off = document.createElement('canvas');
-  off.width = W * 2; off.height = H * 2;
-  const ctx = off.getContext('2d');
-  ctx.scale(2, 2);
+  const c = document.getElementById('preview');
+  const ctx = c.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
 
   ctx.textBaseline = 'alphabetic';
@@ -345,9 +342,9 @@ function _draw(data) {
     ctx.fillText(s, x, y + ascent(sz, fam));
   }
 
-  // Bottom bar
+  // Bottom bar — use pure black for clean threshold
   const barY = data.bar?.y ?? 105, barH = data.bar?.h ?? 17;
-  ctx.fillStyle = '#111'; ctx.fillRect(0, barY, W, barH);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, barY, W, barH);
 
   // Time
   ctx.fillStyle = '#000';
@@ -383,39 +380,23 @@ function _draw(data) {
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
   text(b.text, b.x, b.y, _current.small_pt ?? 10, FONT_CN);
-  ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
+  // Snap stroke to pixel grid for crisp 1px lines
+  ctx.strokeRect(b.frame.x + 0.5, b.frame.y + 0.5, b.frame.w, b.frame.h);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+3, 3, 3);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+7, 3, 3);
 
   // IP in bar
   text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN);
 
-  // 1-bit threshold at 2x, then downscale to preview
-  const out = document.getElementById('preview');
-  const octx = out.getContext('2d');
-  octx.fillStyle = '#fff'; octx.fillRect(0, 0, W, H);
-
-  const img = off.getContext('2d').getImageData(0, 0, W*2, H*2);
-  const outImg = octx.createImageData(W, H);
-  const src = img.data, dst = outImg.data;
-  const T = 128;
-
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      // Average 2x2 block, then threshold
-      let sum = 0;
-      for (let dy = 0; dy < 2; dy++) {
-        for (let dx = 0; dx < 2; dx++) {
-          const si = ((y*2+dy) * W*2 + (x*2+dx)) * 4;
-          sum += src[si] * 0.299 + src[si+1] * 0.587 + src[si+2] * 0.114;
-        }
-      }
-      const bw = (sum / 4) > T ? 255 : 0;
-      const di = (y * W + x) * 4;
-      dst[di] = dst[di+1] = dst[di+2] = bw; dst[di+3] = 255;
-    }
+  // 1-bit threshold with error clamping
+  const img = ctx.getImageData(0, 0, W, H);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+    const bw = lum > 127 ? 255 : 0;
+    d[i] = d[i+1] = d[i+2] = bw;
   }
-  octx.putImageData(outImg, 0, 0);
+  ctx.putImageData(img, 0, 0);
 }
 
 function renderInfo() {
