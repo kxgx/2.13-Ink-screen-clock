@@ -317,25 +317,37 @@ function _draw(data) {
   const c = document.getElementById('preview');
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0,0,250,122);
-  ctx.textBaseline = 'top';
+
+  // stb_truetype places text at: y + ascent*scale.
+  // Canvas 'alphabetic' baseline matches this — we just need the ascent.
+  ctx.textBaseline = 'alphabetic';
+
+  function ascent(sz, fam) {
+    ctx.font = `${sz}px ${fam}`;
+    // Measure a full-height CJK character to get the font's ascent
+    const m = ctx.measureText('\u56FD');
+    return m.actualBoundingBoxAscent || sz * 0.72;
+  }
+  function text(s, x, y, sz, fam) {
+    ctx.font = `${sz}px ${fam}`;
+    ctx.fillText(s, x, y + ascent(sz, fam));
+  }
 
   // Bottom bar
   const barY = data.bar?.y ?? 105, barH = data.bar?.h ?? 17;
   ctx.fillStyle = '#111'; ctx.fillRect(0, barY, 250, barH);
 
-  // Time — 40pt DSEG digital font
+  // Time — 40pt DSEG
   ctx.fillStyle = '#000';
-  ctx.font = `40px ${FONT_TIME}`;
-  ctx.fillText(data.time.text, data.time.x, data.time.y);
+  text(data.time.text, data.time.x, data.time.y, 40, FONT_TIME);
 
   // Date — 14pt Chinese
-  ctx.font = `14px ${FONT_CN}`;
-  ctx.fillText(data.date.text, data.date.x, data.date.y);
+  text(data.date.text, data.date.x, data.date.y, 14, FONT_CN);
 
   // Weather
   const w = data.weather;
   if (w) {
-    ctx.font = `14px ${FONT_CN}`; ctx.fillStyle = '#333';
+    ctx.fillStyle = '#333';
     const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
     const lx = _current.w_label_x ?? 150, dx = _current.w_data_x ?? 195;
     [
@@ -344,28 +356,26 @@ function _draw(data) {
       [labels[2], w.humidity.text],
       [labels[3], w.city.text],
     ].forEach(([lb, val], i) => {
-      ctx.fillText(lb, lx, _current['w_label_y'+i] ?? (25+i*20));
-      ctx.fillText(val, dx, _current['w_data_y'+i] ?? (25+i*20));
+      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), 14, FONT_CN);
+      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), 14, FONT_CN);
     });
 
     // Update time in bar
-    ctx.font = `13px ${FONT_CN}`; ctx.fillStyle = '#aaa';
-    ctx.fillText(w.updated.text, w.updated.x, w.updated.y);
+    ctx.fillStyle = '#aaa';
+    text(w.updated.text, w.updated.x, w.updated.y, 13, FONT_CN);
   }
 
-  // Battery
+  // Battery in bar (white on black)
   const b = data.battery;
-  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-  ctx.fillStyle = '#fff'; ctx.font = `10px ${FONT_CN}`;
-  ctx.fillText(b.text, b.x, b.y);
-  ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
   ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+  text(b.text, b.x, b.y, 10, FONT_CN);
+  ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+3, 3, 3);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+7, 3, 3);
 
   // IP in bar
-  ctx.fillStyle = '#fff'; ctx.font = `13px ${FONT_CN}`;
-  ctx.fillText('IP:'+data.ip.text, data.ip.x, data.ip.y);
+  text('IP:'+data.ip.text, data.ip.x, data.ip.y, 13, FONT_CN);
 }
 
 function renderInfo() {
