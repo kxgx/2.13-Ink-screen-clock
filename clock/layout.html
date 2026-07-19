@@ -324,17 +324,18 @@ function _draw(data) {
   if (!data) data = _remote;
   if (!data || !Object.keys(data).length) return;
 
-  const c = document.getElementById('preview');
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,250,122);
+  const W = 250, H = 122;
+  // Render at 2x into offscreen canvas for sub-pixel accuracy
+  const off = document.createElement('canvas');
+  off.width = W * 2; off.height = H * 2;
+  const ctx = off.getContext('2d');
+  ctx.scale(2, 2);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
 
-  // stb_truetype places text at: y + ascent*scale.
-  // Canvas 'alphabetic' baseline matches this — we just need the ascent.
   ctx.textBaseline = 'alphabetic';
 
   function ascent(sz, fam) {
     ctx.font = `${sz}px ${fam}`;
-    // DSEG is digital-only, CJK fonts are full-height
     const ch = fam.includes('DSEG') ? '0' : '\u56FD';
     const m = ctx.measureText(ch);
     return m.actualBoundingBoxAscent || sz * 0.72;
@@ -346,7 +347,7 @@ function _draw(data) {
 
   // Bottom bar
   const barY = data.bar?.y ?? 105, barH = data.bar?.h ?? 17;
-  ctx.fillStyle = '#111'; ctx.fillRect(0, barY, 250, barH);
+  ctx.fillStyle = '#111'; ctx.fillRect(0, barY, W, barH);
 
   // Time
   ctx.fillStyle = '#000';
@@ -372,13 +373,12 @@ function _draw(data) {
       text(val, dx, _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN);
     });
 
-    // Update time in bar
     const ip = _current.ip_pt ?? 13;
     ctx.fillStyle = '#aaa';
     text(w.updated.text, w.updated.x, w.updated.y, ip, FONT_CN);
   }
 
-  // Battery in bar (white on black)
+  // Battery in bar
   const b = data.battery;
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
@@ -390,25 +390,32 @@ function _draw(data) {
   // IP in bar
   text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN);
 
-  // --- 1-bit threshold: simulate e-Paper pixels ---
-  toEpaper(ctx);
-}
+  // 1-bit threshold at 2x, then downscale to preview
+  const out = document.getElementById('preview');
+  const octx = out.getContext('2d');
+  octx.fillStyle = '#fff'; octx.fillRect(0, 0, W, H);
 
-/* Convert canvas to 1-bit (pure black/white) — simple threshold, no dither */
-function toEpaper(ctx) {
-  const w = 250, h = 122;
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
-  const T = 128;  /* mid-point: preserves both black and white edges */
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const i = (y * w + x) * 4;
-      const lum = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
-      const bw = lum > T ? 255 : 0;
-      d[i] = d[i+1] = d[i+2] = bw;
+  const img = off.getContext('2d').getImageData(0, 0, W*2, H*2);
+  const outImg = octx.createImageData(W, H);
+  const src = img.data, dst = outImg.data;
+  const T = 128;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      // Average 2x2 block, then threshold
+      let sum = 0;
+      for (let dy = 0; dy < 2; dy++) {
+        for (let dx = 0; dx < 2; dx++) {
+          const si = ((y*2+dy) * W*2 + (x*2+dx)) * 4;
+          sum += src[si] * 0.299 + src[si+1] * 0.587 + src[si+2] * 0.114;
+        }
+      }
+      const bw = (sum / 4) > T ? 255 : 0;
+      const di = (y * W + x) * 4;
+      dst[di] = dst[di+1] = dst[di+2] = bw; dst[di+3] = 255;
     }
   }
-  ctx.putImageData(img, 0, 0);
+  octx.putImageData(outImg, 0, 0);
 }
 
 function renderInfo() {
