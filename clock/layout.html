@@ -347,18 +347,18 @@ function extractPos(json) {
   const p = {};
   p.time_x = json.time.x; p.time_y = json.time.y;
   p.date_x = json.date.x; p.date_y = json.date.y;
+  // Label positions: from weather.label_x[] and label_y[] (JSON arrays)
   const lx = json.weather.label_x || [150,150,150,150];
-  p.w_label_x0 = lx[0] ?? _current.w_label_x0 ?? 150;
-  p.w_label_x1 = lx[1] ?? _current.w_label_x1 ?? 150;
-  p.w_label_x2 = lx[2] ?? _current.w_label_x2 ?? 150;
-  p.w_label_x3 = lx[3] ?? _current.w_label_x3 ?? 150;
-  ['w_label_y0','w_label_y1','w_label_y2','w_label_y3'].forEach((k,i)=>{ p[k] = _current[k] ?? (25+i*20); });
-  p.w_data_x0 = json.weather.desc.x ?? _current.w_data_x0 ?? 195;
-  p.w_data_x1 = json.weather.temp.x ?? _current.w_data_x1 ?? 195;
-  p.w_data_x2 = json.weather.humidity.x ?? _current.w_data_x2 ?? 195;
-  p.w_data_x3 = json.weather.city.x ?? _current.w_data_x3 ?? 195;
+  const ly = json.weather.label_y || [25,45,65,85];
+  ['w_label_x0','w_label_x1','w_label_x2','w_label_x3'].forEach((k,i)=>{ p[k] = _current[k] ?? lx[i]; });
+  ['w_label_y0','w_label_y1','w_label_y2','w_label_y3'].forEach((k,i)=>{ p[k] = _current[k] ?? ly[i]; });
+  // Data positions: individual X,Y per field
+  p.w_data_x0 = _current.w_data_x0 ?? json.weather.desc.x;
+  p.w_data_x1 = _current.w_data_x1 ?? json.weather.temp.x;
+  p.w_data_x2 = _current.w_data_x2 ?? json.weather.humidity.x;
+  p.w_data_x3 = _current.w_data_x3 ?? json.weather.city.x;
   ['w_data_y0','w_data_y1','w_data_y2','w_data_y3'].forEach((k,i)=>{
-    p[k] = [json.weather.desc.y, json.weather.temp.y, json.weather.humidity.y, json.weather.city.y][i];
+    p[k] = _current[k] ?? [json.weather.desc.y, json.weather.temp.y, json.weather.humidity.y, json.weather.city.y][i];
   });
   p.w_upd_x = json.weather.updated.x; p.w_upd_y = json.weather.updated.y;
   p.bat_x = json.battery.x; p.bat_y = json.battery.y;
@@ -723,16 +723,19 @@ function _draw(data) {
     ctx.fillStyle = '#000';  /* pure black for crisp threshold */
     const wp = _current.weather_pt ?? 14;
     const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
-    const lxx = [_current.w_label_x0??150,_current.w_label_x1??150,_current.w_label_x2??150,_current.w_label_x3??150];
-    const dxx = [_current.w_data_x0??195,_current.w_data_x1??195,_current.w_data_x2??195,_current.w_data_x3??195];
+    const lx0 = _current.w_label_x0 ?? 150, lx1 = _current.w_label_x1 ?? 150;
+    const lx2 = _current.w_label_x2 ?? 150, lx3 = _current.w_label_x3 ?? 150;
+    const dx0 = _current.w_data_x0 ?? 195, dx1 = _current.w_data_x1 ?? 195;
+    const dx2 = _current.w_data_x2 ?? 195, dx3 = _current.w_data_x3 ?? 195;
+    const lxs = [lx0, lx1, lx2, lx3], dxs = [dx0, dx1, dx2, dx3];
     [
       [labels[0], w.desc.text],
       [labels[1], w.temp.text],
       [labels[2], w.humidity.text],
       [labels[3], w.city.text],
     ].forEach(([lb, val], i) => {
-      text(lb, lxx[i], _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
-      text(val, dxx[i], _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
+      text(lb, lxs[i], _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
+      text(val, dxs[i], _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
     });
 
     const ip = _current.ip_pt ?? 13;

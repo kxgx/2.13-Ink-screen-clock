@@ -109,9 +109,10 @@ static void build_json(char *buf, int bufsize, int show_pending) {
         esc_t, l->w_data_x[1], l->w_data_y[1],
         esc_h, l->w_data_x[2], l->w_data_y[2],
         esc_c, l->w_data_x[3], l->w_data_y[3],
-        cached_weather_u, l->w_upd_x, l->w_upd_y, l->weather_pt,
+        cached_weather_u, l->w_upd_x, l->w_upd_y,
         l->w_label_x[0], l->w_label_x[1], l->w_label_x[2], l->w_label_x[3],
         l->w_label_y[0], l->w_label_y[1], l->w_label_y[2], l->w_label_y[3],
+        l->weather_pt,
         cached_power, l->bat_x, l->bat_y, l->small_pt,
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         cached_ip, l->ip_x, l->ip_y, l->ip_pt,
@@ -212,15 +213,10 @@ static void handle_preview(int fd, const char *body) {
     #define S(k, f) g_pending.f = json_get_int(body, k, g_pending.f)
     S("time_x", time_x); S("time_y", time_y);
     S("date_x", date_x); S("date_y", date_y);
-    /* backward compat: old "w_label_x" sets all */
-    { int v = json_get_int(body, "w_label_x", -1);
-      if (v >= 0) for (int i = 0; i < 4; i++) g_pending.w_label_x[i] = v; }
     S("w_label_x0", w_label_x[0]); S("w_label_x1", w_label_x[1]);
     S("w_label_x2", w_label_x[2]); S("w_label_x3", w_label_x[3]);
     S("w_label_y0", w_label_y[0]); S("w_label_y1", w_label_y[1]);
     S("w_label_y2", w_label_y[2]); S("w_label_y3", w_label_y[3]);
-    { int v = json_get_int(body, "w_data_x", -1);
-      if (v >= 0) for (int i = 0; i < 4; i++) g_pending.w_data_x[i] = v; }
     S("w_data_x0", w_data_x[0]); S("w_data_x1", w_data_x[1]);
     S("w_data_x2", w_data_x[2]); S("w_data_x3", w_data_x[3]);
     S("w_data_y0", w_data_y[0]); S("w_data_y1", w_data_y[1]);

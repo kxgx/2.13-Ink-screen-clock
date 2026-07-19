@@ -17,11 +17,11 @@ typedef struct {
     /* date (pt=14) */
     int date_x, date_y;
 
-    /* weather labels */
-    int w_label_x[4];
-    int w_label_y[4];
+    /* weather labels (pt=14) — "天气:", "温度:", "湿度:", "城市:" */
+    int w_label_x[4];          /* x for each of the 4 labels */
+    int w_label_y[4];           /* y for each of the 4 labels */
 
-    /* weather data */
+    /* weather data (pt=14) — desc, temp, humidity, city */
     int w_data_x[4];
     int w_data_y[4];
 
