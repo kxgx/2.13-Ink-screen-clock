@@ -710,7 +710,9 @@ static void partial_refresh(EPD *epd) {
         char current_time[8];
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
-            fb_fill_rect(g_layout.time_x, g_layout.time_y - 2, 133, 48, 1);
+            int tw = FONT_SIZE_TIME * 10 / 3;  /* "88:88" width @ DSEG */
+            int th = FONT_SIZE_TIME + 8;
+            fb_fill_rect(g_layout.time_x, g_layout.time_y - 2, tw, th, 1);
             ft_render_text(g_layout.time_x, g_layout.time_y, current_time, FONT_SIZE_TIME, 1, 0, 127);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
             need_refresh = 1;
