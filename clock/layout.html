@@ -526,8 +526,15 @@ function getHandleSize(h) {
   ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN_VAR}`;
   if (fn === 'bat') { const m = ctx.measureText(_remote?.battery?.text || '100%'); return {w: Math.ceil(m.width) + 2, h: _current.small_pt ?? 10}; }
   if (fn === 'batf') return {w: _current.bat_frame_w ?? 29, h: _current.bat_frame_h ?? 11};
-  if (fn === 'bolt') return {w: (_current.small_pt ?? 10), h: (_current.small_pt ?? 10)};
+  if (fn === 'bolt') { const s = _current.small_pt ?? 10; return {w: s, h: s, cx: true}; }
   return {w: 20, h: 14};
+}
+
+function handleRect(h) {
+  const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
+  const s = getHandleSize(h);
+  if (s.cx) return {x: x - s.w/2, y: y - s.h/2, w: s.w, h: s.h, cx: true};
+  return {x, y, w: s.w, h: s.h};
 }
 
 function drawHandles() {
@@ -539,28 +546,25 @@ function drawHandles() {
   // Only show hover highlight (subtle outline)
   if (_hoverIdx >= 0) {
     const h = DRAG_HANDLES[_hoverIdx];
-    const x = _current[h.k] ?? 0;
-    const y = _current[h.ky] ?? 0;
-    const s = getHandleSize(h);
+    const r = handleRect(h);
     ctx.strokeStyle = '#e94560';
     ctx.lineWidth = 1;
     ctx.setLineDash([3, 3]);
-    ctx.strokeRect(x + 0.5, y + 0.5, s.w, s.h);
+    ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.w, r.h);
     ctx.setLineDash([]);
     // Label with coordinates
     ctx.fillStyle = '#e94560';
     ctx.font = 'bold 9px monospace';
     const tx = _current[h.k] ?? 0, ty = _current[h.ky] ?? 0;
-    ctx.fillText(`${h.label} (${tx}, ${ty})`, x, y - 2);
+    ctx.fillText(`${h.label} (${tx}, ${ty})`, r.x, r.y - 2);
   }
 }
 
 function getHandleAt(mx, my) {
   for (let i = DRAG_HANDLES.length - 1; i >= 0; i--) {
     const h = DRAG_HANDLES[i];
-    const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
-    const s = getHandleSize(h);
-    if (mx >= x && mx <= x + s.w && my >= y && my <= y + s.h) return i;
+    const r = handleRect(h);
+    if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) return i;
   }
   return -1;
 }
@@ -580,8 +584,9 @@ function setupDragLayer() {
     _dragIdx = getHandleAt(x, y);
     if (_dragIdx >= 0) {
       const h = DRAG_HANDLES[_dragIdx];
-      _dragOffX = Math.round(x) - (_current[h.k] ?? 0);
-      _dragOffY = Math.round(y) - (_current[h.ky] ?? 0);
+      const r = handleRect(h);
+      _dragOffX = Math.round(x) - r.x;
+      _dragOffY = Math.round(y) - r.y;
       c.style.cursor = 'grabbing';
       e.preventDefault();
     }
@@ -599,8 +604,8 @@ function setupDragLayer() {
     const s = getHandleSize(h);
     const nx = Math.max(0, Math.min(250 - s.w, Math.round(x) - _dragOffX));
     const ny = Math.max(0, Math.min(122 - s.h, Math.round(y) - _dragOffY));
-    _current[h.k] = nx;
-    _current[h.ky] = ny;
+    _current[h.k] = s.cx ? nx + s.w/2 : nx;
+    _current[h.ky] = s.cx ? ny + s.h/2 : ny;
     drawHandles();
     drawNow();
     updateUI();
