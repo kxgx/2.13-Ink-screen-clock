@@ -1,0 +1,153 @@
+/**
+ * @file    layout.c
+ * @brief   Layout persistence — JSON read/write (hand-rolled, no library)
+ */
+
+#include "layout.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* ================================================================== */
+/* Default positions (mirrors current clock.c hard-coded values)        */
+/* ================================================================== */
+static void set_defaults(Layout *l) {
+    l->screen_w = 250;
+    l->screen_h = 122;
+
+    l->time_x = -1;
+    l->time_y = 40;
+
+    l->date_x = 2;
+    l->date_y = 2;
+
+    l->w_label_x = 150;
+    l->w_label_y[0] = 25;
+    l->w_label_y[1] = 45;
+    l->w_label_y[2] = 65;
+    l->w_label_y[3] = 85;
+
+    l->w_data_x = 195;
+    l->w_data_y[0] = 25;
+    l->w_data_y[1] = 45;
+    l->w_data_y[2] = 65;
+    l->w_data_y[3] = 85;
+
+    l->w_upd_x = 211;
+    l->w_upd_y = 109;
+
+    l->bat_x = 128;
+    l->bat_y = 108;
+    l->bat_frame_x = 126;
+    l->bat_frame_y = 108;
+    l->bat_frame_w = 29;
+    l->bat_frame_h = 11;
+
+    l->ip_x = 10;
+    l->ip_y = 109;
+
+    l->bar_y = 105;
+    l->bar_h = 17;
+}
+
+/* ================================================================== */
+/* Tiny JSON int-reader: extract integer value for a given key.         */
+/* ================================================================== */
+static int json_get_int(const char *json, const char *key, int fallback) {
+    char search[64];
+    snprintf(search, sizeof(search), "\"%s\"", key);
+    const char *p = strstr(json, search);
+    if (!p) return fallback;
+    p += strlen(search);
+    while (*p == ' ' || *p == ':' || *p == '\t') p++;
+    int val = 0, sign = 1;
+    if (*p == '-') { sign = -1; p++; }
+    while (*p >= '0' && *p <= '9') { val = val * 10 + (*p - '0'); p++; }
+    return val * sign;
+}
+
+/* ================================================================== */
+int layout_init(Layout *l) {
+    set_defaults(l);
+
+    FILE *fp = fopen(LAYOUT_FILE, "r");
+    if (!fp) return -1;   /* file missing — defaults are fine */
+
+    fseek(fp, 0, SEEK_END);
+    long sz = ftell(fp);
+    if (sz <= 0 || sz > 8192) { fclose(fp); return -1; }
+    fseek(fp, 0, SEEK_SET);
+
+    char *buf = (char *)malloc(sz + 1);
+    if (!buf) { fclose(fp); return -1; }
+    size_t n = fread(buf, 1, sz, fp);
+    buf[n] = '\0';
+    fclose(fp);
+
+    l->time_x = json_get_int(buf, "time_x", l->time_x);
+    l->time_y = json_get_int(buf, "time_y", l->time_y);
+    l->date_x = json_get_int(buf, "date_x", l->date_x);
+    l->date_y = json_get_int(buf, "date_y", l->date_y);
+    l->w_label_x = json_get_int(buf, "w_label_x", l->w_label_x);
+    l->w_label_y[0] = json_get_int(buf, "w_label_y0", l->w_label_y[0]);
+    l->w_label_y[1] = json_get_int(buf, "w_label_y1", l->w_label_y[1]);
+    l->w_label_y[2] = json_get_int(buf, "w_label_y2", l->w_label_y[2]);
+    l->w_label_y[3] = json_get_int(buf, "w_label_y3", l->w_label_y[3]);
+    l->w_data_x = json_get_int(buf, "w_data_x", l->w_data_x);
+    l->w_data_y[0] = json_get_int(buf, "w_data_y0", l->w_data_y[0]);
+    l->w_data_y[1] = json_get_int(buf, "w_data_y1", l->w_data_y[1]);
+    l->w_data_y[2] = json_get_int(buf, "w_data_y2", l->w_data_y[2]);
+    l->w_data_y[3] = json_get_int(buf, "w_data_y3", l->w_data_y[3]);
+    l->w_upd_x = json_get_int(buf, "w_upd_x", l->w_upd_x);
+    l->w_upd_y = json_get_int(buf, "w_upd_y", l->w_upd_y);
+    l->bat_x = json_get_int(buf, "bat_x", l->bat_x);
+    l->bat_y = json_get_int(buf, "bat_y", l->bat_y);
+    l->bat_frame_x = json_get_int(buf, "bat_frame_x", l->bat_frame_x);
+    l->bat_frame_y = json_get_int(buf, "bat_frame_y", l->bat_frame_y);
+    l->bat_frame_w = json_get_int(buf, "bat_frame_w", l->bat_frame_w);
+    l->bat_frame_h = json_get_int(buf, "bat_frame_h", l->bat_frame_h);
+    l->ip_x = json_get_int(buf, "ip_x", l->ip_x);
+    l->ip_y = json_get_int(buf, "ip_y", l->ip_y);
+    l->bar_y = json_get_int(buf, "bar_y", l->bar_y);
+    l->bar_h = json_get_int(buf, "bar_h", l->bar_h);
+
+    free(buf);
+    printf("Layout loaded from %s\n", LAYOUT_FILE);
+    return 0;
+}
+
+/* ================================================================== */
+int layout_save(const Layout *l) {
+    FILE *fp = fopen(LAYOUT_FILE, "w");
+    if (!fp) return -1;
+
+    fprintf(fp,
+        "{\n"
+        "  \"time_x\":%d,\"time_y\":%d,\n"
+        "  \"date_x\":%d,\"date_y\":%d,\n"
+        "  \"w_label_x\":%d,\n"
+        "  \"w_label_y0\":%d,\"w_label_y1\":%d,\"w_label_y2\":%d,\"w_label_y3\":%d,\n"
+        "  \"w_data_x\":%d,\n"
+        "  \"w_data_y0\":%d,\"w_data_y1\":%d,\"w_data_y2\":%d,\"w_data_y3\":%d,\n"
+        "  \"w_upd_x\":%d,\"w_upd_y\":%d,\n"
+        "  \"bat_x\":%d,\"bat_y\":%d,\n"
+        "  \"bat_frame_x\":%d,\"bat_frame_y\":%d,\"bat_frame_w\":%d,\"bat_frame_h\":%d,\n"
+        "  \"ip_x\":%d,\"ip_y\":%d,\n"
+        "  \"bar_y\":%d,\"bar_h\":%d\n"
+        "}\n",
+        l->time_x, l->time_y,
+        l->date_x, l->date_y,
+        l->w_label_x,
+        l->w_label_y[0], l->w_label_y[1], l->w_label_y[2], l->w_label_y[3],
+        l->w_data_x,
+        l->w_data_y[0], l->w_data_y[1], l->w_data_y[2], l->w_data_y[3],
+        l->w_upd_x, l->w_upd_y,
+        l->bat_x, l->bat_y,
+        l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
+        l->ip_x, l->ip_y,
+        l->bar_y, l->bar_h);
+
+    fclose(fp);
+    printf("Layout saved to %s\n", LAYOUT_FILE);
+    return 0;
+}

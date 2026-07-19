@@ -16,6 +16,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "layout.h"
+
 #define API_PORT        8080
 #define API_BACKLOG     4
 #define API_BUF_SIZE    4096
@@ -32,6 +34,9 @@ extern char cached_weather_t[32];
 extern char cached_weather_h[32];
 extern char cached_weather_c[32];
 extern char cached_weather_u[32];
+
+extern Layout g_layout;
+extern volatile int g_layout_refresh;  /* 1 = trigger full refresh */
 
 /* ------------------------------------------------------------------ */
 /* Build the JSON payload.  All strings are already UTF‑8 on RPi.     */
@@ -70,16 +75,23 @@ static void build_json(char *buf, int bufsize) {
             "\"labels\":[\"天气:\",\"温度:\",\"湿度:\",\"城市:\"],"
             "\"pt\":%d"
         "},"
-        "\"battery\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
-        "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d}"
+        "\"battery\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,"
+            "\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
+        "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
+        "\"bar\":{\"y\":%d,\"h\":%d}"
         "}",
-        250, 122,
-        cached_time, -1, 40, 40,
-        esc_date, 2, 2, 14,
-        esc_w, 195, 25, esc_t, 195, 45, esc_h, 195, 65, esc_c, 195, 85,
-        cached_weather_u, 211, 109, 14,
-        cached_power, 128, 108, 10, 126, 108, 29, 11,
-        cached_ip, 10, 109, 13);
+        g_layout.screen_w, g_layout.screen_h,
+        cached_time, g_layout.time_x, g_layout.time_y, 40,
+        esc_date, g_layout.date_x, g_layout.date_y, 14,
+        esc_w, g_layout.w_data_x, g_layout.w_data_y[0],
+        esc_t, g_layout.w_data_x, g_layout.w_data_y[1],
+        esc_h, g_layout.w_data_x, g_layout.w_data_y[2],
+        esc_c, g_layout.w_data_x, g_layout.w_data_y[3],
+        cached_weather_u, g_layout.w_upd_x, g_layout.w_upd_y, 14,
+        cached_power, g_layout.bat_x, g_layout.bat_y, 10,
+        g_layout.bat_frame_x, g_layout.bat_frame_y, g_layout.bat_frame_w, g_layout.bat_frame_h,
+        cached_ip, g_layout.ip_x, g_layout.ip_y, 13,
+        g_layout.bar_y, g_layout.bar_h);
 
 #undef ESC
 }
@@ -100,6 +112,53 @@ static void send_response(int fd, int code, const char *mime, const char *body) 
         code, mime, body_len);
     write(fd, header, strlen(header));
     write(fd, body, body_len);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tiny JSON int parser (same as layout.c)                             */
+/* ------------------------------------------------------------------ */
+static int json_get_int(const char *json, const char *key, int fallback) {
+    char search[64];
+    snprintf(search, sizeof(search), "\"%s\"", key);
+    const char *p = strstr(json, search);
+    if (!p) return fallback;
+    p += strlen(search);
+    while (*p == ' ' || *p == ':' || *p == '\t') p++;
+    int val = 0, sign = 1;
+    if (*p == '-') { sign = -1; p++; }
+    while (*p >= '0' && *p <= '9') { val = val * 10 + (*p - '0'); p++; }
+    return val * sign;
+}
+
+/* ------------------------------------------------------------------ */
+/* POST /layout — parse JSON, update, save, trigger full refresh       */
+/* ------------------------------------------------------------------ */
+static void handle_post(int fd, const char *body) {
+    Layout tmp = g_layout;
+    #define S(k, f) tmp.f = json_get_int(body, k, tmp.f)
+    S("time_x", time_x); S("time_y", time_y);
+    S("date_x", date_x); S("date_y", date_y);
+    S("w_label_x", w_label_x);
+    S("w_label_y0", w_label_y[0]); S("w_label_y1", w_label_y[1]);
+    S("w_label_y2", w_label_y[2]); S("w_label_y3", w_label_y[3]);
+    S("w_data_x", w_data_x);
+    S("w_data_y0", w_data_y[0]); S("w_data_y1", w_data_y[1]);
+    S("w_data_y2", w_data_y[2]); S("w_data_y3", w_data_y[3]);
+    S("w_upd_x", w_upd_x); S("w_upd_y", w_upd_y);
+    S("bat_x", bat_x); S("bat_y", bat_y);
+    S("bat_frame_x", bat_frame_x); S("bat_frame_y", bat_frame_y);
+    S("bat_frame_w", bat_frame_w); S("bat_frame_h", bat_frame_h);
+    S("ip_x", ip_x); S("ip_y", ip_y);
+    S("bar_y", bar_y); S("bar_h", bar_h);
+    #undef S
+
+    g_layout = tmp;
+    layout_save(&g_layout);
+    g_layout_refresh = 1;
+
+    char json[2048];
+    build_json(json, sizeof(json));
+    send_response(fd, 200, "application/json", json);
 }
 
 /* ------------------------------------------------------------------ */
@@ -150,8 +209,12 @@ void api_server_start(void) {
         if (n > 0) {
             buf[n] = '\0';
 
-            /* Extremely rough routing: match "GET /" (or "GET / ") */
-            if (strncmp(buf, "GET / ", 6) == 0 || strncmp(buf, "GET /\r\n", 7) == 0) {
+            /* Routing */
+            if (strncmp(buf, "POST /layout", 12) == 0) {
+                /* Extract body (after \r\n\r\n) */
+                char *body = strstr(buf, "\r\n\r\n");
+                handle_post(client_fd, body ? body + 4 : "{}");
+            } else if (strncmp(buf, "GET / ", 6) == 0 || strncmp(buf, "GET /\r\n", 7) == 0) {
                 char json[2048];
                 build_json(json, sizeof(json));
                 send_response(client_fd, 200, "application/json", json);

@@ -18,7 +18,7 @@ LIB_FILE  = $(LIB_DIR)/lib/libwaveshare_epd.a
 BUILD_DIR = build
 TARGET    = $(BUILD_DIR)/epd_clock
 
-SRCS      = clock.c lunar.c api.c
+SRCS      = clock.c lunar.c api.c layout.c
 OBJS      = $(SRCS:%.c=$(BUILD_DIR)/%.o)
 
 .PHONY: all clean run clock

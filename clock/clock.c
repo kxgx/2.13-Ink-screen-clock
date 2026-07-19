@@ -26,6 +26,7 @@
 
 #include "lunar.h"
 #include "api.h"
+#include "layout.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -628,39 +629,37 @@ char cached_weather_h[32]  = "";
 char cached_weather_c[32]  = "";
 char cached_weather_u[32]  = "";
 
+/* Layout — loaded from layout.json, writable via API */
+Layout g_layout;
+volatile int g_layout_refresh = 0;
+
 /* Draw bottom edge bar (matching Bottom_edge) */
 static void draw_bottom_edge(void) {
     /* Black bar across bottom */
-    fb_fill_rect(0, 105, FB_WIDTH, 17, 0);
+    fb_fill_rect(0, g_layout.bar_y, FB_WIDTH, g_layout.bar_h, 0);
 
-    /* Battery icon outline - centered in bar (y=105~121, center=113) */
-    fb_draw_line(126, 108, 154, 108, 1);  /* top */
-    fb_draw_line(126, 109, 126, 118, 1);  /* left */
-    fb_draw_line(127, 118, 154, 118, 1);  /* bottom */
-    fb_draw_line(154, 109, 154, 117, 1);  /* right */
-    /* Battery bump */
-    fb_draw_line(155, 111, 157, 111, 1);
-    fb_draw_line(155, 115, 157, 115, 1);
-    fb_draw_line(157, 112, 157, 114, 1);
+    int bx = g_layout.bat_frame_x, by = g_layout.bat_frame_y;
+    int bw = g_layout.bat_frame_w, bh = g_layout.bat_frame_h;
+    fb_draw_line(bx, by, bx + bw - 1, by, 1);
+    fb_draw_line(bx, by + 1, bx, by + bh - 1, 1);
+    fb_draw_line(bx + 1, by + bh - 1, bx + bw - 1, by + bh - 1, 1);
+    fb_draw_line(bx + bw - 1, by + 1, bx + bw - 1, by + bh - 2, 1);
+    fb_draw_line(bx + bw, by + 3, bx + bw + 2, by + 3, 1);
+    fb_draw_line(bx + bw, by + 7, bx + bw + 2, by + 7, 1);
+    fb_draw_line(bx + bw + 2, by + 4, bx + bw + 2, by + 6, 1);
 
-    /* Battery percentage text */
-    char power[16];
-    get_power_str(power, sizeof(power));
-    snprintf(cached_power, sizeof(cached_power), "%s", power);
-    ft_render_text(128, 110, power, FONT_SIZE_SMALL, 0, 1, 64);
+    ft_render_text(g_layout.bat_x, g_layout.bat_y, power, FONT_SIZE_SMALL, 0, 1, 64);
 
-    /* Clock icon (ellipse + hands) */
-    fb_draw_ellipse(199, 113, 7, 6, 1, 1);   /* filled white circle, white outline */
-    fb_draw_line(199, 109, 199, 114, 0);       /* hour hand (black) */
-    fb_draw_line(200, 114, 204, 114, 0);        /* minute hand (black) */
+    fb_draw_ellipse(199, by + 5, 7, 6, 1, 1);
+    fb_draw_line(199, by + 1, 199, by + 6, 0);
+    fb_draw_line(200, by + 6, 204, by + 6, 0);
 
-    /* IP address */
     char ip[32];
     get_ip_str(ip, sizeof(ip));
     snprintf(cached_ip, sizeof(cached_ip), "%s", ip);
     char ip_text[64];
     snprintf(ip_text, sizeof(ip_text), "IP:%s", ip);
-    ft_render_text(10, 109, ip_text, FONT_SIZE_IP, 0, 1, 127);
+    ft_render_text(g_layout.ip_x, g_layout.ip_y, ip_text, FONT_SIZE_IP, 0, 1, 127);
 }
 
 /* Draw weather section (matching Weather) */
@@ -676,21 +675,21 @@ static void draw_weather(void) {
     snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
 
     /* Prefix labels */
-    ft_render_text(150, 25, "天气:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(150, 45, "温度:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(150, 65, "湿度:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(150, 85, "城市:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[0], "天气:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[1], "温度:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[2], "湿度:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[3], "城市:", FONT_SIZE_WEATHER, 0, 0, 127);
 
     /* Weather data */
     char temp_str[32];
     snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
-    ft_render_text(195, 25, w.weather,  FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(195, 45, temp_str,    FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(195, 65, w.sd,        FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(195, 85, w.cityname,  FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather,  FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str,    FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd,        FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname,  FONT_SIZE_WEATHER, 0, 0, 127);
 
     /* Weather update time in bottom bar */
-    ft_render_text(211, 109, w.time_str, FONT_SIZE_IP, 0, 1, 127);
+    ft_render_text(g_layout.w_upd_x, g_layout.w_upd_y, w.time_str, FONT_SIZE_IP, 0, 1, 127);
 }
 
 /* Full refresh (matching Basic_refresh) */
@@ -699,11 +698,11 @@ static void basic_refresh(EPD *epd) {
 
     /* Date line */
     get_date_str(cached_date, sizeof(cached_date));
-    ft_render_text(2, 2, cached_date, FONT_SIZE_DATE, 0, 0, 127);
+    ft_render_text(g_layout.date_x, g_layout.date_y, cached_date, FONT_SIZE_DATE, 0, 0, 127);
 
     /* Time display */
     get_time_str(cached_time, sizeof(cached_time));
-    ft_render_text(-1, 40, cached_time, FONT_SIZE_TIME, 1, 0, 127);
+    ft_render_text(g_layout.time_x, g_layout.time_y, cached_time, FONT_SIZE_TIME, 1, 0, 127);
 
     /* Bottom edge */
     draw_bottom_edge();
@@ -728,13 +727,19 @@ static void partial_refresh(EPD *epd) {
     while (1) {
         int need_refresh = 0;
 
+        /* ---- Layout refresh check (triggered by API POST) ---- */
+        if (g_layout_refresh) {
+            g_layout_refresh = 0;
+            printf("Layout changed — full refresh\n");
+            break;  /* exit partial loop, re-enter basic_refresh */
+        }
+
         /* ---- Time check ---- */
         char current_time[8];
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
-            /* Erase old time area - Python: (5,40,133,82) inclusive */
-            fb_fill_rect(-1, 40, 133, 48, 1);
-            ft_render_text(-1, 40, current_time, FONT_SIZE_TIME, 1, 0, 127);
+            fb_fill_rect(g_layout.time_x, g_layout.time_y - 2, 133, 48, 1);
+            ft_render_text(g_layout.time_x, g_layout.time_y, current_time, FONT_SIZE_TIME, 1, 0, 127);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
             need_refresh = 1;
         }
@@ -743,8 +748,8 @@ static void partial_refresh(EPD *epd) {
         char current_date[128];
         get_date_str(current_date, sizeof(current_date));
         if (strcmp(current_date, cached_date) != 0) {
-            fb_fill_rect(2, 2, 249, 15, 1);
-            ft_render_text(2, 2, current_date, FONT_SIZE_DATE, 0, 0, 127);
+            fb_fill_rect(g_layout.date_x, g_layout.date_y, 249, 15, 1);
+            ft_render_text(g_layout.date_x, g_layout.date_y, current_date, FONT_SIZE_DATE, 0, 0, 127);
             snprintf(cached_date, sizeof(cached_date), "%s", current_date);
             need_refresh = 1;
         }
@@ -753,10 +758,10 @@ static void partial_refresh(EPD *epd) {
         char current_ip[32];
         get_ip_str(current_ip, sizeof(current_ip));
         if (strcmp(current_ip, cached_ip) != 0) {
-            fb_fill_rect(1, 106, 123, 16, 0);  /* black background */
+            fb_fill_rect(g_layout.ip_x - 9, g_layout.ip_y - 2, 123, 16, 0);
             char ip_text[64];
             snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
-            ft_render_text(10, 109, ip_text, FONT_SIZE_IP, 0, 1, 127);
+            ft_render_text(g_layout.ip_x, g_layout.ip_y, ip_text, FONT_SIZE_IP, 0, 1, 127);
             snprintf(cached_ip, sizeof(cached_ip), "%s", current_ip);
             need_refresh = 1;
         }
@@ -766,8 +771,8 @@ static void partial_refresh(EPD *epd) {
         if (read_weather(&w) == 0) {
             /* Weather description */
             if (strcmp(w.weather, cached_weather_w) != 0) {
-                fb_fill_rect(191, 23, 59, 18, 1);
-                ft_render_text(195, 25, w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[0] - 2, 59, 18, 1);
+                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
                 need_refresh = 1;
             }
@@ -776,32 +781,32 @@ static void partial_refresh(EPD *epd) {
             char temp_str[32];
             snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
             if (strcmp(temp_str, cached_weather_t) != 0) {
-                fb_fill_rect(191, 43, 59, 17, 1);
-                ft_render_text(195, 45, temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[1] - 2, 59, 17, 1);
+                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
                 need_refresh = 1;
             }
 
             /* Humidity */
             if (strcmp(w.sd, cached_weather_h) != 0) {
-                fb_fill_rect(191, 63, 59, 17, 1);
-                ft_render_text(195, 65, w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[2] - 2, 59, 17, 1);
+                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
                 need_refresh = 1;
             }
 
             /* City */
             if (strcmp(w.cityname, cached_weather_c) != 0) {
-                fb_fill_rect(191, 83, 59, 18, 1);
-                ft_render_text(195, 85, w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x - 4, g_layout.w_data_y[3] - 2, 59, 18, 1);
+                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
                 need_refresh = 1;
             }
 
             /* Update time */
             if (strcmp(w.time_str, cached_weather_u) != 0) {
-                fb_fill_rect(210, 106, 40, 15, 0);
-                ft_render_text(211, 109, w.time_str, FONT_SIZE_IP, 0, 1, 127);
+                fb_fill_rect(g_layout.w_upd_x - 1, g_layout.w_upd_y - 3, 40, 15, 0);
+                ft_render_text(g_layout.w_upd_x, g_layout.w_upd_y, w.time_str, FONT_SIZE_IP, 0, 1, 127);
                 snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
                 need_refresh = 1;
             }
@@ -811,8 +816,8 @@ static void partial_refresh(EPD *epd) {
         char current_power[16];
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
-            fb_fill_rect(122, 108, 27, 10, 0);
-            ft_render_text(128, 110, current_power, FONT_SIZE_SMALL, 0, 1, 64);
+            fb_fill_rect(g_layout.bat_x - 6, g_layout.bat_y - 2, 27, 10, 0);
+            ft_render_text(g_layout.bat_x, g_layout.bat_y, current_power, FONT_SIZE_SMALL, 0, 1, 64);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
         }
@@ -868,6 +873,9 @@ int main(void) {
 
     printf("Ink Screen Clock - C Version\n");
     printf("=============================\n");
+
+    /* Load layout (layout.json or defaults) */
+    layout_init(&g_layout);
 
     /* Start HTTP API server thread */
     pthread_t api_tid;

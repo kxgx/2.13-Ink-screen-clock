@@ -1,0 +1,52 @@
+/**
+ * @file    layout.h
+ * @brief   Persistent layout configuration — all display-element positions
+ */
+
+#ifndef LAYOUT_H
+#define LAYOUT_H
+
+/* One flat struct so the API can GET/PUT everything atomically. */
+typedef struct {
+    /* screen */
+    int screen_w, screen_h;     /* read-only, set at init */
+
+    /* time (DSEG font, pt=40) */
+    int time_x, time_y;
+
+    /* date (pt=14) */
+    int date_x, date_y;
+
+    /* weather labels (pt=14) — "天气:", "温度:", "湿度:", "城市:" */
+    int w_label_x;
+    int w_label_y[4];           /* y for each of the 4 labels */
+
+    /* weather data (pt=14) — desc, temp, humidity, city */
+    int w_data_x;
+    int w_data_y[4];
+
+    /* weather update time (pt=13) */
+    int w_upd_x, w_upd_y;
+
+    /* battery percentage (pt=10, inside frame) */
+    int bat_x, bat_y;
+    int bat_frame_x, bat_frame_y, bat_frame_w, bat_frame_h;
+
+    /* IP address (pt=13) */
+    int ip_x, ip_y;
+
+    /* black bottom bar */
+    int bar_y, bar_h;
+} Layout;
+
+/* Filename for persistent storage (relative to CWD = clock/) */
+#define LAYOUT_FILE  "layout.json"
+
+/* Load layout from file, or initialise with defaults.  Returns 0 on
+ * success, -1 if file is missing/broken (defaults are still set). */
+int layout_init(Layout *l);
+
+/* Save current layout to file.  Returns 0 on success. */
+int layout_save(const Layout *l);
+
+#endif /* LAYOUT_H */
