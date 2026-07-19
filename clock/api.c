@@ -292,7 +292,7 @@ static void handle_fonts(int fd) {
 /* ------------------------------------------------------------------ */
 /* POST /fonts/upload/filename  — upload a font file (.ttf/.ttc)      */
 /* ------------------------------------------------------------------ */
-static void handle_upload(int fd, const char *req, int req_len) {
+static void handle_upload(int fd, const char *req) {
     char fname[128] = {0};
 
     /* Extract filename from URL: POST /fonts/upload/filename.ttf */
@@ -313,24 +313,56 @@ static void handle_upload(int fd, const char *req, int req_len) {
         send_response(fd, 400, "application/json", "{\"error\":\"only .ttf and .ttc allowed\"}"); return;
     }
 
-    /* Find body (after \r\n\r\n) */
-    const char *body = strstr(req, "\r\n\r\n");
-    if (!body) { send_response(fd, 400, "application/json", "{\"error\":\"no body\"}"); return; }
-    body += 4;
-    int body_len = req_len - (int)(body - req);
+    /* Parse Content-Length from headers */
+    const char *cl = strstr(req, "Content-Length:");
+    if (!cl) cl = strstr(req, "content-length:");
+    int content_len = 0;
+    if (cl) {
+        cl += 15;  /* skip "Content-Length:" */
+        while (*cl == ' ' || *cl == '\t') cl++;
+        while (*cl >= '0' && *cl <= '9') { content_len = content_len * 10 + (*cl - '0'); cl++; }
+    }
+    if (content_len <= 0 || content_len > 20 * 1024 * 1024) {  /* max 20MB */
+        send_response(fd, 400, "application/json", "{\"error\":\"invalid content length\"}"); return;
+    }
+
+    /* Find body start (after \r\n\r\n) in what we've already read */
+    const char *body_start = strstr(req, "\r\n\r\n");
+    int already_read = 0;
+    if (body_start) {
+        body_start += 4;
+        already_read = (int)(req + strlen(req) - body_start);
+        if (already_read < 0) already_read = 0;
+        if (already_read > content_len) already_read = content_len;
+    }
 
     /* Save to ../pic/ */
     char fpath[256];
     snprintf(fpath, sizeof(fpath), "../pic/%s", fname);
     FILE *fp = fopen(fpath, "wb");
     if (!fp) { send_response(fd, 500, "application/json", "{\"error\":\"cannot create file\"}"); return; }
-    size_t written = fwrite(body, 1, body_len, fp);
+
+    size_t total = 0;
+    /* Write any bytes already in the buffer after \r\n\r\n */
+    if (already_read > 0) {
+        total += fwrite(body_start, 1, already_read, fp);
+    }
+
+    /* Read remaining body from socket in chunks */
+    char chunk[8192];
+    while (total < (size_t)content_len) {
+        size_t remain = (size_t)content_len - total;
+        size_t to_read = remain < sizeof(chunk) ? remain : sizeof(chunk);
+        ssize_t nr = read(fd, chunk, to_read);
+        if (nr <= 0) break;
+        total += fwrite(chunk, 1, nr, fp);
+    }
     fclose(fp);
 
-    char json[128];
-    snprintf(json, sizeof(json), "{\"ok\":true,\"name\":\"%s\",\"size\":%zu}", fname, written);
+    char json[256];
+    snprintf(json, sizeof(json), "{\"ok\":true,\"name\":\"%s\",\"size\":%zu}", fname, total);
     send_response(fd, 200, "application/json", json);
-    printf("  Font uploaded: %s (%zu bytes)\n", fname, written);
+    printf("  Font uploaded: %s (%zu bytes)\n", fname, total);
 }
 
 /* ------------------------------------------------------------------ */
@@ -382,8 +414,19 @@ void api_server_start(void) {
             buf[n] = '\0';
 
             /* Routing */
-            if (strncmp(buf, "POST /fonts/upload/", 19) == 0) {
-                handle_upload(client_fd, buf, (int)n);
+            if (strncmp(buf, "OPTIONS ", 8) == 0) {
+                /* CORS preflight */
+                const char *rsp =
+                    "HTTP/1.1 204 No Content\r\n"
+                    "Access-Control-Allow-Origin: *\r\n"
+                    "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n"
+                    "Access-Control-Allow-Headers: Content-Type, Content-Length\r\n"
+                    "Access-Control-Max-Age: 86400\r\n"
+                    "Connection: close\r\n"
+                    "\r\n";
+                write(client_fd, rsp, strlen(rsp));
+            } else if (strncmp(buf, "POST /fonts/upload/", 19) == 0) {
+                handle_upload(client_fd, buf);
             } else if (strncmp(buf, "POST /layout/apply", 18) == 0) {
                 handle_apply(client_fd);
             } else if (strncmp(buf, "POST /layout/cancel", 19) == 0) {
