@@ -378,6 +378,36 @@ next_char:
     }
 }
 
+/* Measure actual pixel width of text using loaded font.
+ * use_dseg: 1=digital font, 0=CJK font */
+static int ft_measure_text(const char *text, int font_size, int use_dseg) {
+    stbtt_fontinfo *font = use_dseg ? &font_dseg : &font_ttc;
+    float scale = stbtt_ScaleForMappingEmToPixels(font, font_size);
+    int total = 0;
+    const char *p = text;
+    while (*p) {
+        unsigned int ch; int adv = 0;
+        if ((*p & 0x80) == 0)      { ch = (unsigned char)*p; adv = 1; }
+        else if ((*p & 0xE0) == 0xC0) { ch = ((unsigned char)p[0]&0x1F)<<6 | ((unsigned char)p[1]&0x3F); adv = 2; }
+        else if ((*p & 0xF0) == 0xE0) { ch = ((unsigned char)p[0]&0x0F)<<12 | ((unsigned char)p[1]&0x3F)<<6 | ((unsigned char)p[2]&0x3F); adv = 3; }
+        else if ((*p & 0xF8) == 0xF0) { ch = ((unsigned char)p[0]&0x07)<<18 | ((unsigned char)p[1]&0x3F)<<12 | ((unsigned char)p[2]&0x3F)<<6 | ((unsigned char)p[3]&0x3F); adv = 4; }
+        else { p++; continue; }
+        int g = stbtt_FindGlyphIndex(font, ch);
+        if (g) { int aw, lsb; stbtt_GetGlyphHMetrics(font, g, &aw, &lsb); total += (int)(aw * scale); }
+        p += adv;
+    }
+    return total;
+}
+
+/* Pixel line height of a font (ascent - descent + gap + padding) */
+static int ft_line_height(int font_size, int use_dseg) {
+    stbtt_fontinfo *font = use_dseg ? &font_dseg : &font_ttc;
+    float scale = stbtt_ScaleForMappingEmToPixels(font, font_size);
+    int asc, desc, lg;
+    stbtt_GetFontVMetrics(font, &asc, &desc, &lg);
+    return (int)((asc - desc + lg) * scale) + 2;
+}
+
 /* =========================================================================
  * Convert framebuffer (250x122) to display buffer (122x250)
  *
@@ -710,8 +740,8 @@ static void partial_refresh(EPD *epd) {
         char current_time[8];
         get_time_str(current_time, sizeof(current_time));
         if (strcmp(current_time, cached_time) != 0) {
-            int tw = FONT_SIZE_TIME * 10 / 3;  /* "88:88" width @ DSEG */
-            int th = FONT_SIZE_TIME + 8;
+            int tw = ft_measure_text(current_time, FONT_SIZE_TIME, 1) + 4;
+            int th = ft_line_height(FONT_SIZE_TIME, 1) + 6;
             fb_fill_rect(g_layout.time_x, g_layout.time_y - 2, tw, th, 1);
             ft_render_text(g_layout.time_x, g_layout.time_y, current_time, FONT_SIZE_TIME, 1, 0, 127);
             snprintf(cached_time, sizeof(cached_time), "%s", current_time);
@@ -722,8 +752,9 @@ static void partial_refresh(EPD *epd) {
         char current_date[128];
         get_date_str(current_date, sizeof(current_date));
         if (strcmp(current_date, cached_date) != 0) {
-            int dh = FONT_SIZE_DATE + 2;
-            fb_fill_rect(g_layout.date_x, g_layout.date_y - 1, 249, dh, 1);
+            int dw = ft_measure_text(current_date, FONT_SIZE_DATE, 0) + 4;
+            int dh = ft_line_height(FONT_SIZE_DATE, 0) + 1;
+            fb_fill_rect(g_layout.date_x, g_layout.date_y - 1, dw, dh, 1);
             ft_render_text(g_layout.date_x, g_layout.date_y, current_date, FONT_SIZE_DATE, 0, 0, 127);
             snprintf(cached_date, sizeof(cached_date), "%s", current_date);
             need_refresh = 1;
@@ -733,10 +764,11 @@ static void partial_refresh(EPD *epd) {
         char current_ip[32];
         get_ip_str(current_ip, sizeof(current_ip));
         if (strcmp(current_ip, cached_ip) != 0) {
-            int iw = FONT_SIZE_IP * 9, ih = FONT_SIZE_IP + 4;
-            fb_fill_rect(g_layout.ip_x - 1, g_layout.ip_y - 2, iw, ih, 0);
             char ip_text[64];
             snprintf(ip_text, sizeof(ip_text), "IP:%s", current_ip);
+            int iw = ft_measure_text(ip_text, FONT_SIZE_IP, 0) + 4;
+            int ih = ft_line_height(FONT_SIZE_IP, 0) + 4;
+            fb_fill_rect(g_layout.ip_x - 1, g_layout.ip_y - 2, iw, ih, 0);
             ft_render_text(g_layout.ip_x, g_layout.ip_y, ip_text, FONT_SIZE_IP, 0, 1, 127);
             snprintf(cached_ip, sizeof(cached_ip), "%s", current_ip);
             need_refresh = 1;
@@ -745,10 +777,11 @@ static void partial_refresh(EPD *epd) {
         /* ---- Weather update ---- */
         WeatherData w;
         if (read_weather(&w) == 0) {
-            int ww = FONT_SIZE_WEATHER * 4;  /* width ~ 4 chars' worth */
-            int wh = FONT_SIZE_WEATHER + 4;
+            int ww = ft_measure_text(w.weather, FONT_SIZE_WEATHER, 0) + 4;
+            int wh = ft_line_height(FONT_SIZE_WEATHER, 0) + 3;
             /* Weather description */
             if (strcmp(w.weather, cached_weather_w) != 0) {
+                ww = ft_measure_text(w.weather, FONT_SIZE_WEATHER, 0) + 4;
                 fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[0] - 2, ww, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
@@ -759,7 +792,8 @@ static void partial_refresh(EPD *epd) {
             char temp_str[32];
             snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
             if (strcmp(temp_str, cached_weather_t) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[1] - 2, ww, wh, 1);
+                int tw2 = ft_measure_text(temp_str, FONT_SIZE_WEATHER, 0) + 4;
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[1] - 2, tw2, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
                 need_refresh = 1;
@@ -767,7 +801,8 @@ static void partial_refresh(EPD *epd) {
 
             /* Humidity */
             if (strcmp(w.sd, cached_weather_h) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[2] - 2, ww, wh, 1);
+                int hw = ft_measure_text(w.sd, FONT_SIZE_WEATHER, 0) + 4;
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[2] - 2, hw, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
                 need_refresh = 1;
@@ -775,7 +810,8 @@ static void partial_refresh(EPD *epd) {
 
             /* City */
             if (strcmp(w.cityname, cached_weather_c) != 0) {
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[3] - 2, ww, wh, 1);
+                int cw = ft_measure_text(w.cityname, FONT_SIZE_WEATHER, 0) + 4;
+                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[3] - 2, cw, wh, 1);
                 ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
                 need_refresh = 1;
@@ -783,7 +819,8 @@ static void partial_refresh(EPD *epd) {
 
             /* Update time */
             if (strcmp(w.time_str, cached_weather_u) != 0) {
-                int uw = FONT_SIZE_IP * 4, uh = FONT_SIZE_IP + 3;
+                int uw = ft_measure_text(w.time_str, FONT_SIZE_IP, 0) + 4;
+                int uh = ft_line_height(FONT_SIZE_IP, 0) + 2;
                 fb_fill_rect(g_layout.w_upd_x - 1, g_layout.w_upd_y - 2, uw, uh, 0);
                 ft_render_text(g_layout.w_upd_x, g_layout.w_upd_y, w.time_str, FONT_SIZE_IP, 0, 1, 127);
                 snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
@@ -795,9 +832,9 @@ static void partial_refresh(EPD *epd) {
         char current_power[16];
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
-            /* Erase inside frame only — avoid overwriting white borders */
+            int pw = ft_measure_text(current_power, FONT_SIZE_SMALL, 0) + 4;
             fb_fill_rect(g_layout.bat_frame_x + 1, g_layout.bat_frame_y + 1,
-                         g_layout.bat_frame_w - 3, g_layout.bat_frame_h - 2, 0);
+                         pw, g_layout.bat_frame_h - 2, 0);
             ft_render_text(g_layout.bat_x, g_layout.bat_y, current_power, FONT_SIZE_SMALL, 0, 1, 64);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
