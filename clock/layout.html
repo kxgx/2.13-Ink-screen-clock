@@ -258,7 +258,7 @@ function buildControls() {
       </div>
       <div class="group-body">${g.fields.map(f =>
         `<div class="field"><label>${f.l}</label>
-          <input id="f-${f.k}" type="number" data-key="${f.k}" oninput="onFieldChange(this);drawNow()" onfocus="this.select()">
+          <input id="f-${f.k}" type="number" data-key="${f.k}" oninput="if(!_updating){onFieldChange(this);drawNow()}" onfocus="this.select()">
         </div>`).join('')}
       </div>
     </div>`).join('');
@@ -272,15 +272,19 @@ function onFieldChange(inp) {
 }
 
 function updateUI() {
+  _updating = true;
   for (const [k,v] of Object.entries(_current)) {
     const inp = document.getElementById('f-'+k);
     if (!inp) continue;
     inp.value = v;
     inp.classList.toggle('modified', v !== _original[k]);
   }
+  _updating = false;
 }
 
 // ==================== Preview ====================
+let _updating = false;
+
 function drawNow() {
   if (!_remote || !Object.keys(_remote).length) return;
   const prev = JSON.parse(JSON.stringify(_remote));
@@ -303,6 +307,10 @@ function drawNow() {
 }
 
 function drawPreview(data) {
+  try { _draw(data); } catch(e) { console.error('drawPreview error:', e); }
+}
+
+function _draw(data) {
   if (!data) data = _remote;
   if (!data || !Object.keys(data).length) return;
 
