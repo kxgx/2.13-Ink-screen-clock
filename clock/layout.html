@@ -84,6 +84,8 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 .upload-status { font-size:11px; margin-top:4px; text-align:center; }
 .upload-status.ok { color:var(--ok); }
 .upload-status.err { color:var(--hl); }
+.auto-refresh { display:flex; align-items:center; gap:2px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
+.auto-refresh input[type=checkbox] { accent-color:var(--ok); cursor:pointer; }
 
 @font-face {
   font-family:'DSEG';
@@ -107,6 +109,14 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
     </div>
     <span class="badge" id="pending-badge">--</span>
     <span class="badge" id="conn-badge">--</span>
+    <label class="auto-refresh" id="ar-label" title="自动刷新预览">
+      <input type="checkbox" id="ar-toggle" onchange="toggleAutoRefresh()"> 自动刷新
+      <select id="ar-interval" onchange="changeInterval()" style="margin-left:4px;background:var(--input-bg);border:1px solid var(--accent);color:var(--text);font-size:11px;padding:2px 4px;border-radius:4px;">
+        <option value="10">10s</option>
+        <option value="30" selected>30s</option>
+        <option value="60">60s</option>
+      </select>
+    </label>
   </div>
 </header>
 
@@ -170,6 +180,7 @@ let _host = () => document.getElementById('api-host').value || '192.168.2.103:80
 let _original = {};
 let _current  = {};
 let _remote   = {};
+let _arTimer = null;
 
 function showErr(msg) {
   const el = document.getElementById('err-msg');
@@ -596,6 +607,32 @@ function renderInfo() {
 document.getElementById('api-host').addEventListener('change', fetchLayout);
 buildControls();
 fetchLayout();
+
+function toggleAutoRefresh() {
+  const cb = document.getElementById('ar-toggle');
+  if (cb.checked) startAutoRefresh();
+  else stopAutoRefresh();
+}
+
+function changeInterval() {
+  if (document.getElementById('ar-toggle').checked) {
+    stopAutoRefresh(); startAutoRefresh();
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  const sec = parseInt(document.getElementById('ar-interval').value) || 30;
+  _arTimer = setInterval(() => {
+    if (_host()) fetchLayout().catch(()=>{});
+  }, sec * 1000);
+  document.getElementById('ar-label').style.color = 'var(--ok)';
+}
+
+function stopAutoRefresh() {
+  if (_arTimer) { clearInterval(_arTimer); _arTimer = null; }
+  document.getElementById('ar-label').style.color = 'var(--muted)';
+}
 </script>
 </body>
 </html>
