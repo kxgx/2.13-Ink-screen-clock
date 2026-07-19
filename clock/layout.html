@@ -347,9 +347,16 @@ function extractPos(json) {
   const p = {};
   p.time_x = json.time.x; p.time_y = json.time.y;
   p.date_x = json.date.x; p.date_y = json.date.y;
-  p.w_label_x = _current.w_label_x ?? 150;
+  const lx = json.weather.label_x || [150,150,150,150];
+  p.w_label_x0 = lx[0] ?? _current.w_label_x0 ?? 150;
+  p.w_label_x1 = lx[1] ?? _current.w_label_x1 ?? 150;
+  p.w_label_x2 = lx[2] ?? _current.w_label_x2 ?? 150;
+  p.w_label_x3 = lx[3] ?? _current.w_label_x3 ?? 150;
   ['w_label_y0','w_label_y1','w_label_y2','w_label_y3'].forEach((k,i)=>{ p[k] = _current[k] ?? (25+i*20); });
-  p.w_data_x = json.weather.desc.x;
+  p.w_data_x0 = json.weather.desc.x ?? _current.w_data_x0 ?? 195;
+  p.w_data_x1 = json.weather.temp.x ?? _current.w_data_x1 ?? 195;
+  p.w_data_x2 = json.weather.humidity.x ?? _current.w_data_x2 ?? 195;
+  p.w_data_x3 = json.weather.city.x ?? _current.w_data_x3 ?? 195;
   ['w_data_y0','w_data_y1','w_data_y2','w_data_y3'].forEach((k,i)=>{
     p[k] = [json.weather.desc.y, json.weather.temp.y, json.weather.humidity.y, json.weather.city.y][i];
   });
@@ -482,14 +489,14 @@ function updateUI() {
 const DRAG_HANDLES = [
   { k:'time_x',ky:'time_y', label:'时间', fn:'time' },
   { k:'date_x',ky:'date_y', label:'日期', fn:'date' },
-  { k:'w_label_x',ky:'w_label_y0', label:'标签1', fn:'wlabel' },
-  { k:'w_label_x',ky:'w_label_y1', label:'标签2', fn:'wlabel' },
-  { k:'w_label_x',ky:'w_label_y2', label:'标签3', fn:'wlabel' },
-  { k:'w_label_x',ky:'w_label_y3', label:'标签4', fn:'wlabel' },
-  { k:'w_data_x',ky:'w_data_y0', label:'数据1', fn:'wdata' },
-  { k:'w_data_x',ky:'w_data_y1', label:'数据2', fn:'wdata' },
-  { k:'w_data_x',ky:'w_data_y2', label:'数据3', fn:'wdata' },
-  { k:'w_data_x',ky:'w_data_y3', label:'数据4', fn:'wdata' },
+  { k:'w_label_x0',ky:'w_label_y0', label:'标签1', fn:'wlabel' },
+  { k:'w_label_x1',ky:'w_label_y1', label:'标签2', fn:'wlabel' },
+  { k:'w_label_x2',ky:'w_label_y2', label:'标签3', fn:'wlabel' },
+  { k:'w_label_x3',ky:'w_label_y3', label:'标签4', fn:'wlabel' },
+  { k:'w_data_x0',ky:'w_data_y0', label:'数据1', fn:'wdata' },
+  { k:'w_data_x1',ky:'w_data_y1', label:'数据2', fn:'wdata' },
+  { k:'w_data_x2',ky:'w_data_y2', label:'数据3', fn:'wdata' },
+  { k:'w_data_x3',ky:'w_data_y3', label:'数据4', fn:'wdata' },
   { k:'w_upd_x',ky:'w_upd_y', label:'更新', fn:'wupd' },
   { k:'bat_x',ky:'bat_y', label:'电量%', fn:'bat' },
   { k:'bat_frame_x',ky:'bat_frame_y', label:'框', fn:'batf' },
@@ -658,10 +665,10 @@ function drawNow() {
   prev.ip.x = c.ip_x; prev.ip.y = c.ip_y;
   prev.bar.y = c.bar_y; prev.bar.h = c.bar_h;
   if (prev.weather) {
-    prev.weather.desc.x = c.w_data_x;     prev.weather.desc.y = c.w_data_y0;
-    prev.weather.temp.x = c.w_data_x;     prev.weather.temp.y = c.w_data_y1;
-    prev.weather.humidity.x = c.w_data_x; prev.weather.humidity.y = c.w_data_y2;
-    prev.weather.city.x = c.w_data_x;     prev.weather.city.y = c.w_data_y3;
+    prev.weather.desc.x = c.w_data_x0;     prev.weather.desc.y = c.w_data_y0;
+    prev.weather.temp.x = c.w_data_x1;     prev.weather.temp.y = c.w_data_y1;
+    prev.weather.humidity.x = c.w_data_x2; prev.weather.humidity.y = c.w_data_y2;
+    prev.weather.city.x = c.w_data_x3;     prev.weather.city.y = c.w_data_y3;
     prev.weather.updated.x = c.w_upd_x;   prev.weather.updated.y = c.w_upd_y;
   }
   drawPreview(prev);
@@ -716,15 +723,16 @@ function _draw(data) {
     ctx.fillStyle = '#000';  /* pure black for crisp threshold */
     const wp = _current.weather_pt ?? 14;
     const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
-    const lx = _current.w_label_x ?? 150, dx = _current.w_data_x ?? 195;
+    const lxx = [_current.w_label_x0??150,_current.w_label_x1??150,_current.w_label_x2??150,_current.w_label_x3??150];
+    const dxx = [_current.w_data_x0??195,_current.w_data_x1??195,_current.w_data_x2??195,_current.w_data_x3??195];
     [
       [labels[0], w.desc.text],
       [labels[1], w.temp.text],
       [labels[2], w.humidity.text],
       [labels[3], w.city.text],
     ].forEach(([lb, val], i) => {
-      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
-      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
+      text(lb, lxx[i], _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
+      text(val, dxx[i], _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN_VAR);
     });
 
     const ip = _current.ip_pt ?? 13;

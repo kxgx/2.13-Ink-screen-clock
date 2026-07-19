@@ -40,7 +40,7 @@
  * then rotates 180°, and the Python driver's getbuffer() rotates 90° CCW.
  *
  * Coordinate mapping: Python (px, py) in 250x122
- *   �?display buffer (dx = 121-py, dy = px) in 122x250
+ *   �?display buffer (dx = 121-py, dy = px) in 122x250
  *
  * We draw directly into fb[250][122] (1bpp packed), then convert to
  * the display buffer format (122x250, 16 bytes/row).
@@ -77,12 +77,12 @@ static stbtt_fontinfo font_dseg;
 static unsigned char *font_ttc_buf = NULL;
 static unsigned char *font_dseg_buf = NULL;
 
-/* Global layout — set by layout_init, used by render functions */
+/* Global layout �?set by layout_init, used by render functions */
 Layout g_layout;
 volatile int g_layout_refresh = 0;
-volatile int g_layout_changed = 0;  /* layout refresh → skip clear/sleep */
+volatile int g_layout_changed = 0;  /* layout refresh �?skip clear/sleep */
 
-/* Font sizes in pt — read from layout at runtime */
+/* Font sizes in pt �?read from layout at runtime */
 #define FONT_SIZE_DATE    (g_layout.date_pt)
 #define FONT_SIZE_TIME    (g_layout.time_pt)
 #define FONT_SIZE_SMALL   (g_layout.small_pt)
@@ -411,7 +411,7 @@ static int ft_line_height(int font_size, int use_dseg) {
 /* =========================================================================
  * Convert framebuffer (250x122) to display buffer (122x250)
  *
- * Mapping: Python (px, py) �?display (dx=121-py, dy=px)
+ * Mapping: Python (px, py) �?display (dx=121-py, dy=px)
  * ========================================================================= */
 static void fb_to_display(void) {
     memset(display_buf, 0xFF, DISP_SIZE);  /* Start all white */
@@ -427,7 +427,7 @@ static void fb_to_display(void) {
             int pixel = (fb[src_byte] >> src_bit) & 1;
 
             if (pixel == 0) {
-                /* Black pixel �?clear bit in display buffer */
+                /* Black pixel �?clear bit in display buffer */
                 int dst_byte = dy * DISP_ROW + (dx / 8);
                 int dst_bit  = 7 - (dx % 8);
                 display_buf[dst_byte] &= ~(1 << dst_bit);
@@ -487,11 +487,11 @@ static void get_date_str(char *buf, size_t bufsize) {
 
     /* Gregorian date */
     char gregorian[64];
-    strftime(gregorian, sizeof(gregorian), "%Y年%m月%d日 ", tm_info);
+    strftime(gregorian, sizeof(gregorian), "%Y�?m�?d�?", tm_info);
 
     /* Weekday in Chinese */
     static const char *weekdays[] = {
-        "星期日 ", "星期一 ", "星期二 ", "星期三 ", "星期四 ", "星期五 ", "星期六 "
+        "星期�?", "星期一 ", "星期�?", "星期�?", "星期�?", "星期�?", "星期�?"
     };
     const char *weekday = weekdays[tm_info->tm_wday];
 
@@ -623,7 +623,7 @@ static int read_weather(WeatherData *w) {
  * Display content drawing (matching Python display functions)
  * ========================================================================= */
 
-/* Cached values for partial refresh comparison — extern for api.c */
+/* Cached values for partial refresh comparison �?extern for api.c */
 char cached_date[128]    = "";
 char cached_time[8]      = "";
 char cached_ip[32]       = "";
@@ -676,18 +676,18 @@ static void draw_weather(void) {
     snprintf(cached_weather_u, sizeof(cached_weather_u), "%s", w.time_str);
 
     /* Prefix labels */
-    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[0], "天气:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[1], "温度:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[2], "湿度:", FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_label_x, g_layout.w_label_y[3], "城市:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x[0], g_layout.w_label_y[0], "天气:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x[1], g_layout.w_label_y[1], "温度:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x[2], g_layout.w_label_y[2], "湿度:", FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_label_x[3], g_layout.w_label_y[3], "城市:", FONT_SIZE_WEATHER, 0, 0, 127);
 
     /* Weather data */
     char temp_str[32];
     snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
-    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather,  FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str,    FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd,        FONT_SIZE_WEATHER, 0, 0, 127);
-    ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname,  FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x[0], g_layout.w_data_y[0], w.weather,  FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x[1], g_layout.w_data_y[1], temp_str,    FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x[2], g_layout.w_data_y[2], w.sd,        FONT_SIZE_WEATHER, 0, 0, 127);
+    ft_render_text(g_layout.w_data_x[3], g_layout.w_data_y[3], w.cityname,  FONT_SIZE_WEATHER, 0, 0, 127);
 
     /* Weather update time in bottom bar */
     ft_render_text(g_layout.w_upd_x, g_layout.w_upd_y, w.time_str, FONT_SIZE_IP, 0, 1, 127);
@@ -732,7 +732,7 @@ static void partial_refresh(EPD *epd) {
         if (g_layout_refresh) {
             g_layout_refresh = 0;
             g_layout_changed = 1;  /* skip clear/sleep in main loop */
-            printf("Layout changed — full refresh\n");
+            printf("Layout changed �?full refresh\n");
             break;  /* exit partial loop, re-enter basic_refresh */
         }
 
@@ -782,8 +782,8 @@ static void partial_refresh(EPD *epd) {
             /* Weather description */
             if (strcmp(w.weather, cached_weather_w) != 0) {
                 ww = ft_measure_text(w.weather, FONT_SIZE_WEATHER, 0) + 4;
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[0] - 2, ww, wh, 1);
-                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[0], w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x[0] - 2, g_layout.w_data_y[0] - 2, ww, wh, 1);
+                ft_render_text(g_layout.w_data_x[0], g_layout.w_data_y[0], w.weather, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_w, sizeof(cached_weather_w), "%s", w.weather);
                 need_refresh = 1;
             }
@@ -793,8 +793,8 @@ static void partial_refresh(EPD *epd) {
             snprintf(temp_str, sizeof(temp_str), "%s°C", w.temp);
             if (strcmp(temp_str, cached_weather_t) != 0) {
                 int tw2 = ft_measure_text(temp_str, FONT_SIZE_WEATHER, 0) + 4;
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[1] - 2, tw2, wh, 1);
-                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[1], temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x[1] - 2, g_layout.w_data_y[1] - 2, tw2, wh, 1);
+                ft_render_text(g_layout.w_data_x[1], g_layout.w_data_y[1], temp_str, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_t, sizeof(cached_weather_t), "%s", temp_str);
                 need_refresh = 1;
             }
@@ -802,8 +802,8 @@ static void partial_refresh(EPD *epd) {
             /* Humidity */
             if (strcmp(w.sd, cached_weather_h) != 0) {
                 int hw = ft_measure_text(w.sd, FONT_SIZE_WEATHER, 0) + 4;
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[2] - 2, hw, wh, 1);
-                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[2], w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x[2] - 2, g_layout.w_data_y[2] - 2, hw, wh, 1);
+                ft_render_text(g_layout.w_data_x[2], g_layout.w_data_y[2], w.sd, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_h, sizeof(cached_weather_h), "%s", w.sd);
                 need_refresh = 1;
             }
@@ -811,8 +811,8 @@ static void partial_refresh(EPD *epd) {
             /* City */
             if (strcmp(w.cityname, cached_weather_c) != 0) {
                 int cw = ft_measure_text(w.cityname, FONT_SIZE_WEATHER, 0) + 4;
-                fb_fill_rect(g_layout.w_data_x - 2, g_layout.w_data_y[3] - 2, cw, wh, 1);
-                ft_render_text(g_layout.w_data_x, g_layout.w_data_y[3], w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
+                fb_fill_rect(g_layout.w_data_x[3] - 2, g_layout.w_data_y[3] - 2, cw, wh, 1);
+                ft_render_text(g_layout.w_data_x[3], g_layout.w_data_y[3], w.cityname, FONT_SIZE_WEATHER, 0, 0, 127);
                 snprintf(cached_weather_c, sizeof(cached_weather_c), "%s", w.cityname);
                 need_refresh = 1;
             }
@@ -884,7 +884,7 @@ int main(void) {
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
-    /* Load layout first — ft_init needs font_cn/font_time from it */
+    /* Load layout first �?ft_init needs font_cn/font_time from it */
     layout_init(&g_layout);
 
     if (ft_init() != 0) {
@@ -921,12 +921,12 @@ int main(void) {
         printf("Entering partial refresh loop...\n");
         partial_refresh(&epd);
 
-        /* Layout change from API — skip clear/sleep, just redo basic_refresh */
+        /* Layout change from API �?skip clear/sleep, just redo basic_refresh */
         if (g_layout_changed) {
             g_layout_changed = 0;
             ft_reload();  /* reload fonts if font_cn/font_time changed */
             EPD_2in13_V4_Sleep(&epd);
-            printf("Layout applied — immediate refresh\n");
+            printf("Layout applied �?immediate refresh\n");
             continue;
         }
 

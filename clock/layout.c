@@ -21,13 +21,13 @@ static void set_defaults(Layout *l) {
     l->date_x = 2;
     l->date_y = 2;
 
-    l->w_label_x = 150;
+    for (int i = 0; i < 4; i++) l->w_label_x[i] = 150;
     l->w_label_y[0] = 25;
     l->w_label_y[1] = 45;
     l->w_label_y[2] = 65;
     l->w_label_y[3] = 85;
 
-    l->w_data_x = 195;
+    for (int i = 0; i < 4; i++) l->w_data_x[i] = 195;
     l->w_data_y[0] = 25;
     l->w_data_y[1] = 45;
     l->w_data_y[2] = 65;
@@ -116,12 +116,23 @@ int layout_init(Layout *l) {
     l->time_y = json_get_int(buf, "time_y", l->time_y);
     l->date_x = json_get_int(buf, "date_x", l->date_x);
     l->date_y = json_get_int(buf, "date_y", l->date_y);
-    l->w_label_x = json_get_int(buf, "w_label_x", l->w_label_x);
+    /* Backward compat: old "w_label_x" applies to all, individual overrides */
+    { int v = json_get_int(buf, "w_label_x", -1);
+      if (v >= 0) for (int i = 0; i < 4; i++) l->w_label_x[i] = v; }
+    l->w_label_x[0] = json_get_int(buf, "w_label_x0", l->w_label_x[0]);
+    l->w_label_x[1] = json_get_int(buf, "w_label_x1", l->w_label_x[1]);
+    l->w_label_x[2] = json_get_int(buf, "w_label_x2", l->w_label_x[2]);
+    l->w_label_x[3] = json_get_int(buf, "w_label_x3", l->w_label_x[3]);
     l->w_label_y[0] = json_get_int(buf, "w_label_y0", l->w_label_y[0]);
     l->w_label_y[1] = json_get_int(buf, "w_label_y1", l->w_label_y[1]);
     l->w_label_y[2] = json_get_int(buf, "w_label_y2", l->w_label_y[2]);
     l->w_label_y[3] = json_get_int(buf, "w_label_y3", l->w_label_y[3]);
-    l->w_data_x = json_get_int(buf, "w_data_x", l->w_data_x);
+    { int v = json_get_int(buf, "w_data_x", -1);
+      if (v >= 0) for (int i = 0; i < 4; i++) l->w_data_x[i] = v; }
+    l->w_data_x[0] = json_get_int(buf, "w_data_x0", l->w_data_x[0]);
+    l->w_data_x[1] = json_get_int(buf, "w_data_x1", l->w_data_x[1]);
+    l->w_data_x[2] = json_get_int(buf, "w_data_x2", l->w_data_x[2]);
+    l->w_data_x[3] = json_get_int(buf, "w_data_x3", l->w_data_x[3]);
     l->w_data_y[0] = json_get_int(buf, "w_data_y0", l->w_data_y[0]);
     l->w_data_y[1] = json_get_int(buf, "w_data_y1", l->w_data_y[1]);
     l->w_data_y[2] = json_get_int(buf, "w_data_y2", l->w_data_y[2]);
@@ -162,9 +173,9 @@ int layout_save(const Layout *l) {
         "{\n"
         "  \"time_x\":%d,\"time_y\":%d,\n"
         "  \"date_x\":%d,\"date_y\":%d,\n"
-        "  \"w_label_x\":%d,\n"
+        "  \"w_label_x0\":%d,\"w_label_x1\":%d,\"w_label_x2\":%d,\"w_label_x3\":%d,\n"
         "  \"w_label_y0\":%d,\"w_label_y1\":%d,\"w_label_y2\":%d,\"w_label_y3\":%d,\n"
-        "  \"w_data_x\":%d,\n"
+        "  \"w_data_x0\":%d,\"w_data_x1\":%d,\"w_data_x2\":%d,\"w_data_x3\":%d,\n"
         "  \"w_data_y0\":%d,\"w_data_y1\":%d,\"w_data_y2\":%d,\"w_data_y3\":%d,\n"
         "  \"w_upd_x\":%d,\"w_upd_y\":%d,\n"
         "  \"bat_x\":%d,\"bat_y\":%d,\n"
@@ -176,9 +187,9 @@ int layout_save(const Layout *l) {
         "}\n",
         l->time_x, l->time_y,
         l->date_x, l->date_y,
-        l->w_label_x,
+        l->w_label_x[0], l->w_label_x[1], l->w_label_x[2], l->w_label_x[3],
         l->w_label_y[0], l->w_label_y[1], l->w_label_y[2], l->w_label_y[3],
-        l->w_data_x,
+        l->w_data_x[0], l->w_data_x[1], l->w_data_x[2], l->w_data_x[3],
         l->w_data_y[0], l->w_data_y[1], l->w_data_y[2], l->w_data_y[3],
         l->w_upd_x, l->w_upd_y,
         l->bat_x, l->bat_y,
