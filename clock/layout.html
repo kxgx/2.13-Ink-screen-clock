@@ -110,7 +110,7 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
     <span class="badge" id="pending-badge">--</span>
     <span class="badge" id="conn-badge">--</span>
     <label class="auto-refresh" id="ar-label" title="自动刷新预览">
-      <input type="checkbox" id="ar-toggle" onchange="toggleAutoRefresh()" checked> 自动刷新
+      <input type="checkbox" id="ar-toggle" onchange="toggleAutoRefresh()"> 自动刷新
       <select id="ar-interval" onchange="changeInterval()" style="margin-left:4px;background:var(--input-bg);border:1px solid var(--accent);color:var(--text);font-size:11px;padding:2px 4px;border-radius:4px;">
         <option value="3" selected>3s</option>
         <option value="10">10s</option>
@@ -559,9 +559,11 @@ function setupDragLayer() {
   };
 
   const onUp = () => {
+    const wasDragging = _dragIdx >= 0;
     _dragIdx = -1; _hoverIdx = -1;
     c.style.cursor = 'crosshair';
     drawHandles();
+    if (wasDragging) postPreview();  // auto-preview on drag end
   };
 
   c.addEventListener('mousedown', onDown);
@@ -739,10 +741,7 @@ function renderInfo() {
 document.getElementById('api-host').addEventListener('change', fetchLayout);
 buildControls();
 setupDragLayer();
-fetchLayout().then(() => {
-  // Auto-refresh starts by default once connected
-  if (document.getElementById('ar-toggle').checked) startAutoRefresh();
-});
+fetchLayout();
 
 function toggleAutoRefresh() {
   const cb = document.getElementById('ar-toggle');
