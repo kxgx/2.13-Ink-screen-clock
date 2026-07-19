@@ -624,9 +624,15 @@ function _draw(data) {
 
   function ascent(sz, fam) {
     ctx.font = `${sz}px ${fam}`;
-    const ch = fam.includes('DSEG') ? '0' : '\u56FD';
-    const m = ctx.measureText(ch);
-    return m.actualBoundingBoxAscent || sz * 0.72;
+    if (fam.includes('DSEG')) {
+      const m = ctx.measureText('0');
+      return m.actualBoundingBoxAscent || sz * 0.72;
+    }
+    // CJK: actualBoundingBoxAscent ≈ full em, but stb_truetype uses
+    // OS/2 sTypoAscender (~0.88× em).  Scale down to match.
+    const m = ctx.measureText('\u56FD');
+    const raw = m.actualBoundingBoxAscent;
+    return raw ? raw * 0.88 : sz * 0.78;
   }
   function text(s, x, y, sz, fam) {
     ctx.font = `${sz}px ${fam}`;
