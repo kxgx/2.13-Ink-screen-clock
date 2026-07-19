@@ -437,22 +437,44 @@ function updateUI() {
 
 // ==================== Drag layer ====================
 const DRAG_HANDLES = [
-  { k:'time_x',ky:'time_y', label:'时间', color:'#e94560', w:80,h:28 },
-  { k:'date_x',ky:'date_y', label:'日期', color:'#00b894', w:70,h:14 },
-  { k:'w_label_x',ky:'w_label_y0', label:'标签1', color:'#0984e3' },
-  { k:'w_label_x',ky:'w_label_y1', label:'标签2', color:'#0984e3' },
-  { k:'w_label_x',ky:'w_label_y2', label:'标签3', color:'#0984e3' },
-  { k:'w_label_x',ky:'w_label_y3', label:'标签4', color:'#0984e3' },
-  { k:'w_data_x',ky:'w_data_y0', label:'数据1', color:'#6c5ce7' },
-  { k:'w_data_x',ky:'w_data_y1', label:'数据2', color:'#6c5ce7' },
-  { k:'w_data_x',ky:'w_data_y2', label:'数据3', color:'#6c5ce7' },
-  { k:'w_data_x',ky:'w_data_y3', label:'数据4', color:'#6c5ce7' },
-  { k:'w_upd_x',ky:'w_upd_y', label:'更新', color:'#fdcb6e', w:50,h:12 },
-  { k:'bat_x',ky:'bat_y', label:'电量%', color:'#e17055', w:28,h:10 },
-  { k:'bat_frame_x',ky:'bat_frame_y', label:'框', color:'#d63031', w:29,h:11 },
-  { k:'ip_x',ky:'ip_y', label:'IP', color:'#636e72', w:80,h:12 },
+  { k:'time_x',ky:'time_y', label:'时间', fn:'time' },
+  { k:'date_x',ky:'date_y', label:'日期', fn:'date' },
+  { k:'w_label_x',ky:'w_label_y0', label:'标签1', fn:'wlabel' },
+  { k:'w_label_x',ky:'w_label_y1', label:'标签2', fn:'wlabel' },
+  { k:'w_label_x',ky:'w_label_y2', label:'标签3', fn:'wlabel' },
+  { k:'w_label_x',ky:'w_label_y3', label:'标签4', fn:'wlabel' },
+  { k:'w_data_x',ky:'w_data_y0', label:'数据1', fn:'wdata' },
+  { k:'w_data_x',ky:'w_data_y1', label:'数据2', fn:'wdata' },
+  { k:'w_data_x',ky:'w_data_y2', label:'数据3', fn:'wdata' },
+  { k:'w_data_x',ky:'w_data_y3', label:'数据4', fn:'wdata' },
+  { k:'w_upd_x',ky:'w_upd_y', label:'更新', fn:'wupd' },
+  { k:'bat_x',ky:'bat_y', label:'电量%', fn:'bat' },
+  { k:'bat_frame_x',ky:'bat_frame_y', label:'框', fn:'batf' },
+  { k:'ip_x',ky:'ip_y', label:'IP', fn:'ip' },
 ];
-let _dragIdx = -1, _dragOffX = 0, _dragOffY = 0;
+let _dragIdx = -1, _dragOffX = 0, _dragOffY = 0, _hoverIdx = -1;
+
+function getHandleSize(h) {
+  const W = 250;
+  const fn = h.fn;
+  const c = document.getElementById('preview');
+  const ctx = c.getContext('2d');
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `${_current.time_pt ?? 40}px ${FONT_TIME}`;
+  if (fn === 'time') { const m = ctx.measureText('88:88'); return {w: Math.ceil(m.width) + 4, h: _current.time_pt ?? 40}; }
+  ctx.font = `${_current.date_pt ?? 14}px ${FONT_CN}`;
+  if (fn === 'date') { const m = ctx.measureText(_remote?.date?.text || '0000年00月00日'); return {w: Math.ceil(m.width) + 4, h: _current.date_pt ?? 14}; }
+  ctx.font = `${_current.weather_pt ?? 14}px ${FONT_CN}`;
+  if (fn === 'wlabel') { const m = ctx.measureText('天气:'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
+  if (fn === 'wdata') { const m = ctx.measureText('晴转多云'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
+  ctx.font = `${_current.ip_pt ?? 13}px ${FONT_CN}`;
+  if (fn === 'wupd') { const m = ctx.measureText('07/18 12:00'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
+  if (fn === 'ip') { const m = ctx.measureText('IP:192.168.2.103'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
+  ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN}`;
+  if (fn === 'bat') { const m = ctx.measureText('100%'); return {w: Math.ceil(m.width) + 2, h: _current.small_pt ?? 10}; }
+  if (fn === 'batf') return {w: _current.bat_frame_w ?? 29, h: _current.bat_frame_h ?? 11};
+  return {w: 20, h: 14};
+}
 
 function drawHandles() {
   const c = document.getElementById('drag-layer');
@@ -460,29 +482,30 @@ function drawHandles() {
   const ctx = c.getContext('2d');
   ctx.clearRect(0, 0, 250, 122);
   if (!_current || !Object.keys(_current).length) return;
-
-  DRAG_HANDLES.forEach((h, i) => {
+  // Only show hover highlight (subtle outline)
+  if (_hoverIdx >= 0) {
+    const h = DRAG_HANDLES[_hoverIdx];
     const x = _current[h.k] ?? 0;
     const y = _current[h.ky] ?? 0;
-    const w = h.w || 10, ht = h.h || 10;
-    ctx.fillStyle = h.color + '44';
-    ctx.fillRect(x, y, w, ht);
-    ctx.strokeStyle = h.color;
+    const s = getHandleSize(h);
+    ctx.strokeStyle = '#e94560';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, w, ht);
+    ctx.setLineDash([3, 3]);
+    ctx.strokeRect(x + 0.5, y + 0.5, s.w, s.h);
+    ctx.setLineDash([]);
     // Label
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = '#e94560';
     ctx.font = '9px monospace';
-    ctx.fillText(h.label, x + 2, y - 2);
-  });
+    ctx.fillText(h.label, x, y - 2);
+  }
 }
 
 function getHandleAt(mx, my) {
   for (let i = DRAG_HANDLES.length - 1; i >= 0; i--) {
     const h = DRAG_HANDLES[i];
     const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
-    const w = h.w || 10, ht = h.h || 10;
-    if (mx >= x && mx <= x + w && my >= y && my <= y + ht) return i;
+    const s = getHandleSize(h);
+    if (mx >= x && mx <= x + s.w && my >= y && my <= y + s.h) return i;
   }
   return -1;
 }
@@ -509,15 +532,17 @@ function setupDragLayer() {
   };
 
   const onMove = e => {
+    const {x, y} = getPos(e);
     if (_dragIdx < 0) {
-      const {x, y} = getPos(e);
-      c.style.cursor = getHandleAt(x, y) >= 0 ? 'grab' : 'crosshair';
+      _hoverIdx = getHandleAt(x, y);
+      c.style.cursor = _hoverIdx >= 0 ? 'grab' : 'crosshair';
+      drawHandles();
       return;
     }
-    const {x, y} = getPos(e);
     const h = DRAG_HANDLES[_dragIdx];
-    const nx = Math.max(0, Math.min(250 - (h.w || 10), Math.round(x) - _dragOffX));
-    const ny = Math.max(0, Math.min(122 - (h.h || 10), Math.round(y) - _dragOffY));
+    const s = getHandleSize(h);
+    const nx = Math.max(0, Math.min(250 - s.w, Math.round(x) - _dragOffX));
+    const ny = Math.max(0, Math.min(122 - s.h, Math.round(y) - _dragOffY));
     _current[h.k] = nx;
     _current[h.ky] = ny;
     // Sync label cols: w_label_x / w_data_x
@@ -534,8 +559,9 @@ function setupDragLayer() {
   };
 
   const onUp = () => {
-    _dragIdx = -1;
+    _dragIdx = -1; _hoverIdx = -1;
     c.style.cursor = 'crosshair';
+    drawHandles();
   };
 
   c.addEventListener('mousedown', onDown);
