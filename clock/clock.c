@@ -77,6 +77,11 @@ static stbtt_fontinfo font_dseg;
 static unsigned char *font_ttc_buf = NULL;
 static unsigned char *font_dseg_buf = NULL;
 
+/* Global layout — set by layout_init, used by render functions */
+Layout g_layout;
+volatile int g_layout_refresh = 0;
+volatile int g_layout_changed = 0;  /* layout refresh → skip clear/sleep */
+
 /* Font sizes in pt — read from layout at runtime */
 #define FONT_SIZE_DATE    (g_layout.date_pt)
 #define FONT_SIZE_TIME    (g_layout.time_pt)
@@ -598,12 +603,6 @@ char cached_weather_t[32]  = "";
 char cached_weather_h[32]  = "";
 char cached_weather_c[32]  = "";
 char cached_weather_u[32]  = "";
-
-/* Layout — loaded from layout.json, writable via API */
-Layout g_layout;
-Layout g_pending;
-volatile int g_layout_refresh = 0;
-volatile int g_layout_changed = 0;  /* layout refresh → skip clear/sleep */
 
 /* Draw bottom edge bar (matching Bottom_edge) */
 static void draw_bottom_edge(void) {
