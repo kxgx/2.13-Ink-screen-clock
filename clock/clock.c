@@ -631,6 +631,7 @@ char cached_weather_u[32]  = "";
 
 /* Layout — loaded from layout.json, writable via API */
 Layout g_layout;
+Layout g_pending;
 volatile int g_layout_refresh = 0;
 
 /* Draw bottom edge bar (matching Bottom_edge) */

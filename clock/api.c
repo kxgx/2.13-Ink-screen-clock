@@ -38,10 +38,22 @@ extern char cached_weather_u[32];
 extern Layout g_layout;
 extern volatile int g_layout_refresh;  /* 1 = trigger full refresh */
 
+/* Pending layout — POST /layout writes here, /layout/apply commits */
+static Layout g_pending;
+static int g_has_pending = 0;  /* 1 = there are unapplied changes */
+
+/* ================================================================== */
+/* Get current layout (active or pending) for GET response             */
+/* ================================================================== */
+static Layout *current_layout(void) {
+    return g_has_pending ? &g_pending : &g_layout;
+}
+
 /* ------------------------------------------------------------------ */
 /* Build the JSON payload.  All strings are already UTF‑8 on RPi.     */
 /* ------------------------------------------------------------------ */
-static void build_json(char *buf, int bufsize) {
+static void build_json(char *buf, int bufsize, int show_pending) {
+    Layout *l = current_layout();
     /* Escape minimal set: backslash and double-quote */
 #define ESC(_s, _d) do { \
     const char *_src = (_s); char *_dst = (_d); \
@@ -78,20 +90,22 @@ static void build_json(char *buf, int bufsize) {
         "\"battery\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,"
             "\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
         "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
-        "\"bar\":{\"y\":%d,\"h\":%d}"
+        "\"bar\":{\"y\":%d,\"h\":%d},"
+        "\"%s\":%s"
         "}",
-        g_layout.screen_w, g_layout.screen_h,
-        cached_time, g_layout.time_x, g_layout.time_y, 40,
-        esc_date, g_layout.date_x, g_layout.date_y, 14,
-        esc_w, g_layout.w_data_x, g_layout.w_data_y[0],
-        esc_t, g_layout.w_data_x, g_layout.w_data_y[1],
-        esc_h, g_layout.w_data_x, g_layout.w_data_y[2],
-        esc_c, g_layout.w_data_x, g_layout.w_data_y[3],
-        cached_weather_u, g_layout.w_upd_x, g_layout.w_upd_y, 14,
-        cached_power, g_layout.bat_x, g_layout.bat_y, 10,
-        g_layout.bat_frame_x, g_layout.bat_frame_y, g_layout.bat_frame_w, g_layout.bat_frame_h,
-        cached_ip, g_layout.ip_x, g_layout.ip_y, 13,
-        g_layout.bar_y, g_layout.bar_h);
+        l->screen_w, l->screen_h,
+        cached_time, l->time_x, l->time_y, 40,
+        esc_date, l->date_x, l->date_y, 14,
+        esc_w, l->w_data_x, l->w_data_y[0],
+        esc_t, l->w_data_x, l->w_data_y[1],
+        esc_h, l->w_data_x, l->w_data_y[2],
+        esc_c, l->w_data_x, l->w_data_y[3],
+        cached_weather_u, l->w_upd_x, l->w_upd_y, 14,
+        cached_power, l->bat_x, l->bat_y, 10,
+        l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
+        cached_ip, l->ip_x, l->ip_y, 13,
+        l->bar_y, l->bar_h,
+        show_pending ? "pending" : "active", show_pending ? "true" : "false");
 
 #undef ESC
 }
@@ -131,11 +145,14 @@ static int json_get_int(const char *json, const char *key, int fallback) {
 }
 
 /* ------------------------------------------------------------------ */
-/* POST /layout — parse JSON, update, save, trigger full refresh       */
+/* POST /layout — preview: store in pending                          */
 /* ------------------------------------------------------------------ */
-static void handle_post(int fd, const char *body) {
-    Layout tmp = g_layout;
-    #define S(k, f) tmp.f = json_get_int(body, k, tmp.f)
+static void handle_preview(int fd, const char *body) {
+    if (!g_has_pending) {
+        g_pending = g_layout;  /* start from current active */
+        g_has_pending = 1;
+    }
+    #define S(k, f) g_pending.f = json_get_int(body, k, g_pending.f)
     S("time_x", time_x); S("time_y", time_y);
     S("date_x", date_x); S("date_y", date_y);
     S("w_label_x", w_label_x);
@@ -152,12 +169,36 @@ static void handle_post(int fd, const char *body) {
     S("bar_y", bar_y); S("bar_h", bar_h);
     #undef S
 
-    g_layout = tmp;
+    char json[2048];
+    build_json(json, sizeof(json), 1);
+    send_response(fd, 200, "application/json", json);
+}
+
+/* ------------------------------------------------------------------ */
+/* POST /layout/apply — commit pending to active, save, refresh       */
+/* ------------------------------------------------------------------ */
+static void handle_apply(int fd) {
+    if (!g_has_pending) {
+        send_response(fd, 200, "application/json", "{\"status\":\"no pending changes\"}");
+        return;
+    }
+    g_layout = g_pending;
     layout_save(&g_layout);
+    g_has_pending = 0;
     g_layout_refresh = 1;
 
     char json[2048];
-    build_json(json, sizeof(json));
+    build_json(json, sizeof(json), 0);
+    send_response(fd, 200, "application/json", json);
+}
+
+/* ------------------------------------------------------------------ */
+/* POST /layout/cancel — discard pending, revert to active            */
+/* ------------------------------------------------------------------ */
+static void handle_cancel(int fd) {
+    g_has_pending = 0;
+    char json[2048];
+    build_json(json, sizeof(json), 0);
     send_response(fd, 200, "application/json", json);
 }
 
@@ -210,13 +251,16 @@ void api_server_start(void) {
             buf[n] = '\0';
 
             /* Routing */
-            if (strncmp(buf, "POST /layout", 12) == 0) {
-                /* Extract body (after \r\n\r\n) */
+            if (strncmp(buf, "POST /layout/apply", 18) == 0) {
+                handle_apply(client_fd);
+            } else if (strncmp(buf, "POST /layout/cancel", 19) == 0) {
+                handle_cancel(client_fd);
+            } else if (strncmp(buf, "POST /layout", 12) == 0) {
                 char *body = strstr(buf, "\r\n\r\n");
-                handle_post(client_fd, body ? body + 4 : "{}");
+                handle_preview(client_fd, body ? body + 4 : "{}");
             } else if (strncmp(buf, "GET / ", 6) == 0 || strncmp(buf, "GET /\r\n", 7) == 0) {
                 char json[2048];
-                build_json(json, sizeof(json));
+                build_json(json, sizeof(json), g_has_pending);
                 send_response(client_fd, 200, "application/json", json);
             } else {
                 send_response(client_fd, 404, "text/plain", "{\"error\":\"not found\"}");
