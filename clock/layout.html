@@ -518,8 +518,19 @@ function getHandleSize(h) {
   ctx.font = `${_current.date_pt ?? 14}px ${FONT_CN_VAR}`;
   if (fn === 'date') { const m = ctx.measureText(_remote?.date?.text || '0000年00月00日'); return {w: Math.ceil(m.width) + 4, h: _current.date_pt ?? 14}; }
   ctx.font = `${_current.weather_pt ?? 14}px ${FONT_CN_VAR}`;
-  if (fn === 'wlabel') { const m = ctx.measureText('天气:'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
-  if (fn === 'wdata') { const m = ctx.measureText(_remote?.weather?.desc?.text || '晴'); return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14}; }
+  if (fn === 'wlabel') {
+    const labels = ['天气:', '温度:', '湿度:', '城市:'];
+    const idx = parseInt(h.ky.slice(-1));
+    const m = ctx.measureText(labels[idx] || '天气:');
+    return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14};
+  }
+  if (fn === 'wdata') {
+    const texts = [_remote?.weather?.desc?.text, _remote?.weather?.temp?.text,
+                   _remote?.weather?.humidity?.text, _remote?.weather?.city?.text];
+    const idx = parseInt(h.ky.slice(-1));
+    const m = ctx.measureText(texts[idx] || '--');
+    return {w: Math.ceil(m.width) + 4, h: _current.weather_pt ?? 14};
+  }
   ctx.font = `${_current.ip_pt ?? 13}px ${FONT_CN_VAR}`;
   if (fn === 'wupd') { const m = ctx.measureText(_remote?.weather?.updated?.text || '07/18 12:00'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
   if (fn === 'ip') { const m = ctx.measureText(_remote?.ip?.text ? 'IP:'+_remote.ip.text : 'IP:192.168.2.103'); return {w: Math.ceil(m.width) + 2, h: _current.ip_pt ?? 13}; }
