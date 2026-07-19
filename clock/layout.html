@@ -110,10 +110,11 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
     <span class="badge" id="pending-badge">--</span>
     <span class="badge" id="conn-badge">--</span>
     <label class="auto-refresh" id="ar-label" title="自动刷新预览">
-      <input type="checkbox" id="ar-toggle" onchange="toggleAutoRefresh()"> 自动刷新
+      <input type="checkbox" id="ar-toggle" onchange="toggleAutoRefresh()" checked> 自动刷新
       <select id="ar-interval" onchange="changeInterval()" style="margin-left:4px;background:var(--input-bg);border:1px solid var(--accent);color:var(--text);font-size:11px;padding:2px 4px;border-radius:4px;">
+        <option value="3" selected>3s</option>
         <option value="10">10s</option>
-        <option value="30" selected>30s</option>
+        <option value="30">30s</option>
         <option value="60">60s</option>
       </select>
     </label>
@@ -606,7 +607,10 @@ function renderInfo() {
 // ==================== Init ====================
 document.getElementById('api-host').addEventListener('change', fetchLayout);
 buildControls();
-fetchLayout();
+fetchLayout().then(() => {
+  // Auto-refresh starts by default once connected
+  if (document.getElementById('ar-toggle').checked) startAutoRefresh();
+});
 
 function toggleAutoRefresh() {
   const cb = document.getElementById('ar-toggle');
