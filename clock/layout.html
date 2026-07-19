@@ -25,9 +25,9 @@ header h1 { font-size:18px; }
 .preview-panel { background:var(--card); border-radius:12px; padding:16px; position:sticky; top:68px; height:fit-content; }
 .preview-panel h2 { font-size:14px; color:var(--muted); margin-bottom:12px; }
 canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
-/* E-Paper screen wrap */
 .scr-wrap { position:relative; display:inline-block; line-height:0; border-radius:2px; }
 .scr-wrap canvas { display:block; }
+#drag-layer { position:absolute; inset:0; z-index:3; background:transparent; cursor:crosshair; }
 .scr-texture {
   position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:2px;
   opacity:0.30; mix-blend-mode:multiply;
@@ -126,6 +126,7 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
     <h2>屏幕预览 250×122</h2>
     <div class="scr-wrap">
       <canvas id="preview" width="250" height="122"></canvas>
+      <canvas id="drag-layer" width="250" height="122"></canvas>
       <div class="scr-texture"></div>
       <div class="scr-reflect"></div>
     </div>
@@ -349,24 +350,8 @@ function setPending(v) {
 }
 
 // ==================== UI ====================
+// Simplified: position fields are draggable on preview; keep only size/config fields
 const GROUPS = [
-  { id:'time', name:'时间', fields:[{k:'time_x',l:'X'},{k:'time_y',l:'Y'}] },
-  { id:'date', name:'日期', fields:[{k:'date_x',l:'X'},{k:'date_y',l:'Y'}] },
-  { id:'weather', name:'天气', fields:[
-    {k:'w_label_x',l:'标签 X'},
-    {k:'w_label_y0',l:'标签天气 Y'},{k:'w_label_y1',l:'标签温度 Y'},
-    {k:'w_label_y2',l:'标签湿度 Y'},{k:'w_label_y3',l:'标签城市 Y'},
-    {k:'w_data_x',l:'数据 X'},
-    {k:'w_data_y0',l:'数据天气 Y'},{k:'w_data_y1',l:'数据温度 Y'},
-    {k:'w_data_y2',l:'数据湿度 Y'},{k:'w_data_y3',l:'数据城市 Y'},
-    {k:'w_upd_x',l:'更新时间 X'},{k:'w_upd_y',l:'更新时间 Y'},
-  ]},
-  { id:'battery', name:'电池', fields:[
-    {k:'bat_x',l:'% X'},{k:'bat_y',l:'% Y'},
-    {k:'bat_frame_x',l:'框 X'},{k:'bat_frame_y',l:'框 Y'},
-    {k:'bat_frame_w',l:'框 W'},{k:'bat_frame_h',l:'框 H'},
-  ]},
-  { id:'ip', name:'IP', fields:[{k:'ip_x',l:'X'},{k:'ip_y',l:'Y'}] },
   { id:'bar', name:'底栏', fields:[{k:'bar_y',l:'Y'},{k:'bar_h',l:'H'}] },
   { id:'font', name:'字号 (pt)', fields:[
     {k:'time_pt',l:'时间'},{k:'date_pt',l:'日期'},
@@ -450,6 +435,125 @@ function updateUI() {
   _updating = false;
 }
 
+// ==================== Drag layer ====================
+const DRAG_HANDLES = [
+  { k:'time_x',ky:'time_y', label:'时间', color:'#e94560', w:80,h:28 },
+  { k:'date_x',ky:'date_y', label:'日期', color:'#00b894', w:70,h:14 },
+  { k:'w_label_x',ky:'w_label_y0', label:'标签1', color:'#0984e3' },
+  { k:'w_label_x',ky:'w_label_y1', label:'标签2', color:'#0984e3' },
+  { k:'w_label_x',ky:'w_label_y2', label:'标签3', color:'#0984e3' },
+  { k:'w_label_x',ky:'w_label_y3', label:'标签4', color:'#0984e3' },
+  { k:'w_data_x',ky:'w_data_y0', label:'数据1', color:'#6c5ce7' },
+  { k:'w_data_x',ky:'w_data_y1', label:'数据2', color:'#6c5ce7' },
+  { k:'w_data_x',ky:'w_data_y2', label:'数据3', color:'#6c5ce7' },
+  { k:'w_data_x',ky:'w_data_y3', label:'数据4', color:'#6c5ce7' },
+  { k:'w_upd_x',ky:'w_upd_y', label:'更新', color:'#fdcb6e', w:50,h:12 },
+  { k:'bat_x',ky:'bat_y', label:'电量%', color:'#e17055', w:28,h:10 },
+  { k:'bat_frame_x',ky:'bat_frame_y', label:'框', color:'#d63031', w:29,h:11 },
+  { k:'ip_x',ky:'ip_y', label:'IP', color:'#636e72', w:80,h:12 },
+];
+let _dragIdx = -1, _dragOffX = 0, _dragOffY = 0;
+
+function drawHandles() {
+  const c = document.getElementById('drag-layer');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 250, 122);
+  if (!_current || !Object.keys(_current).length) return;
+
+  DRAG_HANDLES.forEach((h, i) => {
+    const x = _current[h.k] ?? 0;
+    const y = _current[h.ky] ?? 0;
+    const w = h.w || 10, ht = h.h || 10;
+    ctx.fillStyle = h.color + '44';
+    ctx.fillRect(x, y, w, ht);
+    ctx.strokeStyle = h.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w, ht);
+    // Label
+    ctx.fillStyle = '#000';
+    ctx.font = '9px monospace';
+    ctx.fillText(h.label, x + 2, y - 2);
+  });
+}
+
+function getHandleAt(mx, my) {
+  for (let i = DRAG_HANDLES.length - 1; i >= 0; i--) {
+    const h = DRAG_HANDLES[i];
+    const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
+    const w = h.w || 10, ht = h.h || 10;
+    if (mx >= x && mx <= x + w && my >= y && my <= y + ht) return i;
+  }
+  return -1;
+}
+
+function setupDragLayer() {
+  const c = document.getElementById('drag-layer');
+  if (!c) return;
+
+  const getPos = e => {
+    const r = c.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  };
+
+  const onDown = e => {
+    const {x, y} = getPos(e);
+    _dragIdx = getHandleAt(x, y);
+    if (_dragIdx >= 0) {
+      const h = DRAG_HANDLES[_dragIdx];
+      _dragOffX = Math.round(x) - (_current[h.k] ?? 0);
+      _dragOffY = Math.round(y) - (_current[h.ky] ?? 0);
+      c.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  };
+
+  const onMove = e => {
+    if (_dragIdx < 0) {
+      const {x, y} = getPos(e);
+      c.style.cursor = getHandleAt(x, y) >= 0 ? 'grab' : 'crosshair';
+      return;
+    }
+    const {x, y} = getPos(e);
+    const h = DRAG_HANDLES[_dragIdx];
+    const nx = Math.max(0, Math.min(250 - (h.w || 10), Math.round(x) - _dragOffX));
+    const ny = Math.max(0, Math.min(122 - (h.h || 10), Math.round(y) - _dragOffY));
+    _current[h.k] = nx;
+    _current[h.ky] = ny;
+    // Sync label cols: w_label_x / w_data_x
+    if (h.k === 'w_label_x') {
+      for (let i = 0; i < 4; i++) _current['w_label_y'+i] = ny + i * 20;
+    }
+    if (h.k === 'w_data_x') {
+      for (let i = 0; i < 4; i++) _current['w_data_y'+i] = ny + i * 20;
+    }
+    drawHandles();
+    drawNow();
+    updateUI();
+    e.preventDefault();
+  };
+
+  const onUp = () => {
+    _dragIdx = -1;
+    c.style.cursor = 'crosshair';
+  };
+
+  c.addEventListener('mousedown', onDown);
+  c.addEventListener('mousemove', onMove);
+  c.addEventListener('mouseup', onUp);
+  c.addEventListener('mouseleave', onUp);
+  // Touch
+  c.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    onDown({clientX: t.clientX, clientY: t.clientY, preventDefault: ()=>e.preventDefault()});
+  }, {passive: false});
+  c.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    onMove({clientX: t.clientX, clientY: t.clientY, preventDefault: ()=>e.preventDefault()});
+  }, {passive: false});
+  c.addEventListener('touchend', onUp);
+}
+
 // ==================== Preview ====================
 let _updating = false;
 
@@ -472,10 +576,11 @@ function drawNow() {
     prev.weather.updated.x = c.w_upd_x;   prev.weather.updated.y = c.w_upd_y;
   }
   drawPreview(prev);
+  drawHandles();
 }
 
 function drawPreview(data) {
-  try { _draw(data); } catch(e) { console.error('drawPreview error:', e); }
+  try { _draw(data); drawHandles(); } catch(e) { console.error('drawPreview error:', e); }
 }
 
 function _draw(data) {
@@ -607,6 +712,7 @@ function renderInfo() {
 // ==================== Init ====================
 document.getElementById('api-host').addEventListener('change', fetchLayout);
 buildControls();
+setupDragLayer();
 fetchLayout().then(() => {
   // Auto-refresh starts by default once connected
   if (document.getElementById('ar-toggle').checked) startAutoRefresh();
