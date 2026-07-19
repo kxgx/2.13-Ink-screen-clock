@@ -819,7 +819,9 @@ static void partial_refresh(EPD *epd) {
         char current_power[16];
         get_power_str(current_power, sizeof(current_power));
         if (strcmp(current_power, cached_power) != 0) {
-            fb_fill_rect(g_layout.bat_x - 6, g_layout.bat_y - 2, 27, 10, 0);
+            /* Erase inside frame only — avoid overwriting white borders */
+            fb_fill_rect(g_layout.bat_frame_x + 1, g_layout.bat_frame_y + 1,
+                         g_layout.bat_frame_w - 3, g_layout.bat_frame_h - 2, 0);
             ft_render_text(g_layout.bat_x, g_layout.bat_y, current_power, FONT_SIZE_SMALL, 0, 1, 64);
             snprintf(cached_power, sizeof(cached_power), "%s", current_power);
             need_refresh = 1;
