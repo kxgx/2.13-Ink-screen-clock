@@ -645,15 +645,23 @@ static void draw_bottom_edge(void) {
     fb_draw_line(bx, by + 1, bx, by + bh - 1, 1);
     fb_draw_line(bx + 1, by + bh - 1, bx + bw - 1, by + bh - 1, 1);
     fb_draw_line(bx + bw - 1, by + 1, bx + bw - 1, by + bh - 2, 1);
-    fb_draw_line(bx + bw, by + 3, bx + bw + 2, by + 3, 1);
-    fb_draw_line(bx + bw, by + 7, bx + bw + 2, by + 7, 1);
-    fb_draw_line(bx + bw + 2, by + 4, bx + bw + 2, by + 6, 1);
+    /* Battery positive terminal tab — scale with frame height */
+    int tab_y1 = by + bh / 4, tab_y2 = by + bh * 3 / 4;
+    int tab_w = bh / 4 > 0 ? bh / 4 : 2;
+    fb_draw_line(bx + bw, tab_y1, bx + bw + tab_w, tab_y1, 1);
+    fb_draw_line(bx + bw, tab_y2, bx + bw + tab_w, tab_y2, 1);
+    fb_draw_line(bx + bw + tab_w, tab_y1 + 1, bx + bw + tab_w, tab_y2 - 1, 1);
 
     ft_render_text(g_layout.bat_x, g_layout.bat_y, cached_power, FONT_SIZE_SMALL, 0, 1, 64);
 
-    fb_draw_ellipse(199, by + 5, 7, 6, 1, 1);
-    fb_draw_line(199, by + 1, 199, by + 6, 0);
-    fb_draw_line(200, by + 6, 204, by + 6, 0);
+    /* Lightning bolt icon — position after battery text, size proportional to font */
+    int lx = g_layout.bat_x + ft_measure_text(cached_power, FONT_SIZE_SMALL, 0) + 3;
+    int ly = by + bh / 2;
+    int lrx = FONT_SIZE_SMALL * 7 / 10;  /* ≈7 at 10pt */
+    int lry = FONT_SIZE_SMALL * 6 / 10;  /* ≈6 at 10pt */
+    fb_draw_ellipse(lx, ly, lrx, lry, 1, 1);
+    fb_draw_line(lx, ly - lry + 1, lx, ly + 1, 0);
+    fb_draw_line(lx + 1, ly + 1, lx + lrx, ly + 1, 0);
 
     char ip[32];
     get_ip_str(ip, sizeof(ip));
