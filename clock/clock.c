@@ -633,6 +633,7 @@ char cached_weather_u[32]  = "";
 Layout g_layout;
 Layout g_pending;
 volatile int g_layout_refresh = 0;
+volatile int g_layout_changed = 0;  /* layout refresh → skip clear/sleep */
 
 /* Draw bottom edge bar (matching Bottom_edge) */
 static void draw_bottom_edge(void) {
@@ -731,6 +732,7 @@ static void partial_refresh(EPD *epd) {
         /* ---- Layout refresh check (triggered by API POST) ---- */
         if (g_layout_refresh) {
             g_layout_refresh = 0;
+            g_layout_changed = 1;  /* skip clear/sleep in main loop */
             printf("Layout changed — full refresh\n");
             break;  /* exit partial loop, re-enter basic_refresh */
         }
@@ -903,6 +905,14 @@ int main(void) {
 
         printf("Entering partial refresh loop...\n");
         partial_refresh(&epd);
+
+        /* Layout change from API — skip clear/sleep, just redo basic_refresh */
+        if (g_layout_changed) {
+            g_layout_changed = 0;
+            EPD_2in13_V4_Sleep(&epd);
+            printf("Layout applied — immediate refresh\n");
+            continue;
+        }
 
         g_epd = NULL;
         EPD_2in13_V4_Init(&epd);
