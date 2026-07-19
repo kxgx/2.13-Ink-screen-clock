@@ -86,6 +86,12 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 .upload-status.err { color:var(--hl); }
 .auto-refresh { display:flex; align-items:center; gap:2px; font-size:12px; color:var(--muted); cursor:pointer; user-select:none; }
 .auto-refresh input[type=checkbox] { accent-color:var(--ok); cursor:pointer; }
+.pos-table { width:100%; border-collapse:collapse; font:11px/1.4 monospace; margin-top:8px; }
+.pos-table th,.pos-table td { padding:2px 4px; text-align:right; }
+.pos-table th { color:var(--muted); font-weight:400; font-size:10px; border-bottom:1px solid var(--accent); }
+.pos-table th:first-child,.pos-table td:first-child { text-align:left; color:var(--muted); }
+.pos-table td { color:var(--ok); }
+.pos-table td.mod { color:var(--warn); }
 
 @font-face {
   font-family:'DSEG';
@@ -135,6 +141,7 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
     </div>
     <div class="err-msg" id="err-msg"></div>
     <div class="preview-info" id="info"></div>
+    <table class="pos-table" id="pos-table"><thead><tr><th>元素</th><th>X</th><th>Y</th></tr></thead><tbody></tbody></table>
   </div>
   <div class="controls" id="controls"></div>
 </div>
@@ -496,10 +503,11 @@ function drawHandles() {
     ctx.setLineDash([3, 3]);
     ctx.strokeRect(x + 0.5, y + 0.5, s.w, s.h);
     ctx.setLineDash([]);
-    // Label
+    // Label with coordinates
     ctx.fillStyle = '#e94560';
-    ctx.font = '9px monospace';
-    ctx.fillText(h.label, x, y - 2);
+    ctx.font = 'bold 9px monospace';
+    const tx = _current[h.k] ?? 0, ty = _current[h.ky] ?? 0;
+    ctx.fillText(`${h.label} (${tx}, ${ty})`, x, y - 2);
   }
 }
 
@@ -589,6 +597,28 @@ function setupDragLayer() {
 // ==================== Preview ====================
 let _updating = false;
 
+function updatePositionDisplay() {
+  const tbody = document.querySelector('#pos-table tbody');
+  if (!tbody || !_current || !Object.keys(_current).length) return;
+  // Deduplicate: group handles sharing same X key
+  const seen = {};
+  const rows = [];
+  DRAG_HANDLES.forEach(h => {
+    if (seen[h.k]) return;
+    seen[h.k] = true;
+    const x = _current[h.k] ?? 0, y = _current[h.ky] ?? 0;
+    const xMod = _original[h.k] !== undefined && x !== _original[h.k];
+    const yMod = _original[h.ky] !== undefined && y !== _original[h.ky];
+    rows.push(`<tr><td>${h.label}</td><td class="${xMod?'mod':''}">${x}</td><td class="${yMod?'mod':''}">${y}</td></tr>`);
+  });
+  // Also bar
+  if (_current.bar_y !== undefined) {
+    rows.push(`<tr><td>底栏Y</td><td>--</td><td>${_current.bar_y}</td></tr>`);
+    rows.push(`<tr><td>底栏H</td><td>--</td><td>${_current.bar_h}</td></tr>`);
+  }
+  tbody.innerHTML = rows.join('');
+}
+
 function drawNow() {
   if (!_remote || !Object.keys(_remote).length) return;
   const prev = JSON.parse(JSON.stringify(_remote));
@@ -608,11 +638,10 @@ function drawNow() {
     prev.weather.updated.x = c.w_upd_x;   prev.weather.updated.y = c.w_upd_y;
   }
   drawPreview(prev);
-  drawHandles();
 }
 
 function drawPreview(data) {
-  try { _draw(data); drawHandles(); } catch(e) { console.error('drawPreview error:', e); }
+  try { _draw(data); drawHandles(); updatePositionDisplay(); } catch(e) { console.error('drawPreview error:', e); }
 }
 
 function _draw(data) {
