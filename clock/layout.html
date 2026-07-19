@@ -25,8 +25,8 @@ header h1 { font-size:18px; }
 .preview-panel { background:var(--card); border-radius:12px; padding:16px; position:sticky; top:68px; height:fit-content; }
 .preview-panel h2 { font-size:14px; color:var(--muted); margin-bottom:12px; }
 canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
-.scr-wrap { position:relative; display:inline-block; line-height:0; border-radius:2px; transform:scale(var(--s,2)); transform-origin:top left; margin-bottom:calc((var(--s,2) - 1) * 122px); }
-.scr-wrap canvas { display:block; }
+.scr-wrap { position:relative; display:block; line-height:0; border-radius:2px; width:100%; max-width:500px; margin:0 auto; }
+.scr-wrap canvas { display:block; width:100%; height:auto; aspect-ratio:250/122; image-rendering:pixelated; }
 #drag-layer { position:absolute; inset:0; z-index:3; background:transparent; cursor:crosshair; }
 .scr-texture {
   position:absolute; inset:0; pointer-events:none; z-index:1; border-radius:2px;
@@ -95,7 +95,6 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 @media (max-width:768px) {
   .main { grid-template-columns:1fr; }
   .preview-panel { position:static; }
-  .scr-wrap { --s:1.5; }
 }
 @media (min-width:1200px) {
   .scr-wrap { --s:3; }
@@ -520,7 +519,7 @@ function setupDragLayer() {
 
   const getPos = e => {
     const r = c.getBoundingClientRect();
-    const s = parseFloat(getComputedStyle(c.parentElement).getPropertyValue('--s')) || 2;
+    const s = r.width / 250;  // canvas display width / internal width
     return { x: (e.clientX - r.left) / s, y: (e.clientY - r.top) / s };
   };
 
