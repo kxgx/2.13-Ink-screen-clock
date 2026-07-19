@@ -204,6 +204,11 @@ function extractPos(json) {
   p.bat_frame_w = json.battery.frame.w; p.bat_frame_h = json.battery.frame.h;
   p.ip_x = json.ip.x; p.ip_y = json.ip.y;
   p.bar_y = json.bar.y; p.bar_h = json.bar.h;
+  p.time_pt    = json.time.pt    ?? _current.time_pt    ?? 40;
+  p.date_pt    = json.date.pt    ?? _current.date_pt    ?? 14;
+  p.weather_pt = json.weather.pt ?? _current.weather_pt ?? 14;
+  p.small_pt   = json.battery.pt ?? _current.small_pt   ?? 10;
+  p.ip_pt      = json.ip.pt      ?? _current.ip_pt      ?? 13;
   return p;
 }
 
@@ -248,6 +253,11 @@ const GROUPS = [
   ]},
   { id:'ip', name:'IP', fields:[{k:'ip_x',l:'X'},{k:'ip_y',l:'Y'}] },
   { id:'bar', name:'底栏', fields:[{k:'bar_y',l:'Y'},{k:'bar_h',l:'H'}] },
+  { id:'font', name:'字号 (pt)', fields:[
+    {k:'time_pt',l:'时间'},{k:'date_pt',l:'日期'},
+    {k:'weather_pt',l:'天气'},{k:'small_pt',l:'电池'},
+    {k:'ip_pt',l:'IP/更新'},
+  ]},
 ];
 
 function buildControls() {
@@ -338,17 +348,18 @@ function _draw(data) {
   const barY = data.bar?.y ?? 105, barH = data.bar?.h ?? 17;
   ctx.fillStyle = '#111'; ctx.fillRect(0, barY, 250, barH);
 
-  // Time — 40pt DSEG
+  // Time
   ctx.fillStyle = '#000';
-  text(data.time.text, data.time.x, data.time.y, 40, FONT_TIME);
+  text(data.time.text, data.time.x, data.time.y, _current.time_pt ?? 40, FONT_TIME);
 
-  // Date — 14pt Chinese
-  text(data.date.text, data.date.x, data.date.y, 14, FONT_CN);
+  // Date
+  text(data.date.text, data.date.x, data.date.y, _current.date_pt ?? 14, FONT_CN);
 
   // Weather
   const w = data.weather;
   if (w) {
     ctx.fillStyle = '#333';
+    const wp = _current.weather_pt ?? 14;
     const labels = w.labels || ['天气:','温度:','湿度:','城市:'];
     const lx = _current.w_label_x ?? 150, dx = _current.w_data_x ?? 195;
     [
@@ -357,26 +368,27 @@ function _draw(data) {
       [labels[2], w.humidity.text],
       [labels[3], w.city.text],
     ].forEach(([lb, val], i) => {
-      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), 14, FONT_CN);
-      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), 14, FONT_CN);
+      text(lb, lx, _current['w_label_y'+i] ?? (25+i*20), wp, FONT_CN);
+      text(val, dx, _current['w_data_y'+i] ?? (25+i*20), wp, FONT_CN);
     });
 
     // Update time in bar
+    const ip = _current.ip_pt ?? 13;
     ctx.fillStyle = '#aaa';
-    text(w.updated.text, w.updated.x, w.updated.y, 13, FONT_CN);
+    text(w.updated.text, w.updated.x, w.updated.y, ip, FONT_CN);
   }
 
   // Battery in bar (white on black)
   const b = data.battery;
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
-  text(b.text, b.x, b.y, 10, FONT_CN);
+  text(b.text, b.x, b.y, _current.small_pt ?? 10, FONT_CN);
   ctx.strokeRect(b.frame.x, b.frame.y, b.frame.w, b.frame.h);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+3, 3, 3);
   ctx.fillRect(b.frame.x+b.frame.w, b.frame.y+7, 3, 3);
 
   // IP in bar
-  text('IP:'+data.ip.text, data.ip.x, data.ip.y, 13, FONT_CN);
+  text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN);
 }
 
 function renderInfo() {

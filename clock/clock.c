@@ -80,12 +80,12 @@ static stbtt_fontinfo font_dseg;
 static unsigned char *font_ttc_buf = NULL;
 static unsigned char *font_dseg_buf = NULL;
 
-/* Font sizes in pt */
-#define FONT_SIZE_DATE   14   /* font02 */
-#define FONT_SIZE_TIME   40   /* font03 - DSEG7Modern-Bold */
-#define FONT_SIZE_SMALL  10   /* font04 */
-#define FONT_SIZE_IP     13   /* font05 */
-#define FONT_SIZE_WEATHER 14  /* font06 */
+/* Font sizes in pt — read from layout at runtime */
+#define FONT_SIZE_DATE    (g_layout.date_pt)
+#define FONT_SIZE_TIME    (g_layout.time_pt)
+#define FONT_SIZE_SMALL   (g_layout.small_pt)
+#define FONT_SIZE_IP      (g_layout.ip_pt)
+#define FONT_SIZE_WEATHER (g_layout.weather_pt)
 
 /* =========================================================================
  * Framebuffer drawing primitives

@@ -37,6 +37,13 @@ typedef struct {
 
     /* black bottom bar */
     int bar_y, bar_h;
+
+    /* font sizes (pt) */
+    int time_pt;       /* DSEG, default 40 */
+    int date_pt;       /* default 14 */
+    int weather_pt;    /* default 14 */
+    int small_pt;      /* battery, default 10 */
+    int ip_pt;         /* default 13 */
 } Layout;
 
 /* Filename for persistent storage (relative to CWD = clock/) */

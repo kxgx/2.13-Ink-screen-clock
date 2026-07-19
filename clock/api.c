@@ -100,16 +100,16 @@ static void build_json(char *buf, int bufsize, int show_pending) {
         "\"%s\":%s"
         "}",
         l->screen_w, l->screen_h,
-        cached_time, l->time_x, l->time_y, 40,
-        esc_date, l->date_x, l->date_y, 14,
+        cached_time, l->time_x, l->time_y, l->time_pt,
+        esc_date, l->date_x, l->date_y, l->date_pt,
         esc_w, l->w_data_x, l->w_data_y[0],
         esc_t, l->w_data_x, l->w_data_y[1],
         esc_h, l->w_data_x, l->w_data_y[2],
         esc_c, l->w_data_x, l->w_data_y[3],
-        cached_weather_u, l->w_upd_x, l->w_upd_y, 14,
-        cached_power, l->bat_x, l->bat_y, 10,
+        cached_weather_u, l->w_upd_x, l->w_upd_y, l->weather_pt,
+        cached_power, l->bat_x, l->bat_y, l->small_pt,
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
-        cached_ip, l->ip_x, l->ip_y, 13,
+        cached_ip, l->ip_x, l->ip_y, l->ip_pt,
         l->bar_y, l->bar_h,
         show_pending ? "pending" : "active", show_pending ? "true" : "false");
 
@@ -199,6 +199,8 @@ static void handle_preview(int fd, const char *body) {
     S("bat_frame_w", bat_frame_w); S("bat_frame_h", bat_frame_h);
     S("ip_x", ip_x); S("ip_y", ip_y);
     S("bar_y", bar_y); S("bar_h", bar_h);
+    S("time_pt", time_pt); S("date_pt", date_pt);
+    S("weather_pt", weather_pt); S("small_pt", small_pt); S("ip_pt", ip_pt);
     #undef S
 
     char json[2048];

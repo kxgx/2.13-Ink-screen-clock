@@ -48,6 +48,12 @@ static void set_defaults(Layout *l) {
 
     l->bar_y = 105;
     l->bar_h = 17;
+
+    l->time_pt = 40;
+    l->date_pt = 14;
+    l->weather_pt = 14;
+    l->small_pt = 10;
+    l->ip_pt = 13;
 }
 
 /* ================================================================== */
@@ -111,6 +117,12 @@ int layout_init(Layout *l) {
     l->bar_y = json_get_int(buf, "bar_y", l->bar_y);
     l->bar_h = json_get_int(buf, "bar_h", l->bar_h);
 
+    l->time_pt    = json_get_int(buf, "time_pt",    l->time_pt);
+    l->date_pt    = json_get_int(buf, "date_pt",    l->date_pt);
+    l->weather_pt = json_get_int(buf, "weather_pt", l->weather_pt);
+    l->small_pt   = json_get_int(buf, "small_pt",   l->small_pt);
+    l->ip_pt      = json_get_int(buf, "ip_pt",      l->ip_pt);
+
     free(buf);
     printf("Layout loaded from %s\n", LAYOUT_FILE);
     return 0;
@@ -133,7 +145,8 @@ int layout_save(const Layout *l) {
         "  \"bat_x\":%d,\"bat_y\":%d,\n"
         "  \"bat_frame_x\":%d,\"bat_frame_y\":%d,\"bat_frame_w\":%d,\"bat_frame_h\":%d,\n"
         "  \"ip_x\":%d,\"ip_y\":%d,\n"
-        "  \"bar_y\":%d,\"bar_h\":%d\n"
+        "  \"bar_y\":%d,\"bar_h\":%d,\n"
+        "  \"time_pt\":%d,\"date_pt\":%d,\"weather_pt\":%d,\"small_pt\":%d,\"ip_pt\":%d\n"
         "}\n",
         l->time_x, l->time_y,
         l->date_x, l->date_y,
@@ -145,7 +158,8 @@ int layout_save(const Layout *l) {
         l->bat_x, l->bat_y,
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         l->ip_x, l->ip_y,
-        l->bar_y, l->bar_h);
+        l->bar_y, l->bar_h,
+        l->time_pt, l->date_pt, l->weather_pt, l->small_pt, l->ip_pt);
 
     fclose(fp);
     printf("Layout saved to %s\n", LAYOUT_FILE);
