@@ -58,21 +58,28 @@ static void build_json(char *buf, int bufsize) {
 
     snprintf(buf, bufsize,
         "{"
-        "\"time\":\"%s\","
-        "\"date\":\"%s\","
+        "\"screen\":{\"width\":%d,\"height\":%d},"
+        "\"time\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,\"font\":\"DSEG\"},"
+        "\"date\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
         "\"weather\":{"
-            "\"desc\":\"%s\","
-            "\"temp\":\"%s\","
-            "\"humidity\":\"%s\","
-            "\"city\":\"%s\","
-            "\"updated\":\"%s\""
+            "\"desc\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
+            "\"temp\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
+            "\"humidity\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
+            "\"city\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
+            "\"updated\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
+            "\"labels\":[\"天气:\",\"温度:\",\"湿度:\",\"城市:\"],"
+            "\"pt\":%d"
         "},"
-        "\"battery\":\"%s\","
-        "\"ip\":\"%s\""
+        "\"battery\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
+        "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d}"
         "}",
-        cached_time, esc_date,
-        esc_w, esc_t, esc_h, esc_c, cached_weather_u,
-        cached_power, cached_ip);
+        250, 122,
+        cached_time, -1, 40, 40,
+        esc_date, 2, 2, 14,
+        esc_w, 195, 25, esc_t, 195, 45, esc_h, 195, 65, esc_c, 195, 85,
+        cached_weather_u, 211, 109, 14,
+        cached_power, 128, 108, 10, 126, 108, 29, 11,
+        cached_ip, 10, 109, 13);
 
 #undef ESC
 }
