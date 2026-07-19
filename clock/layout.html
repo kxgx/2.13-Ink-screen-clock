@@ -215,6 +215,7 @@ async function fetchLayout() {
     _original = extractPos(_remote);
     _current  = { ..._original };
     updateUI();
+    await document.fonts.ready;
     drawPreview();
     renderInfo();
     setPending(!!_remote.pending);
@@ -298,7 +299,9 @@ async function postApply() {
   try {
     const data = await apiFetch('/layout/apply', { method:'POST' });
     _original = extractPos(data); _current = { ..._original }; _remote = data;
-    updateUI(); setPending(false); drawPreview(); renderInfo();
+    updateUI(); setPending(false);
+    await document.fonts.ready;
+    drawPreview(); renderInfo();
   } catch(e) { showErr('应用失败: '+e.message); }
 }
 
