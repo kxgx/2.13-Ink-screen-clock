@@ -389,7 +389,54 @@ function _draw(data) {
 
   // IP in bar
   text('IP:'+data.ip.text, data.ip.x, data.ip.y, _current.ip_pt ?? 13, FONT_CN);
+
+  // --- 1-bit threshold: simulate e-Paper pixels ---
+  toEpaper(ctx);
 }
+
+/* Convert canvas to 1-bit (pure black/white) with Floyd-Steinberg dither */
+function toEpaper(ctx) {
+  const w = 250, h = 122;
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      // Use luminance: typical sRGB weights
+      const old = d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114;
+      const bw = old > 127 ? 255 : 0;
+      const err = old - bw;
+      d[i] = d[i+1] = d[i+2] = bw;
+      // Floyd-Steinberg error diffusion (fast integer arithmetic)
+      if (x + 1 < w) {
+        const n = i + 4;
+        d[n]   = clamp(d[n]   + err * 7/16);
+        d[n+1] = clamp(d[n+1] + err * 7/16);
+        d[n+2] = clamp(d[n+2] + err * 7/16);
+      }
+      if (y + 1 < h) {
+        if (x > 0) {
+          const s = i + w*4 - 4;
+          d[s]   = clamp(d[s]   + err * 3/16);
+          d[s+1] = clamp(d[s+1] + err * 3/16);
+          d[s+2] = clamp(d[s+2] + err * 3/16);
+        }
+        const s = i + w*4;
+        d[s]   = clamp(d[s]   + err * 5/16);
+        d[s+1] = clamp(d[s+1] + err * 5/16);
+        d[s+2] = clamp(d[s+2] + err * 5/16);
+        if (x + 1 < w) {
+          const e = i + w*4 + 4;
+          d[e]   = clamp(d[e]   + err * 1/16);
+          d[e+1] = clamp(d[e+1] + err * 1/16);
+          d[e+2] = clamp(d[e+2] + err * 1/16);
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+function clamp(v) { return v < 0 ? 0 : v > 255 ? 255 : v; }
 
 function renderInfo() {
   const data = _remote;
