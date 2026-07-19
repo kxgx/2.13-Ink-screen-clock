@@ -18,7 +18,7 @@ LIB_FILE  = $(LIB_DIR)/lib/libwaveshare_epd.a
 BUILD_DIR = build
 TARGET    = $(BUILD_DIR)/epd_clock
 
-SRCS      = clock.c lunar.c
+SRCS      = clock.c lunar.c api.c
 OBJS      = $(SRCS:%.c=$(BUILD_DIR)/%.o)
 
 .PHONY: all clean run clock
@@ -37,7 +37,7 @@ $(LIB_FILE):
 $(TARGET): $(OBJS) stb_truetype.h $(LIB_FILE)
 	@echo "  LD    $@"
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) \
-		-L$(LIB_DIR)/lib -lwaveshare_epd -lm
+		-L$(LIB_DIR)/lib -lwaveshare_epd -lm -lpthread
 	@echo "  Build complete: $@"
 	@echo "  Run: sudo ./$@"
 

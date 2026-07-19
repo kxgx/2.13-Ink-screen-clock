@@ -22,8 +22,10 @@
 #include <time.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include "lunar.h"
+#include "api.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
@@ -615,16 +617,16 @@ static int read_weather(WeatherData *w) {
  * Display content drawing (matching Python display functions)
  * ========================================================================= */
 
-/* Cached values for partial refresh comparison */
-static char cached_date[128]    = "";
-static char cached_time[8]      = "";
-static char cached_ip[32]       = "";
-static char cached_power[16]    = "";
-static char cached_weather_w[32]  = "";
-static char cached_weather_t[32]  = "";
-static char cached_weather_h[32]  = "";
-static char cached_weather_c[32]  = "";
-static char cached_weather_u[32]  = "";
+/* Cached values for partial refresh comparison — extern for api.c */
+char cached_date[128]    = "";
+char cached_time[8]      = "";
+char cached_ip[32]       = "";
+char cached_power[16]    = "";
+char cached_weather_w[32]  = "";
+char cached_weather_t[32]  = "";
+char cached_weather_h[32]  = "";
+char cached_weather_c[32]  = "";
+char cached_weather_u[32]  = "";
 
 /* Draw bottom edge bar (matching Bottom_edge) */
 static void draw_bottom_edge(void) {
@@ -866,6 +868,11 @@ int main(void) {
 
     printf("Ink Screen Clock - C Version\n");
     printf("=============================\n");
+
+    /* Start HTTP API server thread */
+    pthread_t api_tid;
+    pthread_create(&api_tid, NULL, (void *(*)(void *))api_server_start, NULL);
+    pthread_detach(api_tid);
 
     /* Weather update is handled by start.sh */
 
