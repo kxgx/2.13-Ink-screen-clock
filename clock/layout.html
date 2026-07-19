@@ -25,7 +25,7 @@ header h1 { font-size:18px; }
 .preview-panel { background:var(--card); border-radius:12px; padding:16px; position:sticky; top:68px; height:fit-content; }
 .preview-panel h2 { font-size:14px; color:var(--muted); margin-bottom:12px; }
 canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
-.scr-wrap { position:relative; display:inline-block; line-height:0; border-radius:2px; }
+.scr-wrap { position:relative; display:inline-block; line-height:0; border-radius:2px; transform:scale(var(--s,2)); transform-origin:top left; margin-bottom:calc((var(--s,2) - 1) * 122px); }
 .scr-wrap canvas { display:block; }
 #drag-layer { position:absolute; inset:0; z-index:3; background:transparent; cursor:crosshair; }
 .scr-texture {
@@ -95,6 +95,10 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 @media (max-width:768px) {
   .main { grid-template-columns:1fr; }
   .preview-panel { position:static; }
+  .scr-wrap { --s:1.5; }
+}
+@media (min-width:1200px) {
+  .scr-wrap { --s:3; }
 }
 </style>
 </head>
@@ -516,7 +520,8 @@ function setupDragLayer() {
 
   const getPos = e => {
     const r = c.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    const s = parseFloat(getComputedStyle(c.parentElement).getPropertyValue('--s')) || 2;
+    return { x: (e.clientX - r.left) / s, y: (e.clientY - r.top) / s };
   };
 
   const onDown = e => {
