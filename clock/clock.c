@@ -649,7 +649,7 @@ static void draw_bottom_edge(void) {
     fb_draw_line(bx + bw, by + 7, bx + bw + 2, by + 7, 1);
     fb_draw_line(bx + bw + 2, by + 4, bx + bw + 2, by + 6, 1);
 
-    ft_render_text(g_layout.bat_x, g_layout.bat_y, power, FONT_SIZE_SMALL, 0, 1, 64);
+    ft_render_text(g_layout.bat_x, g_layout.bat_y, cached_power, FONT_SIZE_SMALL, 0, 1, 64);
 
     fb_draw_ellipse(199, by + 5, 7, 6, 1, 1);
     fb_draw_line(199, by + 1, 199, by + 6, 0);
