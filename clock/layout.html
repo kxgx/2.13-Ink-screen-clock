@@ -76,6 +76,14 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 .dot.off { background:var(--hl); }
 .err-msg { font-size:12px; color:var(--hl); margin-top:8px; display:none; }
 .err-msg.show { display:block; }
+.upload-zone { border:2px dashed var(--accent); border-radius:8px; padding:16px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; margin-top:8px; }
+.upload-zone:hover, .upload-zone.dragover { border-color:var(--ok); background:rgba(0,184,148,0.08); }
+.upload-zone input[type=file] { display:none; }
+.upload-zone .up-icon { font-size:24px; margin-bottom:4px; }
+.upload-zone .up-text { font-size:12px; color:var(--muted); }
+.upload-status { font-size:11px; margin-top:4px; text-align:center; }
+.upload-status.ok { color:var(--ok); }
+.upload-status.err { color:var(--hl); }
 
 @font-face {
   font-family:'DSEG';
@@ -216,6 +224,34 @@ function populateFontSelect(id, fonts, current) {
   });
 }
 
+async function uploadFont(file) {
+  const st = document.getElementById('up-status');
+  if (!file) return;
+  // Client-side extension check
+  const name = file.name.toLowerCase();
+  if (!name.endsWith('.ttf') && !name.endsWith('.ttc')) {
+    st.textContent = '只允许 .ttf / .ttc 文件'; st.className = 'upload-status err';
+    return;
+  }
+  st.textContent = '上传中...'; st.className = 'upload-status';
+  try {
+    const url = `http://${_host()}/fonts/upload/${encodeURIComponent(file.name)}`;
+    const res = await fetch(url, { method:'POST', body: file, signal: AbortSignal.timeout(30000) });
+    if (!res.ok) {
+      const err = await res.json().catch(()=>({error:'HTTP '+res.status}));
+      throw new Error(err.error || 'HTTP '+res.status);
+    }
+    const data = await res.json();
+    st.textContent = `✓ ${data.name} (${(data.size/1024).toFixed(1)} KB) 上传成功`; st.className = 'upload-status ok';
+    // Refresh font list
+    loadFontList();
+    // Reset file input
+    document.getElementById('upfile').value = '';
+  } catch(e) {
+    st.textContent = '上传失败: '+e.message; st.className = 'upload-status err';
+  }
+}
+
 async function postPreview() {
   showErr('');
   const diff = getDiff();
@@ -351,6 +387,31 @@ function buildControls() {
       }).join('')}
       </div>
     </div>`).join('');
+  // Append upload zone after controls
+  document.getElementById('controls').insertAdjacentHTML('beforeend', `
+    <div class="group open" id="group-upload">
+      <div class="group-head" onclick="document.getElementById('group-upload').classList.toggle('open')">
+        <h3>上传字体</h3><span class="icon">&#9660;</span>
+      </div>
+      <div class="group-body" style="display:block">
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('upfile').click()">
+          <div class="up-icon">&#128194;</div>
+          <div class="up-text">点击或拖放 .ttf / .ttc 文件到这里</div>
+          <input type="file" id="upfile" accept=".ttf,.ttc" onchange="uploadFont(this.files[0])">
+        </div>
+        <div class="upload-status" id="up-status"></div>
+      </div>
+    </div>
+  `);
+  // Drag & drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) uploadFont(f);
+  });
 }
 
 function onFieldChange(inp) {

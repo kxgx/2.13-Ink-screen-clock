@@ -290,6 +290,50 @@ static void handle_fonts(int fd) {
 }
 
 /* ------------------------------------------------------------------ */
+/* POST /fonts/upload/filename  — upload a font file (.ttf/.ttc)      */
+/* ------------------------------------------------------------------ */
+static void handle_upload(int fd, const char *req, int req_len) {
+    char fname[128] = {0};
+
+    /* Extract filename from URL: POST /fonts/upload/filename.ttf */
+    const char *path_start = strstr(req, "/fonts/upload/");
+    if (!path_start) { send_response(fd, 400, "application/json", "{\"error\":\"missing filename\"}"); return; }
+    path_start += 14;  /* skip "/fonts/upload/" */
+    const char *path_end = strchr(path_start, ' ');
+    if (!path_end) { send_response(fd, 400, "application/json", "{\"error\":\"bad request\"}"); return; }
+    int name_len = path_end - path_start;
+    if (name_len < 1 || name_len > 120) { send_response(fd, 400, "application/json", "{\"error\":\"filename too long\"}"); return; }
+    memcpy(fname, path_start, name_len);
+
+    /* Validate extension: .ttf or .ttc only */
+    int elen = (int)strlen(fname);
+    if (elen < 5) { send_response(fd, 400, "application/json", "{\"error\":\"invalid filename\"}"); return; }
+    const char *ext = fname + elen - 4;
+    if (strcasecmp(ext, ".ttf") != 0 && strcasecmp(ext, ".ttc") != 0) {
+        send_response(fd, 400, "application/json", "{\"error\":\"only .ttf and .ttc allowed\"}"); return;
+    }
+
+    /* Find body (after \r\n\r\n) */
+    const char *body = strstr(req, "\r\n\r\n");
+    if (!body) { send_response(fd, 400, "application/json", "{\"error\":\"no body\"}"); return; }
+    body += 4;
+    int body_len = req_len - (int)(body - req);
+
+    /* Save to ../pic/ */
+    char fpath[256];
+    snprintf(fpath, sizeof(fpath), "../pic/%s", fname);
+    FILE *fp = fopen(fpath, "wb");
+    if (!fp) { send_response(fd, 500, "application/json", "{\"error\":\"cannot create file\"}"); return; }
+    size_t written = fwrite(body, 1, body_len, fp);
+    fclose(fp);
+
+    char json[128];
+    snprintf(json, sizeof(json), "{\"ok\":true,\"name\":\"%s\",\"size\":%zu}", fname, written);
+    send_response(fd, 200, "application/json", json);
+    printf("  Font uploaded: %s (%zu bytes)\n", fname, written);
+}
+
+/* ------------------------------------------------------------------ */
 /* Thread entry point — accept loop.                                   */
 /* ------------------------------------------------------------------ */
 void api_server_start(void) {
@@ -338,7 +382,9 @@ void api_server_start(void) {
             buf[n] = '\0';
 
             /* Routing */
-            if (strncmp(buf, "POST /layout/apply", 18) == 0) {
+            if (strncmp(buf, "POST /fonts/upload/", 19) == 0) {
+                handle_upload(client_fd, buf, (int)n);
+            } else if (strncmp(buf, "POST /layout/apply", 18) == 0) {
                 handle_apply(client_fd);
             } else if (strncmp(buf, "POST /layout/cancel", 19) == 0) {
                 handle_cancel(client_fd);
