@@ -54,6 +54,9 @@ static void set_defaults(Layout *l) {
     l->weather_pt = 14;
     l->small_pt = 10;
     l->ip_pt = 13;
+
+    strcpy(l->font_cn, "Font.ttc");
+    strcpy(l->font_time, "DSEG7Modern-Bold.ttf");
 }
 
 /* ================================================================== */
@@ -70,6 +73,25 @@ static int json_get_int(const char *json, const char *key, int fallback) {
     if (*p == '-') { sign = -1; p++; }
     while (*p >= '0' && *p <= '9') { val = val * 10 + (*p - '0'); p++; }
     return val * sign;
+}
+
+/* extract string value for a given key */
+static void json_get_str(const char *json, const char *key, char *out, int outsz, const char *fallback) {
+    strcpy(out, fallback);
+    char search[64];
+    snprintf(search, sizeof(search), "\"%s\"", key);
+    const char *p = strstr(json, search);
+    if (!p) return;
+    p += strlen(search);
+    while (*p == ' ' || *p == ':' || *p == '\t') p++;
+    if (*p != '"') return;
+    p++;  /* skip opening quote */
+    int i = 0;
+    while (*p && *p != '"' && i < outsz - 1) {
+        if (*p == '\\' && *(p+1)) p++;  /* skip escape */
+        out[i++] = *p++;
+    }
+    out[i] = '\0';
 }
 
 /* ================================================================== */
@@ -123,6 +145,9 @@ int layout_init(Layout *l) {
     l->small_pt   = json_get_int(buf, "small_pt",   l->small_pt);
     l->ip_pt      = json_get_int(buf, "ip_pt",      l->ip_pt);
 
+    json_get_str(buf, "font_cn",   l->font_cn,   sizeof(l->font_cn),   l->font_cn);
+    json_get_str(buf, "font_time", l->font_time, sizeof(l->font_time), l->font_time);
+
     free(buf);
     printf("Layout loaded from %s\n", LAYOUT_FILE);
     return 0;
@@ -146,7 +171,8 @@ int layout_save(const Layout *l) {
         "  \"bat_frame_x\":%d,\"bat_frame_y\":%d,\"bat_frame_w\":%d,\"bat_frame_h\":%d,\n"
         "  \"ip_x\":%d,\"ip_y\":%d,\n"
         "  \"bar_y\":%d,\"bar_h\":%d,\n"
-        "  \"time_pt\":%d,\"date_pt\":%d,\"weather_pt\":%d,\"small_pt\":%d,\"ip_pt\":%d\n"
+        "  \"time_pt\":%d,\"date_pt\":%d,\"weather_pt\":%d,\"small_pt\":%d,\"ip_pt\":%d,\n"
+        "  \"font_cn\":\"%s\",\"font_time\":\"%s\"\n"
         "}\n",
         l->time_x, l->time_y,
         l->date_x, l->date_y,
@@ -159,7 +185,8 @@ int layout_save(const Layout *l) {
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         l->ip_x, l->ip_y,
         l->bar_y, l->bar_h,
-        l->time_pt, l->date_pt, l->weather_pt, l->small_pt, l->ip_pt);
+        l->time_pt, l->date_pt, l->weather_pt, l->small_pt, l->ip_pt,
+        l->font_cn, l->font_time);
 
     fclose(fp);
     printf("Layout saved to %s\n", LAYOUT_FILE);

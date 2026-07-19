@@ -44,6 +44,10 @@ typedef struct {
     int weather_pt;    /* default 14 */
     int small_pt;      /* battery, default 10 */
     int ip_pt;         /* default 13 */
+
+    /* font file paths (relative to pic/ directory) */
+    char font_cn[128];    /* Chinese font, default "Font.ttc" */
+    char font_time[128];  /* time font, default "DSEG7Modern-Bold.ttf" */
 } Layout;
 
 /* Filename for persistent storage (relative to CWD = clock/) */

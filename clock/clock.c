@@ -56,10 +56,7 @@
 #define DISP_SIZE   (DISP_ROW * DISP_HEIGHT) /* 4000 bytes */
 
 /* Font and data paths - relative to clock/ working directory */
-#define FONT_PATH_TTC  "../pic/Font.ttc"
-#define FONT_PATH_DSEG "../pic/DSEG7Modern-Bold.ttf"
-
-/* Weather JSON path */
+#define FONT_DIR       "../pic/"
 #define WEATHER_JSON_PATH "../bin/weather.json"
 
 /* =========================================================================
@@ -220,77 +217,50 @@ static void fb_draw_ellipse(int cx, int cy, int rx, int ry, int outline, int fil
  * ========================================================================= */
 
 /* Initialize fonts and load all fonts */
-static int ft_init(void) {
-    FILE *fp = fopen(FONT_PATH_TTC, "rb");
+static int ft_load_font(stbtt_fontinfo *info, unsigned char **buf,
+                         const char *fname) {
+    char path[256];
+    snprintf(path, sizeof(path), FONT_DIR "%s", fname);
+    FILE *fp = fopen(path, "rb");
     if (!fp) {
-        fprintf(stderr, "ERROR: Cannot open %s\n", FONT_PATH_TTC);
+        fprintf(stderr, "ERROR: Cannot open %s\n", path);
         return -1;
     }
-
     fseek(fp, 0, SEEK_END);
     long fsize = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-
-    font_ttc_buf = (unsigned char *)malloc(fsize);
-    if (!font_ttc_buf) {
-        fclose(fp);
-        return -1;
-    }
-
-    size_t nread = fread(font_ttc_buf, 1, fsize, fp);
+    *buf = (unsigned char *)malloc(fsize);
+    if (!*buf) { fclose(fp); return -1; }
+    size_t nread = fread(*buf, 1, fsize, fp);
     fclose(fp);
+    if (nread != (size_t)fsize) { free(*buf); *buf = NULL; return -1; }
 
-    if (nread != (size_t)fsize) {
-        free(font_ttc_buf);
-        return -1;
+    int is_ttc = (strlen(fname) > 4 && strcasecmp(fname + strlen(fname) - 4, ".ttc") == 0);
+    int offset = is_ttc ? stbtt_GetFontOffsetForIndex(*buf, 0) : 0;
+    if (is_ttc && offset < 0) {
+        fprintf(stderr, "ERROR: %s is not a valid TTC font\n", path);
+        free(*buf); *buf = NULL; return -1;
     }
-
-    int ttc_offset = stbtt_GetFontOffsetForIndex(font_ttc_buf, 0);
-    if (ttc_offset < 0) {
-        fprintf(stderr, "ERROR: %s is not a valid TTC font (GetFontOffsetForIndex returned %d)\n",
-                FONT_PATH_TTC, ttc_offset);
-        free(font_ttc_buf);
-        return -1;
+    if (!stbtt_InitFont(info, *buf, offset)) {
+        fprintf(stderr, "ERROR: stbtt_InitFont failed for %s\n", path);
+        free(*buf); *buf = NULL; return -1;
     }
-    printf("  TTC offset for index 0: %d (0x%X)\n", ttc_offset, ttc_offset);
-    if (!stbtt_InitFont(&font_ttc, font_ttc_buf, ttc_offset)) {
-        fprintf(stderr, "ERROR: stbtt_InitFont failed for %s (missing cmap/head/hhea/hmtx table?)\n",
-                FONT_PATH_TTC);
-        free(font_ttc_buf);
-        return -1;
-    }
-
-    fp = fopen(FONT_PATH_DSEG, "rb");
-    if (!fp) {
-        fprintf(stderr, "ERROR: Cannot open %s\n", FONT_PATH_DSEG);
-        return -1;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    fsize = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-
-    font_dseg_buf = (unsigned char *)malloc(fsize);
-    if (!font_dseg_buf) {
-        fclose(fp);
-        return -1;
-    }
-
-    nread = fread(font_dseg_buf, 1, fsize, fp);
-    fclose(fp);
-
-    if (nread != (size_t)fsize) {
-        free(font_dseg_buf);
-        return -1;
-    }
-
-    if (!stbtt_InitFont(&font_dseg, font_dseg_buf, 0)) {
-        fprintf(stderr, "ERROR: Cannot load %s\n", FONT_PATH_DSEG);
-        free(font_dseg_buf);
-        return -1;
-    }
-
+    printf("  Font loaded: %s (%ld bytes)\n", fname, fsize);
     return 0;
+}
+
+static int ft_init(void) {
+    if (ft_load_font(&font_ttc, &font_ttc_buf, g_layout.font_cn) != 0) return -1;
+    if (ft_load_font(&font_dseg, &font_dseg_buf, g_layout.font_time) != 0) return -1;
+    return 0;
+}
+
+/* Re-load fonts after layout change (e.g. font_cn/font_time changed) */
+static int ft_reload(void) {
+    printf("Reloading fonts...\n");
+    if (font_dseg_buf) { free(font_dseg_buf); font_dseg_buf = NULL; }
+    if (font_ttc_buf)  { free(font_ttc_buf);  font_ttc_buf = NULL; }
+    return ft_init();
 }
 
 /* Clean up fonts resources */
@@ -911,6 +881,7 @@ int main(void) {
         /* Layout change from API — skip clear/sleep, just redo basic_refresh */
         if (g_layout_changed) {
             g_layout_changed = 0;
+            ft_reload();  /* reload fonts if font_cn/font_time changed */
             EPD_2in13_V4_Sleep(&epd);
             printf("Layout applied — immediate refresh\n");
             continue;

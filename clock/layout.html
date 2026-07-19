@@ -57,6 +57,9 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 .field input { width:100%; padding:7px 10px; background:var(--input-bg); border:1px solid var(--accent); border-radius:6px; color:var(--text); font-size:13px; }
 .field input:focus { outline:none; border-color:var(--hl); }
 .field input.modified { border-color:var(--warn); }
+.field select { width:100%; padding:7px 10px; background:var(--input-bg); border:1px solid var(--accent); border-radius:6px; color:var(--text); font-size:13px; cursor:pointer; }
+.field select:focus { outline:none; border-color:var(--hl); }
+.field select.modified { border-color:var(--warn); }
 .actions { display:flex; gap:10px; padding:16px; background:var(--card); border-radius:12px; position:sticky; bottom:0; }
 .actions button { flex:1; padding:12px 0; border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; transition:filter .2s; }
 .actions button:hover { filter:brightness(1.15); }
@@ -125,10 +128,34 @@ canvas { display:block; border-radius:2px; background:#e8e4dc; margin:0 auto; }
 // Browsers don't support .ttc (TrueType Collection) via @font-face.
 // Use system CJK fonts that match the TTC's style.
 const FONT_CN = '"Noto Sans SC", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif';
-const FONT_TIME = 'DSEG, monospace';
+let FONT_TIME = 'DSEG, monospace';
+let _loadedTimeFont = 'DSEG7Modern-Bold.ttf';
 
 // Try loading the DSEG TTF font (browsers support .ttf fine).
 document.fonts.load('40px DSEG').catch(()=>{});
+
+// Dynamically load a TTF font from /pic/ for preview
+function loadTimeFont(fname) {
+  if (fname === _loadedTimeFont) return;
+  _loadedTimeFont = fname;
+  // Remove old dynamic font style
+  const old = document.getElementById('dyn-time-font');
+  if (old) old.remove();
+  // Create new @font-face
+  const style = document.createElement('style');
+  style.id = 'dyn-time-font';
+  const fnameNoExt = fname.replace(/\.(ttf|ttc)$/i, '');
+  style.textContent = `@font-face {
+    font-family: 'DynTime';
+    src: url('/pic/${encodeURIComponent(fname)}') format('truetype');
+  }`;
+  document.head.appendChild(style);
+  FONT_TIME = `'DynTime', DSEG, monospace`;
+  // Preload
+  document.fonts.load(`40px ${FONT_TIME}`).then(() => {
+    drawNow();
+  }).catch(() => {});
+}
 
 // ==================== API ====================
 let _host = () => document.getElementById('api-host').value || '192.168.2.103:8080';
@@ -161,11 +188,32 @@ async function fetchLayout() {
     renderInfo();
     setPending(!!_remote.pending);
     setConn('on');
+    loadFontList();  /* load available fonts for dropdowns */
   } catch(e) {
     setConn('off');
     showErr('连接失败: ' + e.message + '\n请确认树莓派 IP 和端口是否正确');
     console.error(e);
   }
+}
+
+async function loadFontList() {
+  try {
+    const fonts = await apiFetch('/fonts', {});
+    populateFontSelect('f-font_cn', fonts, _current.font_cn);
+    populateFontSelect('f-font_time', fonts, _current.font_time);
+  } catch(e) { console.error('loadFontList:', e); }
+}
+
+function populateFontSelect(id, fonts, current) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = '';
+  fonts.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f; opt.textContent = f;
+    if (f === current) opt.selected = true;
+    sel.appendChild(opt);
+  });
 }
 
 async function postPreview() {
@@ -226,6 +274,8 @@ function extractPos(json) {
   p.weather_pt = json.weather.pt ?? _current.weather_pt ?? 14;
   p.small_pt   = json.battery.pt ?? _current.small_pt   ?? 10;
   p.ip_pt      = json.ip.pt      ?? _current.ip_pt      ?? 13;
+  p.font_cn    = json.font_cn    ?? _current.font_cn    ?? 'Font.ttc';
+  p.font_time  = json.font_time  ?? _current.font_time  ?? 'DSEG7Modern-Bold.ttf';
   return p;
 }
 
@@ -275,6 +325,10 @@ const GROUPS = [
     {k:'weather_pt',l:'天气'},{k:'small_pt',l:'电池'},
     {k:'ip_pt',l:'IP/更新'},
   ]},
+  { id:'fontsel', name:'字体文件', fields:[
+    {k:'font_cn',l:'中文字体', type:'select'},
+    {k:'font_time',l:'时间字体', type:'select'},
+  ]},
 ];
 
 function buildControls() {
@@ -283,19 +337,28 @@ function buildControls() {
       <div class="group-head" onclick="document.getElementById('group-${g.id}').classList.toggle('open')">
         <h3>${g.name}</h3><span class="icon">&#9660;</span>
       </div>
-      <div class="group-body">${g.fields.map(f =>
-        `<div class="field"><label>${f.l}</label>
+      <div class="group-body">${g.fields.map(f => {
+        if (f.type === 'select') {
+          return `<div class="field"><label>${f.l}</label>
+            <select id="f-${f.k}" data-key="${f.k}" onchange="if(!_updating){onFieldChange(this);drawNow()}">
+              <option value="">--</option>
+            </select>
+          </div>`;
+        }
+        return `<div class="field"><label>${f.l}</label>
           <input id="f-${f.k}" type="number" data-key="${f.k}" oninput="if(!_updating){onFieldChange(this);drawNow()}" onfocus="this.select()">
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       </div>
     </div>`).join('');
 }
 
 function onFieldChange(inp) {
-  const k = inp.dataset.key, v = parseInt(inp.value);
-  if (isNaN(v)) return;
+  const k = inp.dataset.key, v = inp.type === 'select-one' ? inp.value : parseInt(inp.value);
+  if (inp.type !== 'select-one' && isNaN(v)) return;
   _current[k] = v;
   inp.classList.toggle('modified', v !== _original[k]);
+  if (k === 'font_time') loadTimeFont(v);
 }
 
 function updateUI() {
@@ -303,8 +366,13 @@ function updateUI() {
   for (const [k,v] of Object.entries(_current)) {
     const inp = document.getElementById('f-'+k);
     if (!inp) continue;
-    inp.value = v;
+    if (inp.type === 'select-one') {
+      inp.value = v;
+    } else {
+      inp.value = v;
+    }
     inp.classList.toggle('modified', v !== _original[k]);
+    if (k === 'font_time' && v) loadTimeFont(v);
   }
   _updating = false;
 }

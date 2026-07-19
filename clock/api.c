@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <dirent.h>
 
 #include "layout.h"
 
@@ -82,7 +83,7 @@ static void build_json(char *buf, int bufsize, int show_pending) {
     snprintf(buf, bufsize,
         "{"
         "\"screen\":{\"width\":%d,\"height\":%d},"
-        "\"time\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,\"font\":\"DSEG\"},"
+        "\"time\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,\"font\":\"%s\"},"
         "\"date\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
         "\"weather\":{"
             "\"desc\":{\"text\":\"%s\",\"x\":%d,\"y\":%d},"
@@ -97,10 +98,11 @@ static void build_json(char *buf, int bufsize, int show_pending) {
             "\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
         "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
         "\"bar\":{\"y\":%d,\"h\":%d},"
+        "\"font_cn\":\"%s\",\"font_time\":\"%s\","
         "\"%s\":%s"
         "}",
         l->screen_w, l->screen_h,
-        cached_time, l->time_x, l->time_y, l->time_pt,
+        cached_time, l->time_x, l->time_y, l->time_pt, l->font_time,
         esc_date, l->date_x, l->date_y, l->date_pt,
         esc_w, l->w_data_x, l->w_data_y[0],
         esc_t, l->w_data_x, l->w_data_y[1],
@@ -111,6 +113,7 @@ static void build_json(char *buf, int bufsize, int show_pending) {
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         cached_ip, l->ip_x, l->ip_y, l->ip_pt,
         l->bar_y, l->bar_h,
+        l->font_cn, l->font_time,
         show_pending ? "pending" : "active", show_pending ? "true" : "false");
 
 #undef ESC
@@ -176,6 +179,25 @@ static int json_get_int(const char *json, const char *key, int fallback) {
     return val * sign;
 }
 
+/* extract string value for a given key */
+static void json_get_str(const char *json, const char *key, char *out, int outsz, const char *fallback) {
+    strcpy(out, fallback);
+    char search[64];
+    snprintf(search, sizeof(search), "\"%s\"", key);
+    const char *p = strstr(json, search);
+    if (!p) return;
+    p += strlen(search);
+    while (*p == ' ' || *p == ':' || *p == '\t') p++;
+    if (*p != '"') return;
+    p++;  /* skip opening quote */
+    int i = 0;
+    while (*p && *p != '"' && i < outsz - 1) {
+        if (*p == '\\' && *(p+1)) p++;  /* skip escape */
+        out[i++] = *p++;
+    }
+    out[i] = '\0';
+}
+
 /* ------------------------------------------------------------------ */
 /* POST /layout — preview: store in pending                          */
 /* ------------------------------------------------------------------ */
@@ -202,6 +224,8 @@ static void handle_preview(int fd, const char *body) {
     S("time_pt", time_pt); S("date_pt", date_pt);
     S("weather_pt", weather_pt); S("small_pt", small_pt); S("ip_pt", ip_pt);
     #undef S
+    json_get_str(body, "font_cn",   g_pending.font_cn,   sizeof(g_pending.font_cn),   g_pending.font_cn);
+    json_get_str(body, "font_time", g_pending.font_time, sizeof(g_pending.font_time), g_pending.font_time);
 
     char json[2048];
     build_json(json, sizeof(json), 1);
@@ -233,6 +257,35 @@ static void handle_cancel(int fd) {
     g_has_pending = 0;
     char json[2048];
     build_json(json, sizeof(json), 0);
+    send_response(fd, 200, "application/json", json);
+}
+
+/* ------------------------------------------------------------------ */
+/* GET /fonts — list available font files in ../pic/                  */
+/* ------------------------------------------------------------------ */
+static void handle_fonts(int fd) {
+    char json[2048];
+    int pos = 0;
+    pos += snprintf(json + pos, sizeof(json) - pos, "[");
+
+    DIR *d = opendir("../pic");
+    if (d) {
+        struct dirent *ent;
+        int first = 1;
+        while ((ent = readdir(d)) != NULL) {
+            const char *name = ent->d_name;
+            int len = (int)strlen(name);
+            /* Only .ttf and .ttc files */
+            if (len > 4 && (strcasecmp(name + len - 4, ".ttf") == 0 ||
+                            strcasecmp(name + len - 4, ".ttc") == 0)) {
+                if (!first) pos += snprintf(json + pos, sizeof(json) - pos, ",");
+                first = 0;
+                pos += snprintf(json + pos, sizeof(json) - pos, "\"%s\"", name);
+            }
+        }
+        closedir(d);
+    }
+    pos += snprintf(json + pos, sizeof(json) - pos, "]");
     send_response(fd, 200, "application/json", json);
 }
 
@@ -292,14 +345,18 @@ void api_server_start(void) {
             } else if (strncmp(buf, "POST /layout", 12) == 0) {
                 char *body = strstr(buf, "\r\n\r\n");
                 handle_preview(client_fd, body ? body + 4 : "{}");
+            } else if (strncmp(buf, "GET /fonts", 10) == 0) {
+                handle_fonts(client_fd);
             } else if (strncmp(buf, "GET /layout.html", 16) == 0) {
                 send_file(client_fd, "../clock/layout.html", "text/html; charset=utf-8");
             } else if (strncmp(buf, "GET /pic/", 9) == 0) {
-                /* Extract path after /pic/, only allow DSEG font */
-                if (strstr(buf, "DSEG7Modern-Bold.ttf"))
-                    send_file(client_fd, "../pic/DSEG7Modern-Bold.ttf", "font/ttf");
-                else
-                    send_response(client_fd, 404, "text/plain", "{\"error\":\"not found\"}");
+                /* Serve any font file from pic/ */
+                char *start = strstr(buf, "/pic/") + 5;
+                char *end = strchr(start, ' ');
+                if (end) *end = '\0';
+                char fpath[256];
+                snprintf(fpath, sizeof(fpath), "../pic/%s", start);
+                send_file(client_fd, fpath, "font/ttf");
             } else if (strncmp(buf, "GET / ", 6) == 0 || strncmp(buf, "GET /\r\n", 7) == 0) {
                 char json[2048];
                 build_json(json, sizeof(json), g_has_pending);
