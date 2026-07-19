@@ -526,7 +526,7 @@ function getHandleSize(h) {
   ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN_VAR}`;
   if (fn === 'bat') { const m = ctx.measureText(_remote?.battery?.text || '100%'); return {w: Math.ceil(m.width) + 2, h: _current.small_pt ?? 10}; }
   if (fn === 'batf') return {w: _current.bat_frame_w ?? 29, h: _current.bat_frame_h ?? 11};
-  if (fn === 'bolt') return {w: FONT_SIZE_SMALL, h: FONT_SIZE_SMALL};
+  if (fn === 'bolt') return {w: (_current.small_pt ?? 10), h: (_current.small_pt ?? 10)};
   return {w: 20, h: 14};
 }
 
