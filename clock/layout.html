@@ -324,8 +324,9 @@ function _draw(data) {
 
   function ascent(sz, fam) {
     ctx.font = `${sz}px ${fam}`;
-    // Measure a full-height CJK character to get the font's ascent
-    const m = ctx.measureText('\u56FD');
+    // DSEG is digital-only, CJK fonts are full-height
+    const ch = fam.includes('DSEG') ? '0' : '\u56FD';
+    const m = ctx.measureText(ch);
     return m.actualBoundingBoxAscent || sz * 0.72;
   }
   function text(s, x, y, sz, fam) {
