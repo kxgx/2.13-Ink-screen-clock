@@ -42,6 +42,9 @@ static void set_defaults(Layout *l) {
     l->w_upd_x = 211;
     l->w_upd_y = 109;
 
+    l->bolt_x = 199;
+    l->bolt_y = 108;
+
     l->bat_x = 128;
     l->bat_y = 108;
     l->bat_frame_x = 126;
@@ -140,6 +143,8 @@ int layout_init(Layout *l) {
     l->w_data_y[3] = json_get_int(buf, "w_data_y3", l->w_data_y[3]);
     l->w_upd_x = json_get_int(buf, "w_upd_x", l->w_upd_x);
     l->w_upd_y = json_get_int(buf, "w_upd_y", l->w_upd_y);
+    l->bolt_x = json_get_int(buf, "bolt_x", l->bolt_x);
+    l->bolt_y = json_get_int(buf, "bolt_y", l->bolt_y);
     l->bat_x = json_get_int(buf, "bat_x", l->bat_x);
     l->bat_y = json_get_int(buf, "bat_y", l->bat_y);
     l->bat_frame_x = json_get_int(buf, "bat_frame_x", l->bat_frame_x);
@@ -179,6 +184,7 @@ int layout_save(const Layout *l) {
         "  \"w_data_x0\":%d,\"w_data_x1\":%d,\"w_data_x2\":%d,\"w_data_x3\":%d,\n"
         "  \"w_data_y0\":%d,\"w_data_y1\":%d,\"w_data_y2\":%d,\"w_data_y3\":%d,\n"
         "  \"w_upd_x\":%d,\"w_upd_y\":%d,\n"
+        "  \"bolt_x\":%d,\"bolt_y\":%d,\n"
         "  \"bat_x\":%d,\"bat_y\":%d,\n"
         "  \"bat_frame_x\":%d,\"bat_frame_y\":%d,\"bat_frame_w\":%d,\"bat_frame_h\":%d,\n"
         "  \"ip_x\":%d,\"ip_y\":%d,\n"
@@ -193,6 +199,7 @@ int layout_save(const Layout *l) {
         l->w_data_x[0], l->w_data_x[1], l->w_data_x[2], l->w_data_x[3],
         l->w_data_y[0], l->w_data_y[1], l->w_data_y[2], l->w_data_y[3],
         l->w_upd_x, l->w_upd_y,
+        l->bolt_x, l->bolt_y,
         l->bat_x, l->bat_y,
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         l->ip_x, l->ip_y,

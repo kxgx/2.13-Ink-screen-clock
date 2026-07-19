@@ -28,6 +28,9 @@ typedef struct {
     /* weather update time (pt=13) */
     int w_upd_x, w_upd_y;
 
+    /* lightning bolt icon (weather update indicator) */
+    int bolt_x, bolt_y;
+
     /* battery percentage (pt=10, inside frame) */
     int bat_x, bat_y;
     int bat_frame_x, bat_frame_y, bat_frame_w, bat_frame_h;

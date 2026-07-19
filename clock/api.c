@@ -95,6 +95,7 @@ static void build_json(char *buf, int bufsize, int show_pending) {
             "\"label_x\":[%d,%d,%d,%d],\"label_y\":[%d,%d,%d,%d],"
             "\"pt\":%d"
         "},"
+        "\"bolt\":{\"x\":%d,\"y\":%d},"
         "\"battery\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d,"
             "\"frame\":{\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}},"
         "\"ip\":{\"text\":\"%s\",\"x\":%d,\"y\":%d,\"pt\":%d},"
@@ -113,6 +114,7 @@ static void build_json(char *buf, int bufsize, int show_pending) {
         l->w_label_x[0], l->w_label_x[1], l->w_label_x[2], l->w_label_x[3],
         l->w_label_y[0], l->w_label_y[1], l->w_label_y[2], l->w_label_y[3],
         l->weather_pt,
+        l->bolt_x, l->bolt_y,
         cached_power, l->bat_x, l->bat_y, l->small_pt,
         l->bat_frame_x, l->bat_frame_y, l->bat_frame_w, l->bat_frame_h,
         cached_ip, l->ip_x, l->ip_y, l->ip_pt,
@@ -222,6 +224,7 @@ static void handle_preview(int fd, const char *body) {
     S("w_data_y0", w_data_y[0]); S("w_data_y1", w_data_y[1]);
     S("w_data_y2", w_data_y[2]); S("w_data_y3", w_data_y[3]);
     S("w_upd_x", w_upd_x); S("w_upd_y", w_upd_y);
+    S("bolt_x", bolt_x); S("bolt_y", bolt_y);
     S("bat_x", bat_x); S("bat_y", bat_y);
     S("bat_frame_x", bat_frame_x); S("bat_frame_y", bat_frame_y);
     S("bat_frame_w", bat_frame_w); S("bat_frame_h", bat_frame_h);

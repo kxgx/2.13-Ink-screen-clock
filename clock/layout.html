@@ -361,6 +361,8 @@ function extractPos(json) {
     p[k] = _current[k] ?? [json.weather.desc.y, json.weather.temp.y, json.weather.humidity.y, json.weather.city.y][i];
   });
   p.w_upd_x = json.weather.updated.x; p.w_upd_y = json.weather.updated.y;
+  p.bolt_x = _current.bolt_x ?? json.bolt?.x ?? 199;
+  p.bolt_y = _current.bolt_y ?? json.bolt?.y ?? 108;
   p.bat_x = json.battery.x; p.bat_y = json.battery.y;
   p.bat_frame_x = json.battery.frame.x; p.bat_frame_y = json.battery.frame.y;
   p.bat_frame_w = json.battery.frame.w; p.bat_frame_h = json.battery.frame.h;
@@ -501,6 +503,7 @@ const DRAG_HANDLES = [
   { k:'bat_x',ky:'bat_y', label:'电量%', fn:'bat' },
   { k:'bat_frame_x',ky:'bat_frame_y', label:'框', fn:'batf' },
   { k:'ip_x',ky:'ip_y', label:'IP', fn:'ip' },
+  { k:'bolt_x',ky:'bolt_y', label:'闪电', fn:'bolt' },
 ];
 let _dragIdx = -1, _dragOffX = 0, _dragOffY = 0, _hoverIdx = -1;
 
@@ -523,6 +526,7 @@ function getHandleSize(h) {
   ctx.font = `${_current.small_pt ?? 10}px ${FONT_CN_VAR}`;
   if (fn === 'bat') { const m = ctx.measureText(_remote?.battery?.text || '100%'); return {w: Math.ceil(m.width) + 2, h: _current.small_pt ?? 10}; }
   if (fn === 'batf') return {w: _current.bat_frame_w ?? 29, h: _current.bat_frame_h ?? 11};
+  if (fn === 'bolt') return {w: FONT_SIZE_SMALL, h: FONT_SIZE_SMALL};
   return {w: 20, h: 14};
 }
 
@@ -664,6 +668,7 @@ function drawNow() {
   prev.battery.frame.w = c.bat_frame_w; prev.battery.frame.h = c.bat_frame_h;
   prev.ip.x = c.ip_x; prev.ip.y = c.ip_y;
   prev.bar.y = c.bar_y; prev.bar.h = c.bar_h;
+  prev.bolt = prev.bolt || {}; prev.bolt.x = c.bolt_x; prev.bolt.y = c.bolt_y;
   if (prev.weather) {
     prev.weather.desc.x = c.w_data_x0;     prev.weather.desc.y = c.w_data_y0;
     prev.weather.temp.x = c.w_data_x1;     prev.weather.temp.y = c.w_data_y1;
@@ -757,10 +762,10 @@ function _draw(data) {
   ctx.fillRect(b.frame.x + b.frame.w, tabY1, tabW, tabW);
   ctx.fillRect(b.frame.x + b.frame.w, tabY2, tabW, tabW);
 
-  // Lightning bolt icon — position after battery text, size proportional to font
+  // Lightning bolt icon — weather update indicator, independently positioned
+  const bolt = data.bolt || {};
   const sp = _current.small_pt ?? 10;
-  const lx = b.x + ctx.measureText(b.text).width + 3;
-  const ly2 = b.frame.y + Math.floor(b.frame.h / 2);
+  const lx = bolt.x ?? 199, ly2 = bolt.y ?? 108;
   const lrx = sp * 7 / 10, lry = sp * 6 / 10;
   ctx.fillStyle = '#fff';
   ctx.beginPath();

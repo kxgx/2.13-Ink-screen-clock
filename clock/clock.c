@@ -654,9 +654,9 @@ static void draw_bottom_edge(void) {
 
     ft_render_text(g_layout.bat_x, g_layout.bat_y, cached_power, FONT_SIZE_SMALL, 0, 1, 64);
 
-    /* Lightning bolt icon — position after battery text, size proportional to font */
-    int lx = g_layout.bat_x + ft_measure_text(cached_power, FONT_SIZE_SMALL, 0) + 3;
-    int ly = by + bh / 2;
+    /* Lightning bolt icon — weather update indicator, independently positioned */
+    int lx = g_layout.bolt_x;
+    int ly = g_layout.bolt_y;
     int lrx = FONT_SIZE_SMALL * 7 / 10;  /* ≈7 at 10pt */
     int lry = FONT_SIZE_SMALL * 6 / 10;  /* ≈6 at 10pt */
     fb_draw_ellipse(lx, ly, lrx, lry, 1, 1);
